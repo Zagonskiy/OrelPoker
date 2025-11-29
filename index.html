@@ -8,21 +8,22 @@
     <style>
         :root {
             --paper-bg: #f4e4bc;
-            /* Текстура шума для эффекта старой бумаги */
             --paper-texture: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.4 0"/></filter><rect width="100%" height="100%" filter="url(%23noise)" opacity="0.1"/></svg>');
             --ink-color: #3e2b1f;
             --accent-brown: #8b4513;
             --accent-gold: #cba135;
             --accent-red: #8b0000;
             --accent-green: #556b2f;
+            --accent-undo: #d4af37;
         }
 
         body {
-            font-family: 'Special Elite', 'Courier New', monospace; /* Шрифт печатной машинки */
+            font-family: 'Special Elite', 'Courier New', monospace;
             background-color: #2a1b0f;
             background-image: linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.1));
-            padding: 30px 10px;
+            padding: 20px 10px;
             color: var(--ink-color);
+            margin: 0;
         }
 
         .container {
@@ -31,7 +32,7 @@
             background-color: var(--paper-bg);
             background-image: var(--paper-texture), linear-gradient(to right, rgba(139, 69, 19, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(139, 69, 19, 0.1) 1px, transparent 1px);
             background-size: 100px 100px, 20px 20px, 20px 20px;
-            padding: 30px;
+            padding: 20px;
             border-radius: 2px;
             box-shadow: 
                 0 0 0 5px #5a3a22 inset,
@@ -45,13 +46,14 @@
             font-family: 'Rye', cursive;
             text-align: center;
             color: var(--accent-brown);
-            font-size: 3em;
-            margin-bottom: 30px;
+            font-size: 2.5em;
+            margin-bottom: 20px;
             text-shadow: 2px 2px 0px var(--paper-bg), 4px 4px 0px rgba(0,0,0,0.2);
             text-transform: uppercase;
             letter-spacing: 2px;
             border-bottom: 3px double var(--accent-brown);
             padding-bottom: 15px;
+            line-height: 1.2;
         }
         
         .date-section {
@@ -59,10 +61,11 @@
             align-items: center;
             justify-content: center;
             gap: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             background: rgba(139, 69, 19, 0.1);
-            padding: 15px;
+            padding: 10px;
             border: 2px dashed var(--accent-brown);
+            flex-wrap: wrap;
         }
         .date-section label {
             font-weight: bold;
@@ -77,6 +80,7 @@
             color: var(--ink-color);
             outline: none;
             font-size: 1.1em;
+            width: auto;
         }
 
         .controls {
@@ -107,23 +111,24 @@
         button:active { top: 2px; box-shadow: inset 0 0 5px rgba(0,0,0,0.4); }
 
         .btn-add { background-color: var(--accent-green); color: #f4e4bc; border-color: #3a4a20; }
-        .btn-add:hover { background-color: #465c25; }
-        
         .btn-download { background-color: var(--accent-brown); color: var(--accent-gold); border-color: #5c300e; }
-        .btn-download:hover { background-color: #723b11; }
 
-        .btn-calc { 
-            background-color: #6b523d; 
-            color: var(--accent-gold); 
-            width: 36px; height: 36px; padding: 0; 
+        /* Элементы управления счетом */
+        .btn-calc, .btn-undo { 
+            width: 40px; height: 40px; padding: 0; 
             font-family: 'Special Elite', monospace;
             font-weight: bold;
-            font-size: 1.4em;
+            font-size: 1.5em;
             border-radius: 50%; 
             border: 2px solid #3e2b1f;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 2px;
         }
-        .btn-calc:hover { background-color: #5a4432; color: white; }
-
+        .btn-calc { background-color: #6b523d; color: var(--accent-gold); }
+        .btn-undo { background-color: var(--accent-undo); color: #3e2b1f; font-size: 1.2em; }
+        
         .btn-delete { 
             background-color: var(--accent-red); 
             color: #f4e4bc; 
@@ -132,9 +137,10 @@
             width: 30px; height: 30px; padding: 0;
             border: 2px solid #500000;
             font-family: sans-serif;
+            cursor: pointer;
         }
-        .btn-delete:hover { background-color: #a50000; }
-        
+
+        /* --- СТИЛИ ТАБЛИЦЫ --- */
         table {
             width: 100%;
             border-collapse: separate;
@@ -150,7 +156,6 @@
             letter-spacing: 1px;
             border-top: 3px solid #3e2b1f;
             border-bottom: 3px solid #3e2b1f;
-            text-shadow: 1px 1px 0px rgba(0,0,0,0.5);
         }
         
         tbody tr {
@@ -173,35 +178,16 @@
             font-family: 'Special Elite', monospace;
             font-size: 1.1em;
             color: var(--ink-color);
-            width: 100%;
             box-sizing: border-box;
             outline: none;
-            transition: border-color 0.3s;
         }
-        input[type="text"]::placeholder { color: rgba(62, 43, 31, 0.5); }
-        input[type="text"]:focus, input[type="number"]:focus {
-            border-bottom: 2px solid var(--accent-brown);
-            background-color: rgba(203, 161, 53, 0.1);
-        }
-
-        input[type="number"] {
-            width: 80px;
-            margin-right: 10px;
-            text-align: center;
-            border: 2px solid var(--accent-brown);
-            background-color: #f9f3e3;
-        }
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; margin: 0; 
-        }
-
+        input[type="text"] { width: 100%; }
+        input[type="number"] { width: 70px; margin-right: 5px; text-align: center; border: 2px solid var(--accent-brown); background-color: #f9f3e3; }
+        
         .score-cell {
             font-family: 'Rye', cursive;
-            font-weight: normal;
             font-size: 1.8em;
             color: var(--accent-red);
-            text-shadow: 1px 1px 0px rgba(0,0,0,0.2);
             text-align: center;
         }
         
@@ -215,11 +201,89 @@
             padding: 5px;
             background-color: rgba(139, 69, 19, 0.05);
             border-radius: 4px;
-            border: 1px dotted var(--accent-brown);
         }
-        .history-log::-webkit-scrollbar { height: 8px; }
-        .history-log::-webkit-scrollbar-track { background: #d4c5a3; border: 1px solid #8b4513;}
-        .history-log::-webkit-scrollbar-thumb { background: #8b4513; border-radius: 4px; }
+        
+        /* --- МОБИЛЬНАЯ АДАПТАЦИЯ (MEDIA QUERIES) --- */
+        @media screen and (max-width: 768px) {
+            .container { padding: 10px; border-width: 5px; }
+            h2 { font-size: 1.8em; }
+            
+            /* Превращаем таблицу в список карточек */
+            table, thead, tbody, th, td, tr { display: block; }
+            
+            /* Скрываем заголовки таблицы */
+            thead tr { position: absolute; top: -9999px; left: -9999px; }
+            
+            tbody tr {
+                margin-bottom: 20px;
+                position: relative;
+                padding-bottom: 10px;
+                border: 2px solid var(--accent-brown);
+            }
+            
+            td {
+                border: none;
+                position: relative;
+                padding: 5px 10px;
+                text-align: center;
+            }
+            
+            /* 1. Имя игрока (сверху) */
+            td:nth-of-type(1) {
+                text-align: left;
+                padding-right: 40px; /* Место под кнопку удаления */
+                margin-top: 5px;
+            }
+            td:nth-of-type(1) input {
+                font-weight: bold;
+                font-size: 1.2em;
+            }
+
+            /* 2. Действия (по центру) */
+            td:nth-of-type(2) {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 5px;
+                margin: 5px 0;
+            }
+            td:nth-of-type(2) input {
+                width: 60px; /* Чуть меньше на телефоне */
+            }
+            
+            /* 3. Итог (большой цифрой) */
+            td:nth-of-type(3) {
+                border-top: 1px dashed var(--accent-brown);
+                border-bottom: 1px dashed var(--accent-brown);
+                background: rgba(203, 161, 53, 0.1);
+                margin: 5px 0;
+            }
+            td:nth-of-type(3)::before {
+                content: "Итог: ";
+                font-size: 0.6em;
+                color: #555;
+                vertical-align: middle;
+            }
+            
+            /* 4. История */
+            td:nth-of-type(4) {
+                width: auto;
+                max-width: 100%;
+            }
+            .history-log {
+                max-width: 100%;
+            }
+
+            /* 5. Кнопка удаления (абсолютно в углу карточки) */
+            td:nth-of-type(5) {
+                position: absolute;
+                top: 5px;
+                right: 5px;
+                width: auto;
+                padding: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -240,10 +304,10 @@
     <table id="scoreTable">
         <thead>
             <tr>
-                <th style="width: 20%;">Имя игрока</th>
-                <th style="width: 28%;">Действия</th>
-                <th style="width: 12%; text-align: center;">Итог</th>
-                <th style="width: 35%;">История операций</th>
+                <th style="width: 25%;">Имя игрока</th>
+                <th style="width: 30%;">Действия</th>
+                <th style="width: 10%; text-align: center;">Итог</th>
+                <th style="width: 30%;">История операций</th>
                 <th style="width: 5%;"></th>
             </tr>
         </thead>
@@ -253,31 +317,34 @@
 </div>
 
 <script>
-    // JS код
     window.onload = function() {
         const dateInput = document.getElementById('gameDate');
         const today = new Date().toISOString().split('T')[0];
         dateInput.value = today;
-        addPlayer();
+
+        const defaultPlayers = [
+            "EAGLE_THUNDER", "Zagonskiy", "ceme4ko", 
+            "Леонид Стручков", "Машмар", "Егор", "Федя"
+        ];
+        defaultPlayers.forEach(name => { addPlayer(name); });
     };
 
-    function addPlayer() {
+    function addPlayer(name = "") {
         const table = document.getElementById('scoreTable').getElementsByTagName('tbody')[0];
         const newRow = table.insertRow();
 
-        // Имя
+        // 1. Имя
         const cellName = newRow.insertCell(0);
         const inputName = document.createElement('input');
         inputName.type = 'text';
-        inputName.placeholder = 'Введите имя...';
+        inputName.placeholder = 'Имя';
         inputName.className = 'player-name';
+        inputName.value = name;
         cellName.appendChild(inputName);
 
-        // Действия
+        // 2. Действия
         const cellAction = newRow.insertCell(1);
-        cellAction.style.display = "flex";
-        cellAction.style.alignItems = "center";
-
+        
         const inputNum = document.createElement('input');
         inputNum.type = 'number';
         inputNum.placeholder = '0';
@@ -294,30 +361,35 @@
         const btnMinus = document.createElement('button');
         btnMinus.innerText = '-';
         btnMinus.className = 'btn-calc';
-        btnMinus.style.marginLeft = '5px';
         btnMinus.onclick = function() { updateScore(newRow, -1); };
+
+        const btnUndo = document.createElement('button');
+        btnUndo.innerText = '↩';
+        btnUndo.className = 'btn-undo';
+        btnUndo.title = "Отмена";
+        btnUndo.onclick = function() { undoLastAction(newRow); };
 
         cellAction.appendChild(inputNum);
         cellAction.appendChild(btnPlus);
         cellAction.appendChild(btnMinus);
+        cellAction.appendChild(btnUndo);
 
-        // Итог
+        // 3. Итог
         const cellTotal = newRow.insertCell(2);
         cellTotal.className = 'score-cell';
         cellTotal.innerText = '0';
 
-        // История
+        // 4. История
         const cellHistory = newRow.insertCell(3);
         cellHistory.className = 'history-log';
         cellHistory.setAttribute('data-ops', JSON.stringify([])); 
-        cellHistory.innerText = 'История пуста';
+        cellHistory.innerText = 'Пусто';
 
-        // Удалить
+        // 5. Удалить
         const cellDelete = newRow.insertCell(4);
         const btnDelete = document.createElement('button');
         btnDelete.innerText = '✕';
         btnDelete.className = 'btn-delete';
-        btnDelete.title = "Удалить игрока";
         btnDelete.onclick = function() { newRow.remove(); };
         cellDelete.appendChild(btnDelete);
     }
@@ -341,50 +413,63 @@
         ops.push(change);
         historyCell.setAttribute('data-ops', JSON.stringify(ops));
 
-        let historyText = ops.map(num => (num >= 0 ? `+${num}` : num)).join(' ');
-        historyCell.innerText = historyText;
-
+        updateHistoryText(historyCell, ops);
         inputVal.value = '';
-        inputVal.focus();
+    }
+
+    function undoLastAction(row) {
+        const historyCell = row.querySelector('.history-log');
+        const totalCell = row.querySelector('.score-cell');
+        let ops = JSON.parse(historyCell.getAttribute('data-ops'));
+
+        if (ops.length === 0) return;
+
+        let removedValue = ops.pop();
+        let currentTotal = parseFloat(totalCell.innerText);
+        let newTotal = currentTotal - removedValue;
+        totalCell.innerText = newTotal;
+
+        historyCell.setAttribute('data-ops', JSON.stringify(ops));
+        updateHistoryText(historyCell, ops);
+    }
+
+    function updateHistoryText(cell, ops) {
+        if (ops.length === 0) {
+            cell.innerText = 'Пусто';
+        } else {
+            cell.innerText = ops.map(num => (num >= 0 ? `+${num}` : num)).join(' ');
+        }
     }
 
     function downloadCSV() {
         const rows = document.querySelectorAll('#scoreTable tbody tr');
         if (rows.length === 0) {
-            alert("Таблица пуста! Нечего скачивать.");
+            alert("Таблица пуста!");
             return;
         }
 
         const selectedDate = document.getElementById('gameDate').value;
-        
-        // Преобразуем формат даты из YYYY-MM-DD в DD.MM.YYYY для названия файла
         let formattedDate = selectedDate;
         if(selectedDate) {
              const parts = selectedDate.split('-');
-             // parts[0] = год, parts[1] = месяц, parts[2] = день
              formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
         }
 
-        // Заголовки на обычном русском
         let csvContent = `Дата выписки:;${formattedDate}\n\n`;
         csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n";
 
         rows.forEach(row => {
             let name = row.querySelector('.player-name').value.trim();
             if (!name) name = "Игрок без имени";
-            
             let total = row.querySelector('.score-cell').innerText;
             let ops = JSON.parse(row.querySelector('.history-log').getAttribute('data-ops'));
             let opsString = ops.join(";");
-
             csvContent += `"${name}";${total};${opsString}\n`;
         });
 
         const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
-        
-        // НОВОЕ ИМЯ ФАЙЛА с форматом даты DD.MM.YYYY
         const filename = `Выписка за ${formattedDate}.csv`;
         
         link.setAttribute("href", url);
