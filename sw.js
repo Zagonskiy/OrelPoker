@@ -1,5 +1,5 @@
-// Версия v58 - Session Storage Fix
-const CACHE_NAME = 'orelpoker-v58-session-fix';
+// Версия v59 - Fix Mobile Total Width
+const CACHE_NAME = 'orelpoker-v59-total-width';
 const ASSETS = [
     './',
     './index.html',
