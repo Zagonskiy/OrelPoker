@@ -1,5 +1,5 @@
-// Версия v8 - Fix Offline UI
-const CACHE_NAME = 'orelpoker-v8-offline-fix';
+// Версия v9 - Added Grand Total
+const CACHE_NAME = 'orelpoker-v9-total';
 const ASSETS = [
     './',
     './index.html',
