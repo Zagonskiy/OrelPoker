@@ -243,12 +243,7 @@
             td:nth-of-type(1) input { font-weight: bold; font-size: 1.2em; }
             td:nth-of-type(2) { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 5px; margin: 5px 0; }
             td:nth-of-type(2) input { width: 60px; }
-            
-            /* --- ИЗМЕНЕНИЕ ЗДЕСЬ: УБРАНЫ РАМКИ И ФОН У ИТОГА --- */
-            td:nth-of-type(3) { 
-                margin: 10px 0; /* Оставил только отступ */
-            }
-            
+            td:nth-of-type(3) { margin: 5px 0; }
             td:nth-of-type(4) { width: auto; max-width: 100%; }
             .history-log { max-width: 100%; }
             td:nth-of-type(5) { position: absolute; top: 5px; right: 5px; width: auto; padding: 0; }
@@ -266,7 +261,7 @@
 <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 <div id="networkStatus" class="network-badge status-offline">⏳ Connect...</div>
 
-<div class="version-tag">OrelPoker v20.0</div>
+<div class="version-tag">OrelPoker v21.0</div>
 
 <div class="container">
     <h2>— OrelPoker Журнал —</h2>
@@ -309,18 +304,31 @@
 </div>
 
 <script>
+    // АВТОМАТИЧЕСКОЕ ОБНОВЛЕНИЕ БЕЗ CONFIRM
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-            .then(reg => {
+            navigator.serviceWorker.register('./sw.js').then(reg => {
+                // Если есть обновление, ожидающее активации - перезагружаем сразу
+                if (reg.waiting) {
+                    window.location.reload();
+                    return;
+                }
+
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
                     newWorker.onstatechange = () => {
+                        // Если новый воркер установился и уже есть контроллер (значит это не первый заход)
                         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            if(confirm("Вышла новая версия приложения! Обновить?")) window.location.reload();
+                            // АВТОМАТИЧЕСКАЯ ПЕРЕЗАГРУЗКА
+                            window.location.reload();
                         }
                     };
                 };
+            });
+            
+            // Если контроллер сменился (sw.js активировался) - перезагружаем
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
             });
         });
     }
@@ -376,7 +384,7 @@
 
     // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v20'); 
+        const localData = localStorage.getItem('poker_data_v21'); // Обновил ключ
         if (localData) renderTable(JSON.parse(localData));
     });
 
@@ -386,7 +394,7 @@
             initDefaultPlayers();
             return;
         }
-        localStorage.setItem('poker_data_v20', JSON.stringify(data));
+        localStorage.setItem('poker_data_v21', JSON.stringify(data));
         renderTable(data);
     });
 
