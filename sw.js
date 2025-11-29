@@ -1,5 +1,5 @@
-// Версия v21 - Auto Update (No Confirm)
-const CACHE_NAME = 'orelpoker-v21-auto';
+// Версия v22 - Silent Auto Update
+const CACHE_NAME = 'orelpoker-v22-silent';
 const ASSETS = [
     './',
     './index.html',
@@ -7,9 +7,9 @@ const ASSETS = [
     'https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap'
 ];
 
+// 1. Установка: Сразу активируемся, не ждем
 self.addEventListener('install', (e) => {
-    // Эта команда заставляет новый SW немедленно заменить старый
-    self.skipWaiting(); 
+    self.skipWaiting(); // Самая важная команда: "Не ждать, обновить сразу"
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(ASSETS);
@@ -17,6 +17,7 @@ self.addEventListener('install', (e) => {
     );
 });
 
+// 2. Активация: Удаляем старое, захватываем вкладки
 self.addEventListener('activate', (e) => {
     e.waitUntil(
         caches.keys().then((keyList) => {
@@ -27,10 +28,10 @@ self.addEventListener('activate', (e) => {
             }));
         })
     );
-    // Эта команда говорит всем открытым вкладкам: "Я теперь главный, используйте меня"
-    return self.clients.claim();
+    return self.clients.claim(); // Немедленно берем под контроль открытую страницу
 });
 
+// 3. Работа с сетью
 self.addEventListener('fetch', (e) => {
     e.respondWith(
         caches.match(e.request).then((response) => {
