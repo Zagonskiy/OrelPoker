@@ -202,13 +202,8 @@
             td:nth-of-type(4) { font-size: 0.8em; color: #666; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 4px; max-width: 100%; }
             td:nth-of-type(5) { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; padding: 0; }
             .btn-reset-player, .btn-delete { width: 28px; height: 28px; font-size: 0.9em; }
-            
-            tfoot { display: block; margin-top: 20px; }
-            tfoot tr { 
-                display: flex; flex-direction: column; align-items: center; justify-content: center;
-                background: #3e2b1f; border: 2px solid #cba135; border-radius: 12px; padding: 15px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            }
+            tfoot { margin-top: 20px; }
+            tfoot tr { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #3e2b1f; border: 2px solid #cba135; border-radius: 12px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
             tfoot td { display: block; padding: 0; border: none; width: 100%; }
             tfoot td:nth-child(4), tfoot td:nth-child(5) { display: none; }
             .total-label { display: none; }
@@ -219,40 +214,31 @@
 <body>
 
 <div id="login-overlay">
-    
     <div id="login-view-card" class="login-card">
         <h2>ВХОД В КЛУБ</h2>
         <div class="brand-container" style="border:none; margin:0; padding:0;">
              <img src="./logo.png" class="header-logo-round" style="margin-bottom:15px;">
         </div>
-        
         <input type="text" id="loginNick" class="login-input" placeholder="Никнейм">
         <input type="password" id="loginPass" class="login-input" placeholder="Пароль">
-        
         <div class="login-checkbox">
             <input type="checkbox" id="rememberMe" style="width:auto;">
             <label for="rememberMe">Запомнить меня</label>
         </div>
-        
         <button class="btn-login-action" onclick="handleLogin()">ВОЙТИ</button>
         <button class="btn-register-link" onclick="switchAuthView('register')">Нет аккаунта? Регистрация</button>
-        
         <div id="loginError" class="error-msg"></div>
     </div>
 
     <div id="register-view-card" class="login-card hidden">
         <h2>РЕГИСТРАЦИЯ</h2>
-        
         <input type="text" id="regNick" class="login-input" placeholder="Придумайте Ник">
         <input type="password" id="regPass" class="login-input" placeholder="Пароль">
         <input type="password" id="regPassRepeat" class="login-input" placeholder="Повторите пароль">
-        
         <button class="btn-login-action btn-register" onclick="handleRegister()">СОЗДАТЬ АККАУНТ</button>
         <button class="btn-login-action btn-back" onclick="switchAuthView('login')">НАЗАД</button>
-        
         <div id="regError" class="error-msg"></div>
     </div>
-
 </div>
 
 <div id="networkStatus" class="network-badge status-offline" style="display:none;">⏳</div>
@@ -269,12 +255,9 @@
             <span id="desktopStatusDot" class="status-dot"></span>
         </div>
     </div>
-    
     <button class="nav-btn active" onclick="showView('game')">🎲 Игровой стол</button>
     <button class="nav-btn" onclick="showView('journal')">📜 Журнал архива</button>
-    
     <button class="nav-btn" onclick="logout()" style="margin-top: 20px;">🚪 ВЫЙТИ</button>
-    
     <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 </div>
 
@@ -321,7 +304,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v55.0 (Stable Login)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v56.0 (Reg +1000)</div>
 </div>
 
 <script>
@@ -339,7 +322,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=55').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=56').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -375,8 +358,45 @@
     const journalRef = ref(db, 'journal');
     const usersRef = ref(db, 'users');
 
-    // --- АВТОРИЗАЦИЯ (OPTIMISTIC FIX) ---
+    // --- АВТОМАТИЧЕСКОЕ ДОБАВЛЕНИЕ ВСЕХ ЗАРЕГИСТРИРОВАННЫХ В ТАБЛИЦУ ---
+    async function syncUsersToTable() {
+        try {
+            const usersSnap = await get(usersRef);
+            const playersSnap = await get(playersRef);
+            const users = usersSnap.val() || {};
+            const players = playersSnap.val() || {};
 
+            // Собираем имена уже существующих игроков
+            const existingNames = new Set();
+            for(let id in players) {
+                 if(players[id].name) existingNames.add(players[id].name);
+            }
+
+            const updates = {};
+            let hasUpdates = false;
+
+            for(let nick in users) {
+                if(!existingNames.has(nick)) {
+                    // Если пользователя нет в таблице, добавляем его с +1000
+                    const newKey = push(ref(db, 'players')).key;
+                    updates['players/' + newKey] = {
+                        name: nick,
+                        history: { 'start_bonus': 1000 }
+                    };
+                    hasUpdates = true;
+                }
+            }
+
+            if(hasUpdates) {
+                await update(ref(db), updates);
+                console.log("Users synced to table.");
+            }
+        } catch(e) {
+            console.error("Sync error", e);
+        }
+    }
+
+    // --- АВТОРИЗАЦИЯ ---
     window.switchAuthView = function(view) {
         document.getElementById('loginError').innerText = "";
         document.getElementById('regError').innerText = "";
@@ -393,47 +413,38 @@
         const savedUser = localStorage.getItem('op_user');
         if(savedUser) {
             const user = JSON.parse(savedUser);
-            // --- OPTIMISTIC LOGIN START ---
-            // 1. Сразу скрываем оверлей (визуально пускаем юзера)
             performLogin(user.nick, user.pass, true);
-            
-            // 2. Проверяем пароль в фоне (без блокировки интерфейса)
             verifySessionInBackground(user.nick, user.pass);
-            // --- OPTIMISTIC LOGIN END ---
         }
+        // Запускаем синхронизацию при загрузке (если есть инет)
+        if(navigator.onLine) syncUsersToTable();
     });
 
     async function verifySessionInBackground(nick, pass) {
-        if (!navigator.onLine) return; // В офлайне верим локальному хранилищу
-
+        if (!navigator.onLine) return;
         try {
-            // Ждем 3 сек. Если база не ответит - считаем, что всё ок (плохой инет)
             const snapshot = await Promise.race([
                 get(child(ref(db), `users/${nick}`)),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
             ]);
-
             if (snapshot.exists()) {
                 const userData = snapshot.val();
                 if(userData.pass !== pass) {
-                    // Пароль сменили! Выкидываем.
-                    alert("Пароль был изменен. Войдите снова.");
+                    alert("Пароль изменен.");
                     logout();
                 } else {
-                    // Пароль верный, обновляем кэш офлайн входа
                     let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
                     knownUsers[nick] = pass;
                     localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
                     setOnlineStatus(nick);
+                    // Также пробуем синхронизировать таблицу
+                    syncUsersToTable();
                 }
             } else {
                 alert("Аккаунт не найден.");
                 logout();
             }
-        } catch (e) {
-            // Ошибка сети или тайм-аут - просто игнорируем, пусть играет
-            console.log("Background verify skipped (network)");
-        }
+        } catch (e) { }
     }
 
     window.handleLogin = function() {
@@ -441,8 +452,6 @@
         const pass = document.getElementById('loginPass').value.trim();
         const remember = document.getElementById('rememberMe').checked;
         if(!nick || !pass) { document.getElementById('loginError').innerText = "Введите данные"; return; }
-        
-        // Тут используем обычный checkLogin с ожиданием, так как юзер сам нажал кнопку
         checkLogin(nick, pass, false, remember);
     }
 
@@ -451,15 +460,25 @@
         const pass = document.getElementById('regPass').value.trim();
         const passRepeat = document.getElementById('regPassRepeat').value.trim();
         
-        if(!nick || !pass) { document.getElementById('regError').innerText = "Заполните все поля"; return; }
+        if(!nick || !pass) { document.getElementById('regError').innerText = "Заполните поля"; return; }
         if(pass !== passRepeat) { document.getElementById('regError').innerText = "Пароли не совпадают!"; return; }
 
         get(child(ref(db), `users/${nick}`)).then((snapshot) => {
             if (snapshot.exists()) {
-                document.getElementById('regError').innerText = "Этот ник уже занят!";
+                document.getElementById('regError').innerText = "Ник занят!";
             } else {
-                set(ref(db, 'users/' + nick), { pass: pass, created: Date.now() }).then(() => {
-                    alert("Аккаунт создан! Теперь войдите.");
+                // Создаем аккаунт
+                set(ref(db, 'users/' + nick), { pass: pass, created: Date.now() })
+                .then(() => {
+                    // Сразу добавляем игрока за стол с +1000
+                    const newPlayerRef = push(ref(db, 'players'));
+                    return set(newPlayerRef, {
+                        name: nick,
+                        history: { 'start_bonus': 1000 }
+                    });
+                })
+                .then(() => {
+                    alert("Аккаунт создан! +1000 фишек.");
                     switchAuthView('login');
                     document.getElementById('loginNick').value = nick;
                     document.getElementById('loginPass').value = pass;
@@ -477,20 +496,15 @@
             }
             return false;
         };
-
         if (!navigator.onLine) {
-            if (!tryLocalLogin()) {
-                if(!isAuto) document.getElementById('loginError').innerText = "Нет сети и данные не сохранены";
-            }
+            if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Нет сети";
             return;
         }
-
         try {
             const snapshot = await Promise.race([
                 get(child(ref(db), `users/${nick}`)),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
             ]);
-
             if (snapshot.exists()) {
                 const userData = snapshot.val();
                 if(userData.pass === pass) {
@@ -506,31 +520,26 @@
                 if(!isAuto) document.getElementById('loginError').innerText = "Пользователь не найден";
             }
         } catch (error) {
-            if (!tryLocalLogin()) {
-                if(!isAuto) document.getElementById('loginError').innerText = "Ошибка сети";
-            }
+            if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Ошибка сети";
         }
     }
 
     function performLogin(nick, pass, remember) {
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('menuUserName').innerText = nick;
-        if(remember) {
-            localStorage.setItem('op_user', JSON.stringify({nick, pass}));
-        }
+        if(remember) localStorage.setItem('op_user', JSON.stringify({nick, pass}));
         setOnlineStatus(nick);
     }
 
     window.logout = function() {
-        if(confirm("Выйти из аккаунта?")) {
+        if(confirm("Выйти?")) {
             if (currentConnectionRef) remove(currentConnectionRef);
             localStorage.removeItem('op_user');
             location.reload();
         }
     }
 
-    // --- ОСТАЛЬНОЙ КОД (БЕЗ ИЗМЕНЕНИЙ) ---
-    
+    // --- ИГРА ---
     const connectedRef = ref(db, ".info/connected");
     const onlineUsersRef = ref(db, "online_users");
     let currentConnectionRef = null;
@@ -550,7 +559,6 @@
 
         if (snap.val() === true) {
             dotMobile.classList.add('online'); dotDesktop.classList.add('online');
-            // Статус онлайн ставится в performLogin
         } else {
             dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
         }
@@ -566,15 +574,11 @@
         }
     });
 
-    window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v55'); 
-        if (localData) renderTable(JSON.parse(localData));
-    });
-
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
-        if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v55', JSON.stringify(data));
+        // Если данных нет, ничего не делаем (ждем синхронизации)
+        if (!data) return; 
+        localStorage.setItem('poker_data_v56', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -696,7 +700,7 @@
     window.resetPlayer = (id) => { if (prompt("Сбросить игрока (Код)?") === "108020") update(ref(db, 'players/' + id), { history: null, redoStack: null }); else alert("Ошибка"); };
     window.extremeReset = async () => { if (prompt("ПОЛНЫЙ СБРОС (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { updates['players/' + child.key + '/history'] = null; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); } };
     window.startNewDay = async () => { if (prompt("НОВЫЙ ДЕНЬ (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { const { total } = calculatePlayerStats(child.val()); const key1 = push(ref(db)).key; const key2 = push(ref(db)).key; const newHistory = {}; newHistory[key1] = total; newHistory[key2] = 500; updates['players/' + child.key + '/history'] = newHistory; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); alert("День начат! +500"); } };
-    function initDefaultPlayers() { ["EAGLE_THUNDER", "Zagonskiy", "ceme4ko", "Леонид Стручков", "Машмар", "Егор", "Федя"].forEach(n => push(playersRef, { name: n, history: {} })); }
+    
     window.addToJournal = async function() { if(!confirm("В Журнал?")) return; const snapshot = await get(playersRef); const data = snapshot.val(); if (!data) return; let grandTotal = 0; const savedPlayers = []; for (let id in data) { const player = data[id]; const { total, historyArray } = calculatePlayerStats(player); grandTotal += total; savedPlayers.push({ name: player.name || "Без имени", total: total, history: historyArray.join(' ') }); } const now = new Date(); const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString(); push(journalRef, { date: dateStr, timestamp: Date.now(), grandTotal: grandTotal, players: savedPlayers }); alert("Сохранено!"); }
     window.deleteJournalEntry = function(id) { const pass = prompt("Удалить запись (Код)?"); if (pass === "108020") { remove(ref(db, 'journal/' + id)); } else if (pass !== null) { alert("Ошибка"); } }
     onValue(journalRef, (snapshot) => { const listDiv = document.getElementById('journalList'); listDiv.innerHTML = ''; const data = snapshot.val(); if (!data) { listDiv.innerHTML = '<div style="text-align:center;">Пусто</div>'; return; } const entries = Object.entries(data).sort((a, b) => b[1].timestamp - a[1].timestamp); entries.forEach(([id, entry]) => { const card = document.createElement('div'); card.className = 'journal-card'; const header = document.createElement('div'); header.className = 'journal-header'; header.innerHTML = `<div style="display:flex; align-items:center;"><span>📅 ${entry.date}</span><button class="btn-journal-delete" onclick="event.stopPropagation(); deleteJournalEntry('${id}')">🗑️</button></div><span class="journal-total">Банк: ${entry.grandTotal}</span>`; const details = document.createElement('div'); details.className = 'journal-details'; let detailsHtml = `<div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px; display:flex; justify-content:space-between;"><span>Игрок</span><span>Итог</span></div>`; if (entry.players) { entry.players.forEach(p => { detailsHtml += `<div class="detail-row"><span style="font-weight:bold;">${p.name}</span><span style="color:${p.total >= 0 ? 'green' : 'red'}">${p.total}</span></div><div style="font-size:0.8em; color:#666; margin-bottom:5px;">${p.history}</div>`; }); } details.innerHTML = detailsHtml; card.appendChild(header); card.appendChild(details); card.onclick = () => card.classList.toggle('open'); listDiv.appendChild(card); }); });
