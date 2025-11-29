@@ -1,5 +1,5 @@
-// Версия v45 - Account System Added
-const CACHE_NAME = 'orelpoker-v45-accounts';
+// Версия v46 - Full Registration System
+const CACHE_NAME = 'orelpoker-v46-auth';
 const ASSETS = [
     './',
     './index.html',
