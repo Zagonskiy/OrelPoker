@@ -31,6 +31,7 @@
             color: var(--ink-color);
             margin: 0;
             overscroll-behavior: none;
+            padding-bottom: 50px; /* Место для прокрутки */
         }
 
         .btn-extreme-reset {
@@ -194,6 +195,26 @@
         .score-cell { font-family: 'Rye', cursive; font-size: 1.8em; color: var(--accent-red); text-align: center; }
         .history-log { font-size: 0.9em; color: #6b523d; font-style: italic; max-width: 250px; overflow-x: auto; white-space: nowrap; padding: 5px; background-color: rgba(139, 69, 19, 0.05); border-radius: 4px; }
         
+        /* Стили для Общего итога */
+        tfoot tr {
+            background-color: rgba(139, 69, 19, 0.2);
+            border: 2px solid #8b4513;
+        }
+        .total-label {
+            text-align: right;
+            font-family: 'Rye', cursive;
+            font-size: 1.5em;
+            color: var(--accent-brown);
+            padding-right: 20px;
+        }
+        .grand-total-cell {
+            font-family: 'Rye', cursive;
+            font-size: 2em;
+            color: var(--accent-brown);
+            text-align: center;
+            font-weight: bold;
+        }
+
         @media screen and (max-width: 768px) {
             .container { padding: 10px; border-width: 5px; }
             h2 { font-size: 1.8em; }
@@ -210,6 +231,14 @@
             td:nth-of-type(4) { width: auto; max-width: 100%; }
             .history-log { max-width: 100%; }
             td:nth-of-type(5) { position: absolute; top: 5px; right: 5px; width: auto; padding: 0; }
+            
+            /* Адаптация футера для мобильных */
+            tfoot { display: block; margin-top: 20px; }
+            tfoot tr { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-radius: 4px;}
+            .total-label { text-align: left; font-size: 1.2em; }
+            .grand-total-cell { font-size: 1.5em; }
+            /* Скрываем пустые ячейки в футере на мобилках */
+            tfoot td:nth-child(4), tfoot td:nth-child(5) { display: none; }
         }
     </style>
 </head>
@@ -220,7 +249,7 @@
 
 <div class="container">
     <h2>— OrelPoker Журнал —</h2>
-    <div class="sync-info">Offline-First v8.0 (Instant UI)</div>
+    <div class="sync-info">Version v9.0 (Grand Total)</div>
 
     <div class="date-section">
         <label for="gameDate">Дата игры:</label>
@@ -245,6 +274,13 @@
         </thead>
         <tbody id="tableBody">
         </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="2" class="total-label">ОБЩИЙ БАНК:</td>
+                <td id="grandTotal" class="grand-total-cell">0</td>
+                <td colspan="2"></td>
+            </tr>
+        </tfoot>
     </table>
 </div>
 
@@ -297,22 +333,19 @@
         }
     });
 
-    // --- ЗАГРУЗКА И СИНХРОНИЗАЦИЯ ---
-    
-    // Загрузка из локального хранилища (Мгновенно)
+    // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v8');
+        const localData = localStorage.getItem('poker_data_v9');
         if (localData) renderTable(JSON.parse(localData));
     });
 
-    // Загрузка из Firebase (Как только подключимся)
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) {
             initDefaultPlayers();
             return;
         }
-        localStorage.setItem('poker_data_v8', JSON.stringify(data));
+        localStorage.setItem('poker_data_v9', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -321,9 +354,17 @@
 
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
+        
+        let globalSum = 0; // Переменная для общего банка
+
         for (let id in data) {
-            renderPlayerRow(id, data[id]);
+            // Отрисовка строки
+            const playerSum = renderPlayerRow(id, data[id]);
+            globalSum += playerSum; // Складываем итоги
         }
+        
+        // Обновляем общий итог на экране
+        document.getElementById('grandTotal').innerText = globalSum;
     }
 
     function calculatePlayerStats(player) {
@@ -359,7 +400,6 @@
         inputNum.className = 'input-val';
         inputNum.placeholder = '0';
         
-        // Передаем inputNum для мгновенного обновления
         const btnPlus = createBtn('+', 'btn-calc', () => handleScore(id, inputNum, 1));
         const btnMinus = createBtn('-', 'btn-calc', () => handleScore(id, inputNum, -1));
         const btnUndo = createBtn('↩', 'btn-undo', () => undoLast(id, inputNum));
@@ -372,7 +412,7 @@
 
         const cellHistory = newRow.insertCell(3);
         cellHistory.className = 'history-log';
-        cellHistory.setAttribute('data-history-json', JSON.stringify(historyArray)); // Для локального обновления
+        cellHistory.setAttribute('data-history-json', JSON.stringify(historyArray)); 
         
         if (historyArray.length > 0) {
             cellHistory.innerText = historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ');
@@ -385,6 +425,8 @@
             if(confirm("Удалить запись навсегда?")) remove(ref(db, 'players/' + id));
         });
         cellDelete.appendChild(btnDelete);
+
+        return total; // Возвращаем сумму игрока для общего подсчета
     }
 
     function createBtn(text, cls, onClick) {
@@ -395,26 +437,31 @@
         return btn;
     }
 
-    // --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: МГНОВЕННОЕ ОБНОВЛЕНИЕ ---
     window.handleScore = function(id, inputElem, multiplier) {
         let val = parseFloat(inputElem.value);
         if (isNaN(val)) return;
         let change = val * multiplier;
 
-        // 1. ОТПРАВЛЯЕМ В БАЗУ (Оно встанет в очередь, если офлайн)
+        // Отправка в базу
         push(ref(db, 'players/' + id + '/history'), change);
 
-        // 2. ОБНОВЛЯЕМ ЭКРАН МГНОВЕННО (Визуальный обман, пока база не ответит)
+        // Мгновенное визуальное обновление (в том числе ОБЩЕГО ИТОГА)
         const row = inputElem.closest('tr');
         const totalCell = row.querySelector('.score-cell');
         const historyCell = row.querySelector('.history-log');
+        const grandTotalCell = document.getElementById('grandTotal');
 
-        // Считаем визуально
         let currentTotal = parseFloat(totalCell.innerText || 0);
         let newTotal = currentTotal + change;
+        
+        // Обновляем игрока
         totalCell.innerText = newTotal;
+        
+        // Обновляем общий банк
+        let currentGrand = parseFloat(grandTotalCell.innerText || 0);
+        grandTotalCell.innerText = currentGrand + change;
 
-        // Обновляем текст истории визуально
+        // Обновляем текст истории
         let text = historyCell.innerText;
         let newEntry = (change >= 0 ? `+${change}` : change);
         if (text === 'Пусто') {
@@ -428,17 +475,12 @@
     }
 
     window.undoLast = async function(id, inputElem) {
-        // Удаляем из базы
         const historyRef = ref(db, 'players/' + id + '/history');
         const lastItemQuery = query(historyRef, orderByKey(), limitToLast(1));
         const snapshot = await get(lastItemQuery);
         snapshot.forEach((child) => {
             remove(child.ref);
         });
-        
-        // Визуальное удаление сложнее сделать точно без данных, 
-        // поэтому здесь полагаемся на быструю реакцию базы или перезагрузку.
-        // Для undo обычно не критично мгновенное обновление в офлайне, но если нужно - скажи.
     }
 
     window.createNewPlayer = function() {
@@ -469,7 +511,6 @@
             let player = data[id];
             const stats = calculatePlayerStats(player);
             const currentTotal = stats.total;
-            
             updates['players/' + id + '/history'] = null;
             const key1 = push(ref(db, 'players/' + id + '/history')).key;
             const key2 = push(ref(db, 'players/' + id + '/history')).key;
@@ -509,6 +550,11 @@
             let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); 
             csvContent += `"${name}";${total};${opsString}\n`;
         });
+        
+        // Добавляем общий итог в CSV
+        let grandTotal = document.getElementById('grandTotal').innerText;
+        csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`;
+
         const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
