@@ -234,7 +234,7 @@
 
 <div class="container">
     <h2>— OrelPoker Журнал —</h2>
-    <div class="sync-info">Version v15.0 (Global Redo)</div>
+    <div class="sync-info">Version v16.0 (Atomic Transactions)</div>
 
     <div class="date-section">
         <label for="gameDate">Дата игры:</label>
@@ -289,7 +289,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, onValue, push, set, remove, update, get, query, limitToLast, orderByKey } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, onValue, push, set, remove, update, get, query, limitToLast, orderByKey, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyD9E8XsdjGx275Es6HwdCo5jy2l0kJoNXg",
@@ -320,7 +320,7 @@
 
     // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v15'); 
+        const localData = localStorage.getItem('poker_data_v16'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
@@ -330,7 +330,7 @@
             initDefaultPlayers();
             return;
         }
-        localStorage.setItem('poker_data_v15', JSON.stringify(data));
+        localStorage.setItem('poker_data_v16', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -390,8 +390,8 @@
         
         const btnPlus = createBtn('+', 'btn-calc', () => handleScore(id, inputNum, 1));
         const btnMinus = createBtn('-', 'btn-calc', () => handleScore(id, inputNum, -1));
-        const btnUndo = createBtn('↩', 'btn-undo', () => undoLast(id));
-        const btnRedo = createBtn('↪', 'btn-redo', () => redoLast(id)); // REDO КНОПКА
+        const btnUndo = createBtn('↩', 'btn-undo', () => undoLast(id, inputNum));
+        const btnRedo = createBtn('↪', 'btn-redo', () => redoLast(id, inputNum)); 
 
         cellAction.append(inputNum, btnPlus, btnMinus, btnUndo, btnRedo);
 
@@ -424,73 +424,107 @@
         return btn;
     }
 
-    // --- ДОБАВЛЕНИЕ НОВОГО ---
+    // --- ТРАНЗАКЦИЯ: ДОБАВЛЕНИЕ ---
     window.handleScore = function(id, inputElem, multiplier) {
         let val = parseFloat(inputElem.value);
         if (isNaN(val)) return;
         let change = val * multiplier;
 
-        // 1. Добавляем в историю
-        push(ref(db, 'players/' + id + '/history'), change);
+        // Используем runTransaction для атомарного обновления
+        runTransaction(ref(db, 'players/' + id), (player) => {
+            if (player) {
+                // Добавляем в историю
+                if (!player.history) player.history = {};
+                // Генерируем уникальный ключ внутри транзакции
+                const newKey = 'move_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                player.history[newKey] = change;
+                
+                // Очищаем стек возврата
+                player.redoStack = null;
+            }
+            return player;
+        });
+
+        // Визуальное обновление (Optimistic UI)
+        const row = inputElem.closest('tr');
+        const totalCell = row.querySelector('.score-cell');
+        const historyCell = row.querySelector('.history-log');
         
-        // 2. ВАЖНО: Очищаем стек "Вернуть" (Redo Stack), так как ветка истории изменилась
-        set(ref(db, 'players/' + id + '/redoStack'), null);
+        let currentTotal = parseFloat(totalCell.innerText || 0);
+        totalCell.innerText = currentTotal + change;
+        
+        let text = historyCell.innerText;
+        let newEntry = (change >= 0 ? `+${change}` : change);
+        if (text === 'Пусто') historyCell.innerText = newEntry;
+        else historyCell.innerText = text + ' ' + newEntry;
 
         inputElem.value = '';
         inputElem.focus();
+        recalculateGrandTotal();
     }
 
-    // --- ОТМЕНА (В ГЛОБАЛЬНЫЙ СТЕК) ---
-    window.undoLast = async function(id) {
-        const historyRef = ref(db, 'players/' + id + '/history');
-        const lastItemQuery = query(historyRef, orderByKey(), limitToLast(1));
-        
-        const snapshot = await get(lastItemQuery);
-        snapshot.forEach((child) => {
-            const val = child.val();
-            // 1. Удаляем из истории
-            remove(child.ref);
-            // 2. Добавляем в стек возврата в базе
-            push(ref(db, 'players/' + id + '/redoStack'), val);
+    // --- ТРАНЗАКЦИЯ: ОТМЕНА (UNDO) ---
+    window.undoLast = function(id) {
+        runTransaction(ref(db, 'players/' + id), (player) => {
+            if (player && player.history) {
+                const keys = Object.keys(player.history).sort();
+                if (keys.length > 0) {
+                    const lastKey = keys[keys.length - 1];
+                    const val = player.history[lastKey];
+                    
+                    // Удаляем из истории
+                    delete player.history[lastKey];
+                    
+                    // Добавляем в Redo
+                    if (!player.redoStack) player.redoStack = {};
+                    const redoKey = 'redo_' + Date.now();
+                    player.redoStack[redoKey] = val;
+                }
+            }
+            return player;
         });
     }
 
-    // --- ВОЗВРАТ (ИЗ ГЛОБАЛЬНОГО СТЕКА) ---
-    window.redoLast = async function(id) {
-        const redoRef = ref(db, 'players/' + id + '/redoStack');
-        const lastRedoQuery = query(redoRef, orderByKey(), limitToLast(1));
-        
-        const snapshot = await get(lastRedoQuery);
-        snapshot.forEach((child) => {
-            const val = child.val();
-            // 1. Удаляем из стека возврата
-            remove(child.ref);
-            // 2. Возвращаем в историю
-            push(ref(db, 'players/' + id + '/history'), val);
+    // --- ТРАНЗАКЦИЯ: ВОЗВРАТ (REDO) ---
+    window.redoLast = function(id) {
+        runTransaction(ref(db, 'players/' + id), (player) => {
+            if (player && player.redoStack) {
+                const keys = Object.keys(player.redoStack).sort();
+                if (keys.length > 0) {
+                    const lastKey = keys[keys.length - 1];
+                    const val = player.redoStack[lastKey];
+                    
+                    // Удаляем из Redo
+                    delete player.redoStack[lastKey];
+                    
+                    // Возвращаем в историю
+                    if (!player.history) player.history = {};
+                    const newKey = 'move_' + Date.now();
+                    player.history[newKey] = val;
+                }
+            }
+            return player;
         });
     }
 
     window.createNewPlayer = function() {
-        push(playersRef, { name: "Новый игрок", history: {}, redoStack: {} });
+        push(playersRef, { name: "Новый игрок", history: {} });
     }
 
-    // Очистка при сбросе
     window.extremeReset = async function() {
         const pass = prompt("Код подтверждения (СБРОС В НОЛЬ):");
         if (pass !== "108020") { alert("Неверный код!"); return; }
         const snapshot = await get(playersRef);
         const data = snapshot.val();
         if (!data) return;
-        
         const updates = {};
         for (let id in data) {
             updates['players/' + id + '/history'] = null;
-            updates['players/' + id + '/redoStack'] = null; // Чистим redo
+            updates['players/' + id + '/redoStack'] = null;
         }
         await update(ref(db), updates);
     }
 
-    // Очистка при новом дне
     window.startNewDay = async function() {
         const pass = prompt("Код подтверждения (НОВЫЙ ДЕНЬ):");
         if (pass !== "108020") { alert("Ошибка: Неверный код!"); return; }
@@ -513,7 +547,7 @@
             newHistory[key2] = 500;
             
             updates['players/' + id + '/history'] = newHistory;
-            updates['players/' + id + '/redoStack'] = null; // Чистим redo
+            updates['players/' + id + '/redoStack'] = null;
         }
         await update(ref(db), updates);
         alert("День начат! +500 начислено.");
