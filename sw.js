@@ -1,5 +1,5 @@
-// Версия v53 - Hide Total Label on Mobile
-const CACHE_NAME = 'orelpoker-v53-clean-total';
+// Версия v54 - User-based Online Count
+const CACHE_NAME = 'orelpoker-v54-user-presence';
 const ASSETS = [
     './',
     './index.html',
