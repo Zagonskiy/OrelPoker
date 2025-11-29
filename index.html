@@ -13,7 +13,7 @@
             --accent-brown: #8b4513;
             --accent-gold: #cba135;
             --accent-red: #8b0000;
-            --accent-green: #556b2f;
+            --accent-green: #2e7d32;
             --accent-undo: #d4af37;
             --accent-purple: #6a0dad;
         }
@@ -27,12 +27,12 @@
             margin: 0;
         }
 
-        /* КНОПКА ЭКСТРЕМАЛЬНОГО СБРОСА */
+        /* КНОПКА ЭКСТРЕМАЛЬНОГО СБРОСА (Слева) */
         .btn-extreme-reset {
             position: fixed;
             top: 15px;
             left: 15px;
-            background-color: #500000; /* Темно-красный */
+            background-color: #500000;
             color: #ffcccc;
             border: 2px solid #ff0000;
             padding: 8px 12px;
@@ -40,7 +40,7 @@
             font-weight: bold;
             font-size: 0.8em;
             cursor: pointer;
-            z-index: 1000; /* Поверх всего */
+            z-index: 1000;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.7);
             border-radius: 4px;
             transition: all 0.2s;
@@ -49,6 +49,39 @@
             background-color: #ff0000;
             color: white;
             box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+        }
+
+        /* ИНДИКАТОР СЕТИ (Справа) */
+        .network-badge {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            padding: 8px 15px;
+            font-family: 'Rye', cursive;
+            font-size: 0.9em;
+            border-radius: 4px;
+            z-index: 1000;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.7);
+            border: 2px solid #3e2b1f;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        .status-online {
+            background-color: var(--accent-green);
+            color: #fff;
+            border-color: #1b5e20;
+        }
+        .status-offline {
+            background-color: #d32f2f;
+            color: #fff;
+            border-color: #b71c1c;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
         }
 
         .container {
@@ -65,7 +98,7 @@
                 0 0 50px rgba(0,0,0,0.3) inset;
             border: 8px solid #462c1a;
             border-image: repeating-linear-gradient(45deg, #462c1a, #462c1a 10px, #332013 10px, #332013 20px) 20;
-            margin-top: 50px; /* Отступ сверху для мобилок */
+            margin-top: 60px; /* Отступ увеличен для кнопок сверху */
         }
 
         h2 {
@@ -73,7 +106,7 @@
             text-align: center;
             color: var(--accent-brown);
             font-size: 2.5em;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             text-shadow: 2px 2px 0px var(--paper-bg), 4px 4px 0px rgba(0,0,0,0.2);
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -82,12 +115,12 @@
             line-height: 1.2;
         }
         
-        .status-bar {
+        .sync-info {
             text-align: center;
-            font-size: 0.9em;
-            margin-bottom: 10px;
-            color: var(--accent-green);
-            font-weight: bold;
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 15px;
+            font-style: italic;
         }
 
         .date-section {
@@ -264,9 +297,11 @@
 
 <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 
+<div id="networkStatus" class="network-badge status-offline">⏳ Connect...</div>
+
 <div class="container">
     <h2>— OrelPoker Журнал —</h2>
-    <div id="connectionStatus" class="status-bar">Подключение к архиву...</div>
+    <div class="sync-info">Система авто-синхронизации v2.0</div>
 
     <div class="date-section">
         <label for="gameDate">Дата игры:</label>
@@ -313,8 +348,23 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const playersRef = ref(db, 'players');
+    
+    // --- ЛОГИКА ОНЛАЙН/ОФЛАЙН СТАТУСА ---
+    const connectedRef = ref(db, ".info/connected");
+    
+    onValue(connectedRef, (snap) => {
+        const statusEl = document.getElementById('networkStatus');
+        if (snap.val() === true) {
+            statusEl.innerText = "🟢 ONLINE";
+            statusEl.className = "network-badge status-online";
+        } else {
+            statusEl.innerText = "🔴 OFFLINE";
+            statusEl.className = "network-badge status-offline";
+        }
+    });
+    // -------------------------------------
 
-    // Синхронизация
+    // Синхронизация данных
     onValue(playersRef, (snapshot) => {
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
@@ -324,8 +374,6 @@
             initDefaultPlayers();
             return;
         }
-
-        document.getElementById('connectionStatus').innerText = "• Синхронизировано •";
 
         for (let id in data) {
             renderPlayerRow(id, data[id]);
@@ -385,6 +433,7 @@
         return btn;
     }
 
+    // Обработка очков (работает офлайн - ставит в очередь)
     window.handleScore = function(id, player, valStr, multiplier, inputElem) {
         let val = parseFloat(valStr);
         if (isNaN(val)) return;
@@ -412,51 +461,42 @@
         push(playersRef, { name: "Новый игрок", total: 0, history: [] });
     }
 
-    // --- ФУНКЦИЯ ЭКСТРЕМАЛЬНОГО СБРОСА ---
     window.extremeReset = async function() {
         const pass = prompt("!!! ВНИМАНИЕ !!!\nЭта кнопка обнулит счета ВСЕХ игроков до 0.\n\nВведите код подтверждения:");
         if (pass !== "108020") {
             alert("Неверный код! Операция отменена.");
             return;
         }
-
         const snapshot = await get(playersRef);
         const data = snapshot.val();
         if (!data) return;
-
         const updates = {};
         for (let id in data) {
             updates['players/' + id + '/total'] = 0;
             updates['players/' + id + '/history'] = [];
         }
-
         await update(ref(db), updates);
         alert("Внимание: Выполнен полный сброс. Все счета обнулены.");
     }
 
-    // --- ФУНКЦИЯ НОВОГО ДНЯ ---
     window.startNewDay = async function() {
         const pass = prompt("Введите код доступа для нового дня:");
         if (pass !== "108020") {
             alert("Ошибка: Неверный код!");
             return;
         }
-
         const snapshot = await get(playersRef);
         const data = snapshot.val();
         if (!data) return;
-
         const updates = {};
         for (let id in data) {
             let player = data[id];
             let currentTotal = player.total || 0;
             let newHistory = [currentTotal, 500];
             let newTotal = currentTotal + 500;
-
             updates['players/' + id + '/history'] = newHistory;
             updates['players/' + id + '/total'] = newTotal;
         }
-
         await update(ref(db), updates);
         alert("Новый день начат! Всем начислено +500.");
     }
