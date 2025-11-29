@@ -1,15 +1,15 @@
-// Версия v29 - Aggressive Update Check
-const CACHE_NAME = 'orelpoker-v29-aggressive';
+// Версия v30 - Rescue Mode (Fix Infinite Loading)
+const CACHE_NAME = 'orelpoker-v30-rescue';
 const ASSETS = [
     './',
     './index.html',
     './manifest.json',
-    './logo.png',
+    // Я убрал логотип отсюда, чтобы из-за него не ломался весь сайт
+    // Он всё равно загрузится и закэшируется, когда вы откроете страницу
     'https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap'
 ];
 
 self.addEventListener('install', (e) => {
-    // Немедленно активируем новый SW, не дожидаясь закрытия вкладок
     self.skipWaiting();
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
@@ -28,11 +28,9 @@ self.addEventListener('activate', (e) => {
             }));
         })
     );
-    // Захватываем контроль над клиентами (страницами) немедленно
     return self.clients.claim();
 });
 
-// Стратегия: Network First (Сначала сеть, если нет — кэш)
 self.addEventListener('fetch', (e) => {
     e.respondWith(
         fetch(e.request)
