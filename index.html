@@ -231,7 +231,7 @@
 
 <div class="container">
     <h2>— OrelPoker Журнал —</h2>
-    <div class="sync-info">Version v12.0 (Perfect Math)</div>
+    <div class="sync-info">Version v13.0 (New Day Fixed)</div>
 
     <div class="date-section">
         <label for="gameDate">Дата игры:</label>
@@ -317,7 +317,7 @@
 
     // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v12'); 
+        const localData = localStorage.getItem('poker_data_v13'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
@@ -327,7 +327,7 @@
             initDefaultPlayers();
             return;
         }
-        localStorage.setItem('poker_data_v12', JSON.stringify(data));
+        localStorage.setItem('poker_data_v13', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -344,7 +344,7 @@
         recalculateGrandTotal();
     }
 
-    // НОВАЯ ФУНКЦИЯ ДЛЯ ТОЧНОГО ПОДСЧЕТА
+    // ПОДСЧЕТ ИТОГА
     function recalculateGrandTotal() {
         const scoreCells = document.querySelectorAll('.score-cell');
         let totalSum = 0;
@@ -422,23 +422,21 @@
         return btn;
     }
 
-    // --- ОБНОВЛЕННАЯ ФУНКЦИЯ ДЕЙСТВИЙ ---
+    // --- ФУНКЦИЯ ДЕЙСТВИЙ ---
     window.handleScore = function(id, inputElem, multiplier) {
         let val = parseFloat(inputElem.value);
         if (isNaN(val)) return;
         let change = val * multiplier;
 
-        // 1. Отправляем в базу
         push(ref(db, 'players/' + id + '/history'), change);
 
-        // 2. Обновляем экран визуально (для игрока)
+        // Visual update
         const row = inputElem.closest('tr');
         const totalCell = row.querySelector('.score-cell');
         const historyCell = row.querySelector('.history-log');
 
         let currentTotal = parseFloat(totalCell.innerText || 0);
         let newTotal = currentTotal + change;
-        
         totalCell.innerText = newTotal;
         
         let text = historyCell.innerText;
@@ -449,7 +447,6 @@
         inputElem.value = '';
         inputElem.focus();
         
-        // 3. ПЕРЕСЧИТЫВАЕМ ОБЩИЙ ИТОГ (Просто суммируем то, что сейчас на экране)
         recalculateGrandTotal();
     }
 
@@ -479,22 +476,34 @@
         await update(ref(db), updates);
     }
 
+    // --- ИСПРАВЛЕННАЯ ФУНКЦИЯ НОВОГО ДНЯ ---
     window.startNewDay = async function() {
         const pass = prompt("Код подтверждения (НОВЫЙ ДЕНЬ):");
         if (pass !== "108020") { alert("Ошибка: Неверный код!"); return; }
+        
         const snapshot = await get(playersRef);
         const data = snapshot.val();
         if (!data) return;
+        
         const updates = {};
         for (let id in data) {
             let player = data[id];
             const stats = calculatePlayerStats(player);
             const currentTotal = stats.total;
-            updates['players/' + id + '/history'] = null;
+            
+            // Создаем новый объект истории
+            const newHistory = {};
+            
+            // Генерируем два уникальных ключа через ссылку на базу
             const key1 = push(ref(db, 'players/' + id + '/history')).key;
             const key2 = push(ref(db, 'players/' + id + '/history')).key;
-            updates['players/' + id + '/history/' + key1] = currentTotal;
-            updates['players/' + id + '/history/' + key2] = 500;
+            
+            // Заполняем
+            newHistory[key1] = currentTotal;
+            newHistory[key2] = 500;
+            
+            // Заменяем старую историю новой
+            updates['players/' + id + '/history'] = newHistory;
         }
         await update(ref(db), updates);
         alert("День начат! +500 начислено.");
