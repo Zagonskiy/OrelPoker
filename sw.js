@@ -1,16 +1,16 @@
-// Версия v24 - New Header Layout (Text + Round Logo)
-const CACHE_NAME = 'orelpoker-v24-header';
+// Версия v25 - Forced Update Check
+const CACHE_NAME = 'orelpoker-v25-forced';
 const ASSETS = [
     './',
     './index.html',
     './manifest.json',
-    './logo.png', // Убедитесь, что файл logo.png есть на сервере
+    './logo.png',
     'https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap'
 ];
 
-// 1. Установка: Сразу активируемся
 self.addEventListener('install', (e) => {
-    self.skipWaiting(); 
+    // Заставляем новый воркер сразу стать активным, выкидывая старый
+    self.skipWaiting();
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(ASSETS);
@@ -18,7 +18,6 @@ self.addEventListener('install', (e) => {
     );
 });
 
-// 2. Активация: Удаляем старое, захватываем вкладки
 self.addEventListener('activate', (e) => {
     e.waitUntil(
         caches.keys().then((keyList) => {
@@ -29,14 +28,26 @@ self.addEventListener('activate', (e) => {
             }));
         })
     );
+    // Берем контроль над всеми открытыми вкладками немедленно
     return self.clients.claim();
 });
 
-// 3. Работа с сетью
+// Стратегия: Network First (Сначала пробуем интернет, если нет - кэш)
+// Это гарантирует, что если есть интернет, мы всегда получим свежую версию
 self.addEventListener('fetch', (e) => {
     e.respondWith(
-        caches.match(e.request).then((response) => {
-            return response || fetch(e.request);
-        })
+        fetch(e.request)
+            .then((response) => {
+                // Если успешно скачали из интернета — кладем в кэш на будущее
+                const resClone = response.clone();
+                caches.open(CACHE_NAME).then((cache) => {
+                    cache.put(e.request, resClone);
+                });
+                return response;
+            })
+            .catch(() => {
+                // Если интернета нет — берем из кэша
+                return caches.match(e.request);
+            })
     );
 });
