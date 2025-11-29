@@ -48,7 +48,7 @@
             padding: 2px 6px;
             border-radius: 4px;
             border: 1px solid #8b4513;
-            pointer-events: none; /* Чтобы можно было кликать сквозь неё */
+            pointer-events: none;
             opacity: 0.8;
         }
 
@@ -112,7 +112,7 @@
             text-align: center;
             color: var(--accent-brown);
             font-size: 2.5em;
-            margin-bottom: 20px;
+            margin-bottom: 5px;
             text-shadow: 2px 2px 0px var(--paper-bg), 4px 4px 0px rgba(0,0,0,0.2);
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -121,7 +121,6 @@
             line-height: 1.2;
         }
         
-        /* СЧЕТЧИК ОНЛАЙНА */
         .online-counter {
             text-align: center;
             font-family: 'Special Elite', monospace;
@@ -244,8 +243,16 @@
             td:nth-of-type(1) input { font-weight: bold; font-size: 1.2em; }
             td:nth-of-type(2) { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 5px; margin: 5px 0; }
             td:nth-of-type(2) input { width: 60px; }
-            td:nth-of-type(3) { border-top: 1px dashed var(--accent-brown); border-bottom: 1px dashed var(--accent-brown); background: rgba(203, 161, 53, 0.1); margin: 5px 0; }
-            td:nth-of-type(3)::before { content: "Итог: "; font-size: 0.6em; color: #555; vertical-align: middle; }
+            
+            /* --- ИЗМЕНЕНИЕ ЗДЕСЬ: УБРАЛ НАДПИСЬ "ИТОГ:" --- */
+            td:nth-of-type(3) { 
+                border-top: 1px dashed var(--accent-brown); 
+                border-bottom: 1px dashed var(--accent-brown); 
+                background: rgba(203, 161, 53, 0.1); 
+                margin: 5px 0; 
+            }
+            /* Ранее тут был before с контентом */
+            
             td:nth-of-type(4) { width: auto; max-width: 100%; }
             .history-log { max-width: 100%; }
             td:nth-of-type(5) { position: absolute; top: 5px; right: 5px; width: auto; padding: 0; }
@@ -263,7 +270,7 @@
 <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 <div id="networkStatus" class="network-badge status-offline">⏳ Connect...</div>
 
-<div class="version-tag">OrelPoker v18.0</div>
+<div class="version-tag">OrelPoker v19.0</div>
 
 <div class="container">
     <h2>— OrelPoker Журнал —</h2>
@@ -373,7 +380,7 @@
 
     // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v18'); 
+        const localData = localStorage.getItem('poker_data_v19'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
@@ -383,7 +390,7 @@
             initDefaultPlayers();
             return;
         }
-        localStorage.setItem('poker_data_v18', JSON.stringify(data));
+        localStorage.setItem('poker_data_v19', JSON.stringify(data));
         renderTable(data);
     });
 
