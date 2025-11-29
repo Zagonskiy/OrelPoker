@@ -1,5 +1,5 @@
-// Версия v31 - Journal & Sidebar Navigation
-const CACHE_NAME = 'orelpoker-v31-journal';
+// Версия v32 - New Mobile Cards Design
+const CACHE_NAME = 'orelpoker-v32-mobile-cards';
 const ASSETS = [
     './',
     './index.html',
