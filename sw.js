@@ -1,5 +1,5 @@
-// Версия v48 - Fix Logout Button Style
-const CACHE_NAME = 'orelpoker-v48-logout-style';
+// Версия v49 - Username in Menu
+const CACHE_NAME = 'orelpoker-v49-username';
 const ASSETS = [
     './',
     './index.html',
