@@ -1,5 +1,5 @@
-// Версия v59 - Fix Mobile Total Width
-const CACHE_NAME = 'orelpoker-v59-total-width';
+// Версия v60 - Player Status Indicators
+const CACHE_NAME = 'orelpoker-v60-status-dots';
 const ASSETS = [
     './',
     './index.html',
