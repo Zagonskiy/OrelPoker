@@ -1,5 +1,5 @@
-// Версия v28 - Fix Table Border Alignment
-const CACHE_NAME = 'orelpoker-v28-border-fix';
+// Версия v29 - Aggressive Update Check
+const CACHE_NAME = 'orelpoker-v29-aggressive';
 const ASSETS = [
     './',
     './index.html',
@@ -9,6 +9,7 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
+    // Немедленно активируем новый SW, не дожидаясь закрытия вкладок
     self.skipWaiting();
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
@@ -27,13 +28,23 @@ self.addEventListener('activate', (e) => {
             }));
         })
     );
+    // Захватываем контроль над клиентами (страницами) немедленно
     return self.clients.claim();
 });
 
+// Стратегия: Network First (Сначала сеть, если нет — кэш)
 self.addEventListener('fetch', (e) => {
     e.respondWith(
-        caches.match(e.request).then((response) => {
-            return response || fetch(e.request);
-        })
+        fetch(e.request)
+            .then((response) => {
+                const resClone = response.clone();
+                caches.open(CACHE_NAME).then((cache) => {
+                    cache.put(e.request, resClone);
+                });
+                return response;
+            })
+            .catch(() => {
+                return caches.match(e.request);
+            })
     );
 });
