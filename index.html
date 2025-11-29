@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Винтажный журнал (OrelPoker)</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#8b4513">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1064/1064024.png">
+
     <link href="https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -25,9 +30,9 @@
             padding: 20px 10px;
             color: var(--ink-color);
             margin: 0;
+            overscroll-behavior: none; /* Убирает пружинистость на iOS */
         }
 
-        /* КНОПКА ЭКСТРЕМАЛЬНОГО СБРОСА (Слева) */
         .btn-extreme-reset {
             position: fixed;
             top: 15px;
@@ -51,7 +56,6 @@
             box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
         }
 
-        /* ИНДИКАТОР СЕТИ (Справа) */
         .network-badge {
             position: fixed;
             top: 15px;
@@ -66,17 +70,8 @@
             transition: all 0.3s;
             text-transform: uppercase;
         }
-        .status-online {
-            background-color: var(--accent-green);
-            color: #fff;
-            border-color: #1b5e20;
-        }
-        .status-offline {
-            background-color: #d32f2f;
-            color: #fff;
-            border-color: #b71c1c;
-            animation: pulse 2s infinite;
-        }
+        .status-online { background-color: var(--accent-green); color: #fff; border-color: #1b5e20; }
+        .status-offline { background-color: #d32f2f; color: #fff; border-color: #b71c1c; animation: pulse 2s infinite; }
 
         @keyframes pulse {
             0% { opacity: 1; }
@@ -98,7 +93,7 @@
                 0 0 50px rgba(0,0,0,0.3) inset;
             border: 8px solid #462c1a;
             border-image: repeating-linear-gradient(45deg, #462c1a, #462c1a 10px, #332013 10px, #332013 20px) 20;
-            margin-top: 60px; /* Отступ увеличен для кнопок сверху */
+            margin-top: 60px;
         }
 
         h2 {
@@ -115,13 +110,7 @@
             line-height: 1.2;
         }
         
-        .sync-info {
-            text-align: center;
-            font-size: 0.8em;
-            color: #666;
-            margin-bottom: 15px;
-            font-style: italic;
-        }
+        .sync-info { text-align: center; font-size: 0.8em; color: #666; margin-bottom: 15px; font-style: italic; }
 
         .date-section {
             display: flex;
@@ -134,11 +123,7 @@
             border: 2px dashed var(--accent-brown);
             flex-wrap: wrap;
         }
-        .date-section label {
-            font-weight: bold;
-            font-size: 1.2em;
-            color: var(--accent-brown);
-        }
+        .date-section label { font-weight: bold; font-size: 1.2em; color: var(--accent-brown); }
         input[type="date"] {
             padding: 8px;
             border: 2px solid var(--accent-brown);
@@ -207,79 +192,22 @@
             cursor: pointer;
         }
 
-        table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 10px;
-            margin-top: 10px;
-        }
-        th {
-            padding: 15px 10px;
-            text-align: left;
-            background-color: #6b523d;
-            color: var(--accent-gold);
-            font-family: 'Rye', cursive;
-            letter-spacing: 1px;
-            border-top: 3px solid #3e2b1f;
-            border-bottom: 3px solid #3e2b1f;
-        }
-        
-        tbody tr {
-            background-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-            border: 1px solid var(--accent-brown);
-        }
-        td {
-            padding: 15px 10px;
-            border-top: 1px dashed rgba(139, 69, 19, 0.3);
-            border-bottom: 2px solid var(--accent-brown);
-            vertical-align: middle;
-        }
-
-        input[type="text"], input[type="number"] {
-            padding: 8px;
-            background: transparent;
-            border: none;
-            border-bottom: 2px dashed var(--accent-brown);
-            font-family: 'Special Elite', monospace;
-            font-size: 1.1em;
-            color: var(--ink-color);
-            box-sizing: border-box;
-            outline: none;
-        }
+        table { width: 100%; border-collapse: separate; border-spacing: 0 10px; margin-top: 10px; }
+        th { padding: 15px 10px; text-align: left; background-color: #6b523d; color: var(--accent-gold); font-family: 'Rye', cursive; letter-spacing: 1px; border-top: 3px solid #3e2b1f; border-bottom: 3px solid #3e2b1f; }
+        tbody tr { background-color: rgba(255, 255, 255, 0.4); box-shadow: 2px 2px 4px rgba(0,0,0,0.1); border: 1px solid var(--accent-brown); }
+        td { padding: 15px 10px; border-top: 1px dashed rgba(139, 69, 19, 0.3); border-bottom: 2px solid var(--accent-brown); vertical-align: middle; }
+        input[type="text"], input[type="number"] { padding: 8px; background: transparent; border: none; border-bottom: 2px dashed var(--accent-brown); font-family: 'Special Elite', monospace; font-size: 1.1em; color: var(--ink-color); box-sizing: border-box; outline: none; }
         input[type="text"] { width: 100%; }
         input[type="number"] { width: 70px; margin-right: 5px; text-align: center; border: 2px solid var(--accent-brown); background-color: #f9f3e3; }
-        
-        .score-cell {
-            font-family: 'Rye', cursive;
-            font-size: 1.8em;
-            color: var(--accent-red);
-            text-align: center;
-        }
-        
-        .history-log {
-            font-size: 0.9em;
-            color: #6b523d;
-            font-style: italic;
-            max-width: 250px;
-            overflow-x: auto;
-            white-space: nowrap;
-            padding: 5px;
-            background-color: rgba(139, 69, 19, 0.05);
-            border-radius: 4px;
-        }
+        .score-cell { font-family: 'Rye', cursive; font-size: 1.8em; color: var(--accent-red); text-align: center; }
+        .history-log { font-size: 0.9em; color: #6b523d; font-style: italic; max-width: 250px; overflow-x: auto; white-space: nowrap; padding: 5px; background-color: rgba(139, 69, 19, 0.05); border-radius: 4px; }
         
         @media screen and (max-width: 768px) {
             .container { padding: 10px; border-width: 5px; }
             h2 { font-size: 1.8em; }
             table, thead, tbody, th, td, tr { display: block; }
             thead tr { position: absolute; top: -9999px; left: -9999px; }
-            tbody tr {
-                margin-bottom: 20px;
-                position: relative;
-                padding-bottom: 10px;
-                border: 2px solid var(--accent-brown);
-            }
+            tbody tr { margin-bottom: 20px; position: relative; padding-bottom: 10px; border: 2px solid var(--accent-brown); }
             td { border: none; position: relative; padding: 5px 10px; text-align: center; }
             td:nth-of-type(1) { text-align: left; padding-right: 40px; margin-top: 5px; }
             td:nth-of-type(1) input { font-weight: bold; font-size: 1.2em; }
@@ -296,12 +224,11 @@
 <body>
 
 <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
-
 <div id="networkStatus" class="network-badge status-offline">⏳ Connect...</div>
 
 <div class="container">
     <h2>— OrelPoker Журнал —</h2>
-    <div class="sync-info">Система авто-синхронизации v2.0</div>
+    <div class="sync-info">Offline-First v3.0</div>
 
     <div class="date-section">
         <label for="gameDate">Дата игры:</label>
@@ -325,15 +252,24 @@
             </tr>
         </thead>
         <tbody id="tableBody">
-            </tbody>
+        </tbody>
     </table>
 </div>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('SW зарегистрирован:', reg.scope))
+                .catch(err => console.log('Ошибка SW:', err));
+        });
+    }
+</script>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, onValue, push, set, remove, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // --- ТВОИ ДАННЫЕ ВСТАВЛЕНЫ НИЖЕ ---
     const firebaseConfig = {
         apiKey: "AIzaSyD9E8XsdjGx275Es6HwdCo5jy2l0kJoNXg",
         authDomain: "orelpoker-cd9d4.firebaseapp.com",
@@ -343,15 +279,13 @@
         messagingSenderId: "913271365234",
         appId: "1:913271365234:web:b48f717e011eea4847eceb"
     };
-    // ----------------------------------------
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const playersRef = ref(db, 'players');
     
-    // --- ЛОГИКА ОНЛАЙН/ОФЛАЙН СТАТУСА ---
+    // Статус сети
     const connectedRef = ref(db, ".info/connected");
-    
     onValue(connectedRef, (snap) => {
         const statusEl = document.getElementById('networkStatus');
         if (snap.val() === true) {
@@ -362,12 +296,21 @@
             statusEl.className = "network-badge status-offline";
         }
     });
-    // -------------------------------------
 
-    // Синхронизация данных
+    // --- ГИБРИДНАЯ ЗАГРУЗКА ДАННЫХ ---
+    
+    // 1. При загрузке страницы СРАЗУ показываем то, что сохранено в браузере (чтобы не ждать сеть)
+    window.addEventListener('DOMContentLoaded', () => {
+        const localData = localStorage.getItem('poker_data');
+        if (localData) {
+            const parsed = JSON.parse(localData);
+            renderTable(parsed);
+            console.log("Загружено из кэша");
+        }
+    });
+
+    // 2. Слушаем Firebase. Когда приходят новые данные (или восстановилась сеть)
     onValue(playersRef, (snapshot) => {
-        const tableBody = document.getElementById('tableBody');
-        tableBody.innerHTML = '';
         const data = snapshot.val();
         
         if (!data) {
@@ -375,10 +318,22 @@
             return;
         }
 
+        // Сохраняем свежие данные в память браузера
+        localStorage.setItem('poker_data', JSON.stringify(data));
+        
+        // Рисуем таблицу
+        renderTable(data);
+    });
+
+    // Общая функция отрисовки (используется и для офлайна, и для онлайна)
+    function renderTable(data) {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = '';
+        
         for (let id in data) {
             renderPlayerRow(id, data[id]);
         }
-    });
+    }
 
     function renderPlayerRow(id, player) {
         const tableBody = document.getElementById('tableBody');
@@ -433,7 +388,8 @@
         return btn;
     }
 
-    // Обработка очков (работает офлайн - ставит в очередь)
+    // --- ОБНОВЛЕННАЯ ФУНКЦИЯ ДЕЙСТВИЙ (ОФЛАЙН ПОДДЕРЖКА) ---
+    // Firebase Web SDK сам умеет накапливать действия офлайн и отправлять их при подключении
     window.handleScore = function(id, player, valStr, multiplier, inputElem) {
         let val = parseFloat(valStr);
         if (isNaN(val)) return;
@@ -444,7 +400,11 @@
         const newHistory = [...currentHistory, change];
         const newTotal = (player.total || 0) + change;
 
+        // Firebase примет это действие и поставит в очередь, если нет сети
         update(ref(db, 'players/' + id), { total: newTotal, history: newHistory });
+        
+        // ВАЖНО: Мы также обновляем локальный вид вручную для мгновенной реакции
+        // (хотя Firebase SDK обычно делает это сам, но для надежности)
         inputElem.value = ''; inputElem.focus();
     }
 
@@ -463,10 +423,7 @@
 
     window.extremeReset = async function() {
         const pass = prompt("!!! ВНИМАНИЕ !!!\nЭта кнопка обнулит счета ВСЕХ игроков до 0.\n\nВведите код подтверждения:");
-        if (pass !== "108020") {
-            alert("Неверный код! Операция отменена.");
-            return;
-        }
+        if (pass !== "108020") { alert("Неверный код!"); return; }
         const snapshot = await get(playersRef);
         const data = snapshot.val();
         if (!data) return;
@@ -476,15 +433,11 @@
             updates['players/' + id + '/history'] = [];
         }
         await update(ref(db), updates);
-        alert("Внимание: Выполнен полный сброс. Все счета обнулены.");
     }
 
     window.startNewDay = async function() {
         const pass = prompt("Введите код доступа для нового дня:");
-        if (pass !== "108020") {
-            alert("Ошибка: Неверный код!");
-            return;
-        }
+        if (pass !== "108020") { alert("Ошибка: Неверный код!"); return; }
         const snapshot = await get(playersRef);
         const data = snapshot.val();
         if (!data) return;
@@ -498,7 +451,6 @@
             updates['players/' + id + '/total'] = newTotal;
         }
         await update(ref(db), updates);
-        alert("Новый день начат! Всем начислено +500.");
     }
 
     function initDefaultPlayers() {
