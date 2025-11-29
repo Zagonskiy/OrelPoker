@@ -205,43 +205,73 @@
             td:nth-of-type(4) { font-size: 0.8em; color: #666; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 4px; max-width: 100%; }
             td:nth-of-type(5) { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; padding: 0; }
             .btn-reset-player, .btn-delete { width: 28px; height: 28px; font-size: 0.9em; }
-            tfoot { margin-top: 20px; }
-            tfoot tr { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #3e2b1f; border: 2px solid #cba135; border-radius: 12px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+            
+            /* --- МОБИЛЬНЫЙ ДИЗАЙН "ОБЩИЙ БАНК" --- */
+            tfoot { display: block; margin-top: 20px; }
+            tfoot tr { 
+                display: flex; 
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: #3e2b1f;
+                border: 2px solid #cba135;
+                border-radius: 12px;
+                padding: 15px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+                width: 100%;
+                box-sizing: border-box; /* Fix padding issue */
+            }
             tfoot td { display: block; padding: 0; border: none; width: 100%; }
             tfoot td:nth-child(4), tfoot td:nth-child(5) { display: none; }
             .total-label { display: none; }
-            .grand-total-cell { text-align: center; font-size: 2.8em; color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(203, 161, 53, 0.6); margin-top: 0; }
+            .grand-total-cell { 
+                text-align: center; 
+                font-size: 2.8em; 
+                color: #fff; 
+                font-weight: bold; 
+                text-shadow: 0 0 10px rgba(203, 161, 53, 0.6); 
+                margin-top: 0; 
+            }
         }
     </style>
 </head>
 <body>
 
 <div id="login-overlay">
+    
     <div id="login-view-card" class="login-card">
         <h2>ВХОД В КЛУБ</h2>
         <div class="brand-container" style="border:none; margin:0; padding:0;">
              <img src="./logo.png" class="header-logo-round" style="margin-bottom:15px;">
         </div>
+        
         <input type="text" id="loginNick" class="login-input" placeholder="Никнейм">
         <input type="password" id="loginPass" class="login-input" placeholder="Пароль">
+        
         <div class="login-checkbox">
             <input type="checkbox" id="rememberMe" style="width:auto;">
             <label for="rememberMe">Запомнить меня</label>
         </div>
+        
         <button class="btn-login-action" onclick="handleLogin()">ВОЙТИ</button>
         <button class="btn-register-link" onclick="switchAuthView('register')">Нет аккаунта? Регистрация</button>
+        
         <div id="loginError" class="error-msg"></div>
     </div>
 
     <div id="register-view-card" class="login-card hidden">
         <h2>РЕГИСТРАЦИЯ</h2>
+        
         <input type="text" id="regNick" class="login-input" placeholder="Придумайте Ник">
         <input type="password" id="regPass" class="login-input" placeholder="Пароль">
         <input type="password" id="regPassRepeat" class="login-input" placeholder="Повторите пароль">
+        
         <button class="btn-login-action btn-register" onclick="handleRegister()">СОЗДАТЬ АККАУНТ</button>
         <button class="btn-login-action btn-back" onclick="switchAuthView('login')">НАЗАД</button>
+        
         <div id="regError" class="error-msg"></div>
     </div>
+
 </div>
 
 <div id="networkStatus" class="network-badge status-offline" style="display:none;">⏳</div>
@@ -258,9 +288,12 @@
             <span id="desktopStatusDot" class="status-dot"></span>
         </div>
     </div>
+    
     <button class="nav-btn active" onclick="showView('game')">🎲 Игровой стол</button>
     <button class="nav-btn" onclick="showView('journal')">📜 Журнал архива</button>
+    
     <button class="nav-btn" onclick="logout()" style="margin-top: 20px;">🚪 ВЫЙТИ</button>
+    
     <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 </div>
 
@@ -307,7 +340,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v58.0 (Session Fix)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v59.0 (Mobile Total Fix)</div>
 </div>
 
 <script>
@@ -325,7 +358,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=58').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=59').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -361,7 +394,7 @@
     const journalRef = ref(db, 'journal');
     const usersRef = ref(db, 'users');
 
-    // --- АВТОРИЗАЦИЯ (SESSION FIX) ---
+    // --- АВТОРИЗАЦИЯ (OPTIMISTIC) ---
 
     window.switchAuthView = function(view) {
         document.getElementById('loginError').innerText = "";
@@ -376,7 +409,7 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-        // 1. Проверяем постоянную память (галочка была)
+        // 1. Проверяем постоянную память
         const savedUser = localStorage.getItem('op_user');
         if(savedUser) {
             const user = JSON.parse(savedUser);
@@ -385,11 +418,11 @@
             return;
         }
         
-        // 2. Проверяем временную память сессии (галочки не было, но сайт перезагрузился)
+        // 2. Проверяем сессию
         const sessionUser = sessionStorage.getItem('op_session_user');
         if(sessionUser) {
             const user = JSON.parse(sessionUser);
-            performLogin(user.nick, user.pass, false); // False = не сохранять в localStorage
+            performLogin(user.nick, user.pass, false);
             verifySessionInBackground(user.nick, user.pass);
         }
     });
@@ -433,10 +466,9 @@
         const passRepeat = document.getElementById('regPassRepeat').value.trim();
         if(!nick || !pass) { document.getElementById('regError').innerText = "Заполните все поля"; return; }
         if(pass !== passRepeat) { document.getElementById('regError').innerText = "Пароли не совпадают!"; return; }
-
         get(child(ref(db), `users/${nick}`)).then((snapshot) => {
             if (snapshot.exists()) {
-                document.getElementById('regError').innerText = "Этот ник уже занят!";
+                document.getElementById('regError').innerText = "Ник занят!";
             } else {
                 set(ref(db, 'users/' + nick), { pass: pass, created: Date.now() }).then(() => {
                     const newPlayerRef = push(ref(db, 'players'));
@@ -491,29 +523,21 @@
     function performLogin(nick, pass, remember) {
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('menuUserName').innerText = nick;
-        
-        // Сохраняем в сессию ВСЕГДА (чтобы пережить перезагрузку страницы)
         sessionStorage.setItem('op_session_user', JSON.stringify({nick, pass}));
-
-        // Сохраняем в постоянную память ТОЛЬКО если галочка
-        if(remember) {
-            localStorage.setItem('op_user', JSON.stringify({nick, pass}));
-        }
-        
+        if(remember) localStorage.setItem('op_user', JSON.stringify({nick, pass}));
         setOnlineStatus(nick);
     }
 
     window.logout = function() {
-        if(confirm("Выйти из аккаунта?")) {
+        if(confirm("Выйти?")) {
             if (currentConnectionRef) remove(currentConnectionRef);
             localStorage.removeItem('op_user');
-            sessionStorage.removeItem('op_session_user'); // Чистим сессию тоже
+            sessionStorage.removeItem('op_session_user');
             location.reload();
         }
     }
 
     // --- ИГРА ---
-    
     const connectedRef = ref(db, ".info/connected");
     const onlineUsersRef = ref(db, "online_users");
     let currentConnectionRef = null;
@@ -530,7 +554,6 @@
         const dotDesktop = document.getElementById('desktopStatusDot');
         const statusEl = document.getElementById('networkStatus');
         if(statusEl) statusEl.style.display = 'none';
-
         if (snap.val() === true) {
             dotMobile.classList.add('online'); dotDesktop.classList.add('online');
         } else {
@@ -548,15 +571,11 @@
         }
     });
 
-    window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v58'); 
-        if (localData) renderTable(JSON.parse(localData));
-    });
-
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
-        if (!data) return;
-        localStorage.setItem('poker_data_v58', JSON.stringify(data));
+        // Если пусто, пробуем добавить игроков (но это теперь делает handleRegister)
+        // if (!data) { ... }
+        localStorage.setItem('poker_data_v59', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -564,7 +583,9 @@
         if (document.activeElement.tagName === 'INPUT') return; 
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
-        for (let id in data) { renderPlayerRow(id, data[id]); }
+        if(data) {
+            for (let id in data) { renderPlayerRow(id, data[id]); }
+        }
         recalculateGrandTotal();
     }
 
@@ -597,7 +618,7 @@
         const cellName = newRow.insertCell(0);
         const inputName = document.createElement('input');
         inputName.type = 'text'; inputName.className = 'player-name'; inputName.value = player.name || "";
-        inputName.readOnly = true; // ReadOnly
+        inputName.readOnly = true;
         cellName.appendChild(inputName);
 
         const cellAction = newRow.insertCell(1);
