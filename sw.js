@@ -1,5 +1,5 @@
-// Версия v54 - User-based Online Count
-const CACHE_NAME = 'orelpoker-v54-user-presence';
+// Версия v55 - Optimistic Login Fix
+const CACHE_NAME = 'orelpoker-v55-optimistic';
 const ASSETS = [
     './',
     './index.html',
