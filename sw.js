@@ -1,5 +1,5 @@
-// Версия v13 - New Day Logic Rewrite
-const CACHE_NAME = 'orelpoker-v13-fix';
+// Версия v15 - Global Redo Logic
+const CACHE_NAME = 'orelpoker-v15-global-redo';
 const ASSETS = [
     './',
     './index.html',
