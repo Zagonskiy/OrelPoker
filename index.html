@@ -202,8 +202,13 @@
             td:nth-of-type(4) { font-size: 0.8em; color: #666; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 4px; max-width: 100%; }
             td:nth-of-type(5) { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; padding: 0; }
             .btn-reset-player, .btn-delete { width: 28px; height: 28px; font-size: 0.9em; }
-            tfoot { margin-top: 10px; }
-            tfoot tr { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #3e2b1f; border: 2px solid #cba135; border-radius: 12px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+            
+            tfoot { display: block; margin-top: 20px; }
+            tfoot tr { 
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                background: #3e2b1f; border: 2px solid #cba135; border-radius: 12px; padding: 15px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            }
             tfoot td { display: block; padding: 0; border: none; width: 100%; }
             tfoot td:nth-child(4), tfoot td:nth-child(5) { display: none; }
             .total-label { display: none; }
@@ -214,35 +219,47 @@
 <body>
 
 <div id="login-overlay">
+    
     <div id="login-view-card" class="login-card">
         <h2>ВХОД В КЛУБ</h2>
         <div class="brand-container" style="border:none; margin:0; padding:0;">
              <img src="./logo.png" class="header-logo-round" style="margin-bottom:15px;">
         </div>
+        
         <input type="text" id="loginNick" class="login-input" placeholder="Никнейм">
         <input type="password" id="loginPass" class="login-input" placeholder="Пароль">
+        
         <div class="login-checkbox">
             <input type="checkbox" id="rememberMe" style="width:auto;">
             <label for="rememberMe">Запомнить меня</label>
         </div>
+        
         <button class="btn-login-action" onclick="handleLogin()">ВОЙТИ</button>
         <button class="btn-register-link" onclick="switchAuthView('register')">Нет аккаунта? Регистрация</button>
+        
         <div id="loginError" class="error-msg"></div>
     </div>
 
     <div id="register-view-card" class="login-card hidden">
         <h2>РЕГИСТРАЦИЯ</h2>
+        
         <input type="text" id="regNick" class="login-input" placeholder="Придумайте Ник">
         <input type="password" id="regPass" class="login-input" placeholder="Пароль">
         <input type="password" id="regPassRepeat" class="login-input" placeholder="Повторите пароль">
+        
         <button class="btn-login-action btn-register" onclick="handleRegister()">СОЗДАТЬ АККАУНТ</button>
         <button class="btn-login-action btn-back" onclick="switchAuthView('login')">НАЗАД</button>
+        
         <div id="regError" class="error-msg"></div>
     </div>
+
 </div>
 
 <div id="networkStatus" class="network-badge status-offline" style="display:none;">⏳</div>
-<button class="menu-toggle" onclick="toggleSidebar()">☰ <span id="mobileStatusDot" class="status-dot"></span></button>
+
+<button class="menu-toggle" onclick="toggleSidebar()">
+    ☰ <span id="mobileStatusDot" class="status-dot"></span>
+</button>
 
 <div class="sidebar" id="sidebar">
     <div class="sidebar-logo">
@@ -252,9 +269,12 @@
             <span id="desktopStatusDot" class="status-dot"></span>
         </div>
     </div>
+    
     <button class="nav-btn active" onclick="showView('game')">🎲 Игровой стол</button>
     <button class="nav-btn" onclick="showView('journal')">📜 Журнал архива</button>
+    
     <button class="nav-btn" onclick="logout()" style="margin-top: 20px;">🚪 ВЫЙТИ</button>
+    
     <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 </div>
 
@@ -301,7 +321,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v54.0 (Users Count)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v55.0 (Stable Login)</div>
 </div>
 
 <script>
@@ -319,7 +339,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=54').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=55').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -354,65 +374,9 @@
     const playersRef = ref(db, 'players');
     const journalRef = ref(db, 'journal');
     const usersRef = ref(db, 'users');
-    
-    // --- СТАТУС И ПОДСЧЕТ ИГРОКОВ ---
-    const connectedRef = ref(db, ".info/connected");
-    const onlineUsersRef = ref(db, "online_users"); // Новая ветка для пользователей
 
-    let currentConnectionRef = null;
+    // --- АВТОРИЗАЦИЯ (OPTIMISTIC FIX) ---
 
-    function setOnlineStatus(nickname) {
-        // Ссылка на онлайн статус этого пользователя
-        const myUserRef = ref(db, `online_users/${nickname}`);
-        
-        // Создаем уникальное подключение для этого ника
-        currentConnectionRef = push(myUserRef);
-        
-        // Когда отключаемся - удаляем это конкретное подключение
-        onDisconnect(currentConnectionRef).remove();
-        
-        // Записываем, что мы онлайн
-        set(currentConnectionRef, true);
-    }
-
-    onValue(connectedRef, (snap) => {
-        const dotMobile = document.getElementById('mobileStatusDot');
-        const dotDesktop = document.getElementById('desktopStatusDot');
-        const statusEl = document.getElementById('networkStatus');
-        if(statusEl) statusEl.style.display = 'none';
-
-        if (snap.val() === true) {
-            dotMobile.classList.add('online');
-            dotDesktop.classList.add('online');
-            
-            // Восстанавливаем статус при реконнекте, если мы залогинены
-            const savedUser = localStorage.getItem('op_user');
-            if (savedUser) {
-                const user = JSON.parse(savedUser);
-                // Не вызываем setOnlineStatus напрямую, так как он создает дубли
-                // performLogin уже вызывается при старте и настроит всё
-            }
-            
-        } else {
-            dotMobile.classList.remove('online');
-            dotDesktop.classList.remove('online');
-        }
-    });
-
-    // Подсчет уникальных ников в online_users
-    onValue(onlineUsersRef, (snap) => {
-        const countDisplay = document.getElementById('onlineCounter');
-        if (snap.exists()) {
-            // snap.val() вернет объект: { "Nick1": {...}, "Nick2": {...} }
-            // Количество ключей = количество уникальных игроков
-            const count = Object.keys(snap.val()).length;
-            countDisplay.innerText = `👁️ Онлайн: ${count}`;
-        } else {
-            countDisplay.innerText = `👁️ Онлайн: 0`;
-        }
-    });
-
-    // --- АВТОРИЗАЦИЯ ---
     window.switchAuthView = function(view) {
         document.getElementById('loginError').innerText = "";
         document.getElementById('regError').innerText = "";
@@ -429,15 +393,56 @@
         const savedUser = localStorage.getItem('op_user');
         if(savedUser) {
             const user = JSON.parse(savedUser);
-            checkLogin(user.nick, user.pass, true);
+            // --- OPTIMISTIC LOGIN START ---
+            // 1. Сразу скрываем оверлей (визуально пускаем юзера)
+            performLogin(user.nick, user.pass, true);
+            
+            // 2. Проверяем пароль в фоне (без блокировки интерфейса)
+            verifySessionInBackground(user.nick, user.pass);
+            // --- OPTIMISTIC LOGIN END ---
         }
     });
+
+    async function verifySessionInBackground(nick, pass) {
+        if (!navigator.onLine) return; // В офлайне верим локальному хранилищу
+
+        try {
+            // Ждем 3 сек. Если база не ответит - считаем, что всё ок (плохой инет)
+            const snapshot = await Promise.race([
+                get(child(ref(db), `users/${nick}`)),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
+            ]);
+
+            if (snapshot.exists()) {
+                const userData = snapshot.val();
+                if(userData.pass !== pass) {
+                    // Пароль сменили! Выкидываем.
+                    alert("Пароль был изменен. Войдите снова.");
+                    logout();
+                } else {
+                    // Пароль верный, обновляем кэш офлайн входа
+                    let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
+                    knownUsers[nick] = pass;
+                    localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
+                    setOnlineStatus(nick);
+                }
+            } else {
+                alert("Аккаунт не найден.");
+                logout();
+            }
+        } catch (e) {
+            // Ошибка сети или тайм-аут - просто игнорируем, пусть играет
+            console.log("Background verify skipped (network)");
+        }
+    }
 
     window.handleLogin = function() {
         const nick = document.getElementById('loginNick').value.trim();
         const pass = document.getElementById('loginPass').value.trim();
         const remember = document.getElementById('rememberMe').checked;
         if(!nick || !pass) { document.getElementById('loginError').innerText = "Введите данные"; return; }
+        
+        // Тут используем обычный checkLogin с ожиданием, так как юзер сам нажал кнопку
         checkLogin(nick, pass, false, remember);
     }
 
@@ -445,8 +450,10 @@
         const nick = document.getElementById('regNick').value.trim();
         const pass = document.getElementById('regPass').value.trim();
         const passRepeat = document.getElementById('regPassRepeat').value.trim();
+        
         if(!nick || !pass) { document.getElementById('regError').innerText = "Заполните все поля"; return; }
         if(pass !== passRepeat) { document.getElementById('regError').innerText = "Пароли не совпадают!"; return; }
+
         get(child(ref(db), `users/${nick}`)).then((snapshot) => {
             if (snapshot.exists()) {
                 document.getElementById('regError').innerText = "Этот ник уже занят!";
@@ -470,17 +477,20 @@
             }
             return false;
         };
+
         if (!navigator.onLine) {
             if (!tryLocalLogin()) {
                 if(!isAuto) document.getElementById('loginError').innerText = "Нет сети и данные не сохранены";
             }
             return;
         }
+
         try {
             const snapshot = await Promise.race([
                 get(child(ref(db), `users/${nick}`)),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
             ]);
+
             if (snapshot.exists()) {
                 const userData = snapshot.val();
                 if(userData.pass === pass) {
@@ -508,29 +518,63 @@
         if(remember) {
             localStorage.setItem('op_user', JSON.stringify({nick, pass}));
         }
-        // Активируем статус онлайн
         setOnlineStatus(nick);
     }
 
     window.logout = function() {
         if(confirm("Выйти из аккаунта?")) {
-            // Удаляем статус онлайн при выходе
             if (currentConnectionRef) remove(currentConnectionRef);
             localStorage.removeItem('op_user');
             location.reload();
         }
     }
 
-    // --- ДАЛЕЕ СТАРЫЙ КОД (БЕЗ ИЗМЕНЕНИЙ) ---
+    // --- ОСТАЛЬНОЙ КОД (БЕЗ ИЗМЕНЕНИЙ) ---
+    
+    const connectedRef = ref(db, ".info/connected");
+    const onlineUsersRef = ref(db, "online_users");
+    let currentConnectionRef = null;
+
+    function setOnlineStatus(nickname) {
+        const myUserRef = ref(db, `online_users/${nickname}`);
+        currentConnectionRef = push(myUserRef);
+        onDisconnect(currentConnectionRef).remove();
+        set(currentConnectionRef, true);
+    }
+
+    onValue(connectedRef, (snap) => {
+        const dotMobile = document.getElementById('mobileStatusDot');
+        const dotDesktop = document.getElementById('desktopStatusDot');
+        const statusEl = document.getElementById('networkStatus');
+        if(statusEl) statusEl.style.display = 'none';
+
+        if (snap.val() === true) {
+            dotMobile.classList.add('online'); dotDesktop.classList.add('online');
+            // Статус онлайн ставится в performLogin
+        } else {
+            dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
+        }
+    });
+
+    onValue(onlineUsersRef, (snap) => {
+        const countDisplay = document.getElementById('onlineCounter');
+        if (snap.exists()) {
+            const count = Object.keys(snap.val()).length;
+            countDisplay.innerText = `👁️ Онлайн: ${count}`;
+        } else {
+            countDisplay.innerText = `👁️ Онлайн: 0`;
+        }
+    });
+
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v54'); 
+        const localData = localStorage.getItem('poker_data_v55'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v54', JSON.stringify(data));
+        localStorage.setItem('poker_data_v55', JSON.stringify(data));
         renderTable(data);
     });
 
