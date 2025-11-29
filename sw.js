@@ -1,5 +1,5 @@
-// Версия v16 - Atomic Transactions (Fix Duplication)
-const CACHE_NAME = 'orelpoker-v16-atomic';
+// Версия v17 - Online User Counter
+const CACHE_NAME = 'orelpoker-v17-online';
 const ASSETS = [
     './',
     './index.html',
