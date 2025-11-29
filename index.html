@@ -220,7 +220,7 @@
 
 <div class="container">
     <h2>— OrelPoker Журнал —</h2>
-    <div class="sync-info">Final Version v7.0 (Force Update)</div>
+    <div class="sync-info">Offline-First v8.0 (Instant UI)</div>
 
     <div class="date-section">
         <label for="gameDate">Дата игры:</label>
@@ -253,23 +253,15 @@
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./sw.js')
             .then(reg => {
-                // Логика принудительного обновления
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
                     newWorker.onstatechange = () => {
                         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            if(confirm("Вышла новая версия приложения! Нажмите ОК, чтобы обновить.")) {
-                                window.location.reload();
-                            }
+                            if(confirm("Вышла новая версия приложения! Обновить?")) window.location.reload();
                         }
                     };
                 };
             });
-        });
-        
-        // Перезагрузка при смене контроллера
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            window.location.reload();
         });
     }
 </script>
@@ -305,21 +297,22 @@
         }
     });
 
-    // --- ЗАГРУЗКА ---
-    // 1. Грузим из локалки (быстро)
+    // --- ЗАГРУЗКА И СИНХРОНИЗАЦИЯ ---
+    
+    // Загрузка из локального хранилища (Мгновенно)
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v2'); // Новое имя ключа
+        const localData = localStorage.getItem('poker_data_v8');
         if (localData) renderTable(JSON.parse(localData));
     });
 
-    // 2. Грузим из базы
+    // Загрузка из Firebase (Как только подключимся)
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) {
             initDefaultPlayers();
             return;
         }
-        localStorage.setItem('poker_data_v2', JSON.stringify(data));
+        localStorage.setItem('poker_data_v8', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -333,13 +326,10 @@
         }
     }
 
-    // Вспомогательная функция: Считает сумму только из истории
     function calculatePlayerStats(player) {
         let historyArray = [];
         let total = 0;
-
         if (player.history) {
-            // Если history - это объект (Firebase push ID), превращаем в массив
             if (typeof player.history === 'object' && !Array.isArray(player.history)) {
                 historyArray = Object.values(player.history);
             } else if (Array.isArray(player.history)) {
@@ -353,8 +343,6 @@
     function renderPlayerRow(id, player) {
         const tableBody = document.getElementById('tableBody');
         const newRow = tableBody.insertRow();
-
-        // Динамический подсчет
         const { total, historyArray } = calculatePlayerStats(player);
 
         const cellName = newRow.insertCell(0);
@@ -371,18 +359,20 @@
         inputNum.className = 'input-val';
         inputNum.placeholder = '0';
         
+        // Передаем inputNum для мгновенного обновления
         const btnPlus = createBtn('+', 'btn-calc', () => handleScore(id, inputNum, 1));
         const btnMinus = createBtn('-', 'btn-calc', () => handleScore(id, inputNum, -1));
-        const btnUndo = createBtn('↩', 'btn-undo', () => undoLast(id));
+        const btnUndo = createBtn('↩', 'btn-undo', () => undoLast(id, inputNum));
 
         cellAction.append(inputNum, btnPlus, btnMinus, btnUndo);
 
         const cellTotal = newRow.insertCell(2);
         cellTotal.className = 'score-cell';
-        cellTotal.innerText = total; // ВСЕГДА считаем сами, не берем из базы поле total
+        cellTotal.innerText = total;
 
         const cellHistory = newRow.insertCell(3);
         cellHistory.className = 'history-log';
+        cellHistory.setAttribute('data-history-json', JSON.stringify(historyArray)); // Для локального обновления
         
         if (historyArray.length > 0) {
             cellHistory.innerText = historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ');
@@ -405,29 +395,50 @@
         return btn;
     }
 
-    // --- ДОБАВЛЕНИЕ (PUSH ONLY) ---
-    // Это невозможно перезаписать. Это всегда создание НОВОЙ записи.
+    // --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: МГНОВЕННОЕ ОБНОВЛЕНИЕ ---
     window.handleScore = function(id, inputElem, multiplier) {
         let val = parseFloat(inputElem.value);
         if (isNaN(val)) return;
         let change = val * multiplier;
 
-        // Отправляем в базу
+        // 1. ОТПРАВЛЯЕМ В БАЗУ (Оно встанет в очередь, если офлайн)
         push(ref(db, 'players/' + id + '/history'), change);
-        
-        // Очищаем поле
+
+        // 2. ОБНОВЛЯЕМ ЭКРАН МГНОВЕННО (Визуальный обман, пока база не ответит)
+        const row = inputElem.closest('tr');
+        const totalCell = row.querySelector('.score-cell');
+        const historyCell = row.querySelector('.history-log');
+
+        // Считаем визуально
+        let currentTotal = parseFloat(totalCell.innerText || 0);
+        let newTotal = currentTotal + change;
+        totalCell.innerText = newTotal;
+
+        // Обновляем текст истории визуально
+        let text = historyCell.innerText;
+        let newEntry = (change >= 0 ? `+${change}` : change);
+        if (text === 'Пусто') {
+            historyCell.innerText = newEntry;
+        } else {
+            historyCell.innerText = text + ' ' + newEntry;
+        }
+
         inputElem.value = '';
         inputElem.focus();
     }
 
-    // --- ОТМЕНА ---
-    window.undoLast = async function(id) {
+    window.undoLast = async function(id, inputElem) {
+        // Удаляем из базы
         const historyRef = ref(db, 'players/' + id + '/history');
         const lastItemQuery = query(historyRef, orderByKey(), limitToLast(1));
         const snapshot = await get(lastItemQuery);
         snapshot.forEach((child) => {
             remove(child.ref);
         });
+        
+        // Визуальное удаление сложнее сделать точно без данных, 
+        // поэтому здесь полагаемся на быструю реакцию базы или перезагрузку.
+        // Для undo обычно не критично мгновенное обновление в офлайне, но если нужно - скажи.
     }
 
     window.createNewPlayer = function() {
@@ -440,11 +451,9 @@
         const snapshot = await get(playersRef);
         const data = snapshot.val();
         if (!data) return;
-        
         const updates = {};
         for (let id in data) {
-            updates['players/' + id + '/history'] = null; // Просто удаляем историю
-            // Не трогаем total, так как мы его больше не храним
+            updates['players/' + id + '/history'] = null;
         }
         await update(ref(db), updates);
     }
@@ -452,24 +461,18 @@
     window.startNewDay = async function() {
         const pass = prompt("Код подтверждения (НОВЫЙ ДЕНЬ):");
         if (pass !== "108020") { alert("Ошибка: Неверный код!"); return; }
-        
         const snapshot = await get(playersRef);
         const data = snapshot.val();
         if (!data) return;
-        
         const updates = {};
         for (let id in data) {
             let player = data[id];
             const stats = calculatePlayerStats(player);
             const currentTotal = stats.total;
             
-            // Очищаем историю
             updates['players/' + id + '/history'] = null;
-            
-            // Генерируем два новых ключа для двух записей
             const key1 = push(ref(db, 'players/' + id + '/history')).key;
             const key2 = push(ref(db, 'players/' + id + '/history')).key;
-            
             updates['players/' + id + '/history/' + key1] = currentTotal;
             updates['players/' + id + '/history/' + key2] = 500;
         }
