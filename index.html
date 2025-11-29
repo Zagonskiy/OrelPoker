@@ -7,7 +7,9 @@
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#8b4513">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1064/1064024.png">
+    
+    <link rel="icon" type="image/png" href="./logo.png">
+    <link rel="apple-touch-icon" href="./logo.png">
 
     <link href="https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap" rel="stylesheet">
     <style>
@@ -445,7 +447,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v43.0 (Tap to Update)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v44.0 (Tap to Update)</div>
 </div>
 
 <script>
@@ -468,7 +470,7 @@
     // 2. АВТОМАТИЧЕСКОЕ ОБНОВЛЕНИЕ
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=43').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=44').then(reg => {
                 reg.update(); 
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -503,7 +505,7 @@
     const playersRef = ref(db, 'players');
     const journalRef = ref(db, 'journal');
     
-    // --- СТАТУС ---
+    // --- СТАТУС СЕТИ ---
     const connectedRef = ref(db, ".info/connected");
     const connectionsRef = ref(db, "connections");
 
@@ -537,14 +539,14 @@
 
     // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v43'); 
+        const localData = localStorage.getItem('poker_data_v44'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v43', JSON.stringify(data));
+        localStorage.setItem('poker_data_v44', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -736,6 +738,7 @@
         alert("Сохранено!");
     }
     
+    // --- УДАЛЕНИЕ ЗАПИСИ ЖУРНАЛА ---
     window.deleteJournalEntry = function(id) {
         const pass = prompt("Удалить эту запись? Введите код:");
         if (pass === "108020") {
@@ -754,8 +757,10 @@
         entries.forEach(([id, entry]) => {
             const card = document.createElement('div');
             card.className = 'journal-card';
+            
             const header = document.createElement('div');
             header.className = 'journal-header';
+            // Вставляем кнопку удаления
             header.innerHTML = `
                 <div style="display:flex; align-items:center;">
                     <span>📅 ${entry.date}</span>
@@ -763,6 +768,7 @@
                 </div>
                 <span class="journal-total">Банк: ${entry.grandTotal}</span>
             `;
+            
             const details = document.createElement('div');
             details.className = 'journal-details';
             let detailsHtml = `<div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px; display:flex; justify-content:space-between;"><span>Игрок</span><span>Итог</span></div>`;
