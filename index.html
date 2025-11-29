@@ -37,7 +37,6 @@
             padding-bottom: 60px;
         }
 
-        /* Версия и название справа снизу - ТЕПЕРЬ КЛИКАБЕЛЬНАЯ */
         .version-tag {
             position: fixed;
             bottom: 5px;
@@ -47,12 +46,11 @@
             font-family: 'Special Elite', monospace;
             z-index: 2000;
             background: rgba(244, 228, 188, 0.9);
-            padding: 4px 8px;
+            padding: 2px 6px;
             border-radius: 4px;
             border: 1px solid #8b4513;
-            opacity: 0.9;
-            cursor: pointer; /* Курсор указывает, что можно нажать */
-            text-decoration: underline;
+            pointer-events: none;
+            opacity: 0.8;
         }
 
         .btn-extreme-reset {
@@ -73,23 +71,6 @@
             transition: all 0.2s;
         }
         .btn-extreme-reset:hover { background-color: #ff0000; color: white; box-shadow: 0 0 15px rgba(255, 0, 0, 0.5); }
-
-        .network-badge {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            padding: 8px 15px;
-            font-family: 'Rye', cursive;
-            font-size: 0.9em;
-            border-radius: 4px;
-            z-index: 1000;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.7);
-            border: 2px solid #3e2b1f;
-            transition: all 0.3s;
-            text-transform: uppercase;
-        }
-        .status-online { background-color: var(--accent-green); color: #fff; border-color: #1b5e20; }
-        .status-offline { background-color: #d32f2f; color: #fff; border-color: #b71c1c; animation: pulse 2s infinite; }
 
         .container {
             max-width: 1050px;
@@ -373,8 +354,6 @@
 </head>
 <body>
 
-<div id="networkStatus" class="network-badge status-offline">⏳ Connect...</div>
-
 <button class="menu-toggle" onclick="toggleSidebar()">
     ☰ <span id="mobileStatusDot" class="status-dot"></span>
 </button>
@@ -391,7 +370,9 @@
     <button class="nav-btn active" onclick="showView('game')">🎲 Игровой стол</button>
     <button class="nav-btn" onclick="showView('journal')">📜 Журнал архива</button>
     
-    <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
+    <div style="margin-top: auto; text-align: center;">
+        <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
+    </div>
 </div>
 
 <div class="main-content">
@@ -442,7 +423,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v36.0 (Tap to Update)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v37.0 (Tap to Update)</div>
 </div>
 
 <script>
@@ -466,7 +447,7 @@
     // 2. АВТОМАТИЧЕСКОЕ ОБНОВЛЕНИЕ ПРИ ЗАГРУЗКЕ
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=36').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=37').then(reg => {
                 reg.update(); // Проверяем на старте
                 
                 reg.onupdatefound = () => {
@@ -478,6 +459,11 @@
                         }
                     };
                 };
+            });
+
+            // Как только sw.js обновился и перехватил управление -> перезагрузка
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
             });
         });
     }
@@ -502,28 +488,24 @@
     const playersRef = ref(db, 'players');
     const journalRef = ref(db, 'journal');
     
-    // --- СТАТУС ---
+    // --- СТАТУС СЕТИ (ТОЧКА) ---
     const connectedRef = ref(db, ".info/connected");
     const connectionsRef = ref(db, "connections");
 
     onValue(connectedRef, (snap) => {
         const dotMobile = document.getElementById('mobileStatusDot');
         const dotDesktop = document.getElementById('desktopStatusDot');
-        const statusEl = document.getElementById('networkStatus');
         
         if (snap.val() === true) {
             dotMobile.classList.add('online');
             dotDesktop.classList.add('online');
-            statusEl.innerText = "🟢 ONLINE";
-            statusEl.className = "network-badge status-online";
+            
             const con = push(connectionsRef);
             onDisconnect(con).remove();
             set(con, true);
         } else {
             dotMobile.classList.remove('online');
             dotDesktop.classList.remove('online');
-            statusEl.innerText = "🔴 OFFLINE";
-            statusEl.className = "network-badge status-offline";
         }
     });
 
@@ -538,14 +520,14 @@
 
     // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v36'); 
+        const localData = localStorage.getItem('poker_data_v37'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v36', JSON.stringify(data));
+        localStorage.setItem('poker_data_v37', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -609,8 +591,10 @@
         cellHistory.innerText = historyArray.length > 0 ? historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ') : 'Пусто';
 
         const cellDelete = newRow.insertCell(4);
+        
         const wrapper = document.createElement('div');
         wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
+        
         wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
         wrapper.appendChild(createBtn('✕', 'btn-delete', () => { if(confirm("Удалить?")) remove(ref(db, 'players/' + id)); }));
         cellDelete.appendChild(wrapper);
