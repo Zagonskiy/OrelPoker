@@ -1,5 +1,5 @@
-// Версия v33 - Status Dot Indicator
-const CACHE_NAME = 'orelpoker-v33-status-dot';
+// Версия v34 - Preload Logo & Clean Header
+const CACHE_NAME = 'orelpoker-v34-instant';
 const ASSETS = [
     './',
     './index.html',
@@ -32,16 +32,8 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
     e.respondWith(
-        fetch(e.request)
-            .then((response) => {
-                const resClone = response.clone();
-                caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(e.request, resClone);
-                });
-                return response;
-            })
-            .catch(() => {
-                return caches.match(e.request);
-            })
+        caches.match(e.request).then((response) => {
+            return response || fetch(e.request);
+        })
     );
 });
