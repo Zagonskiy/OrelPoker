@@ -38,12 +38,13 @@
             padding-bottom: 60px;
         }
 
-        /* --- LOGIN OVERLAY --- */
+        /* --- LOGIN & REGISTER OVERLAY --- */
         #login-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #2a1b0f; z-index: 9999;
             display: flex; justify-content: center; align-items: center; flex-direction: column;
         }
+        
         .login-card {
             background-image: var(--paper-texture);
             background-color: var(--paper-bg);
@@ -54,27 +55,44 @@
             width: 300px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
+
         .login-card h2 {
             font-family: 'Rye', cursive; color: var(--accent-brown);
             margin-bottom: 20px; border-bottom: 2px double var(--accent-brown);
         }
+
         .login-input {
             width: 100%; padding: 10px; margin-bottom: 15px;
             border: 2px solid var(--accent-brown); background: rgba(255,255,255,0.5);
             font-family: 'Special Elite', monospace; font-size: 1.1em;
             box-sizing: border-box;
         }
+
         .login-checkbox {
             display: flex; align-items: center; justify-content: center;
             gap: 10px; margin-bottom: 20px; font-size: 0.9em; color: var(--accent-brown);
         }
+
         .btn-login-action {
             width: 100%; padding: 12px; margin-bottom: 10px;
             background: var(--accent-green); color: white;
             border: 2px solid #1b5e20; font-family: 'Rye', cursive;
             cursor: pointer; font-size: 1.1em;
+            border-radius: 4px;
         }
-        .btn-register { background: var(--accent-brown); border-color: #5d4037; }
+        
+        .btn-register-link {
+            background: transparent; border: none; color: var(--accent-gold);
+            font-family: 'Rye', cursive; font-size: 1em; cursor: pointer;
+            text-decoration: underline; margin-top: 10px;
+        }
+
+        .btn-back {
+            background: var(--accent-red); border-color: #b71c1c;
+        }
+
+        .error-msg { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
+        /* -------------------- */
 
         .version-tag {
             position: fixed; bottom: 5px; right: 10px; font-size: 0.7em;
@@ -204,7 +222,8 @@
 <body>
 
 <div id="login-overlay">
-    <div class="login-card">
+    
+    <div id="login-view-card" class="login-card">
         <h2>ВХОД В КЛУБ</h2>
         <div class="brand-container" style="border:none; margin:0; padding:0;">
              <img src="./logo.png" class="header-logo-round" style="margin-bottom:15px;">
@@ -215,14 +234,28 @@
         
         <div class="login-checkbox">
             <input type="checkbox" id="rememberMe" style="width:auto;">
-            <label for="rememberMe">Сохранить на устройстве</label>
+            <label for="rememberMe">Запомнить меня</label>
         </div>
         
         <button class="btn-login-action" onclick="handleLogin()">ВОЙТИ</button>
-        <button class="btn-login-action btn-register" onclick="handleRegister()">РЕГИСТРАЦИЯ</button>
+        <button class="btn-register-link" onclick="switchAuthView('register')">Нет аккаунта? Регистрация</button>
         
-        <div id="loginError" style="color:red; margin-top:10px; font-weight:bold;"></div>
+        <div id="loginError" class="error-msg"></div>
     </div>
+
+    <div id="register-view-card" class="login-card hidden">
+        <h2>РЕГИСТРАЦИЯ</h2>
+        
+        <input type="text" id="regNick" class="login-input" placeholder="Придумайте Ник">
+        <input type="password" id="regPass" class="login-input" placeholder="Пароль">
+        <input type="password" id="regPassRepeat" class="login-input" placeholder="Повторите пароль">
+        
+        <button class="btn-login-action btn-register" onclick="handleRegister()">СОЗДАТЬ АККАУНТ</button>
+        <button class="btn-login-action btn-back" onclick="switchAuthView('login')">НАЗАД</button>
+        
+        <div id="regError" class="error-msg"></div>
+    </div>
+
 </div>
 
 <div id="networkStatus" class="network-badge status-offline" style="display:none;">⏳</div>
@@ -249,22 +282,18 @@
 </div>
 
 <div class="main-content">
-    
     <div id="view-game">
         <div class="brand-container">
             <h1 class="header-title">Игорный клуб "Созвездие орла"</h1>
         </div>
-        
         <div class="center-wrap">
             <div id="onlineCounter" class="online-counter">👁️ Онлайн: ...</div>
         </div>
-
         <div class="controls">
             <button class="btn-add" onclick="createNewPlayer()">+ Игрок</button>
             <button class="btn-newday" onclick="startNewDay()">🌅 Новый день</button>
             <button class="btn-journal-add" onclick="addToJournal()">💾 В Журнал</button>
         </div>
-
         <table id="scoreTable">
             <thead>
                 <tr>
@@ -295,11 +324,10 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v46.0 (Accounts)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v47.0 (Auth Update)</div>
 </div>
 
 <script>
-    // --- PWA UPDATE ---
     window.forceUpdate = async function() {
         if (!confirm("Обновить приложение?")) return;
         if ('serviceWorker' in navigator) {
@@ -314,7 +342,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=46').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=47').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -350,13 +378,25 @@
     const journalRef = ref(db, 'journal');
     const usersRef = ref(db, 'users');
 
-    // --- СИСТЕМА АККАУНТОВ ---
+    // --- АВТОРИЗАЦИЯ ---
+
+    window.switchAuthView = function(view) {
+        document.getElementById('loginError').innerText = "";
+        document.getElementById('regError').innerText = "";
+        
+        if(view === 'register') {
+            document.getElementById('login-view-card').classList.add('hidden');
+            document.getElementById('register-view-card').classList.remove('hidden');
+        } else {
+            document.getElementById('register-view-card').classList.add('hidden');
+            document.getElementById('login-view-card').classList.remove('hidden');
+        }
+    }
 
     window.addEventListener('DOMContentLoaded', () => {
         const savedUser = localStorage.getItem('op_user');
         if(savedUser) {
             const user = JSON.parse(savedUser);
-            // Авто-логин, если есть данные
             checkLogin(user.nick, user.pass, true);
         }
     });
@@ -365,30 +405,27 @@
         const nick = document.getElementById('loginNick').value.trim();
         const pass = document.getElementById('loginPass').value.trim();
         const remember = document.getElementById('rememberMe').checked;
-        
-        if(!nick || !pass) { showError("Введите данные"); return; }
+        if(!nick || !pass) { document.getElementById('loginError').innerText = "Введите данные"; return; }
         checkLogin(nick, pass, false, remember);
     }
 
     window.handleRegister = function() {
-        const nick = document.getElementById('loginNick').value.trim();
-        const pass = document.getElementById('loginPass').value.trim();
-        const remember = document.getElementById('rememberMe').checked;
+        const nick = document.getElementById('regNick').value.trim();
+        const pass = document.getElementById('regPass').value.trim();
+        const passRepeat = document.getElementById('regPassRepeat').value.trim();
         
-        if(!nick || !pass) { showError("Введите данные"); return; }
-        
-        // Проверка на существование
+        if(!nick || !pass) { document.getElementById('regError').innerText = "Заполните все поля"; return; }
+        if(pass !== passRepeat) { document.getElementById('regError').innerText = "Пароли не совпадают!"; return; }
+
         get(child(ref(db), `users/${nick}`)).then((snapshot) => {
             if (snapshot.exists()) {
-                showError("Ник уже занят!");
+                document.getElementById('regError').innerText = "Этот ник уже занят!";
             } else {
-                // Создаем аккаунт
-                set(ref(db, 'users/' + nick), {
-                    pass: pass,
-                    created: Date.now()
-                }).then(() => {
-                    alert("Аккаунт создан!");
-                    performLogin(nick, pass, remember);
+                set(ref(db, 'users/' + nick), { pass: pass, created: Date.now() }).then(() => {
+                    alert("Аккаунт создан! Теперь войдите.");
+                    switchAuthView('login');
+                    document.getElementById('loginNick').value = nick;
+                    document.getElementById('loginPass').value = pass;
                 });
             }
         });
@@ -399,30 +436,19 @@
             if (snapshot.exists()) {
                 const userData = snapshot.val();
                 if(userData.pass === pass) {
-                    performLogin(nick, pass, remember || isAuto);
+                    document.getElementById('login-overlay').style.display = 'none';
+                    if(remember) localStorage.setItem('op_user', JSON.stringify({nick, pass}));
                 } else {
-                    if(!isAuto) showError("Неверный пароль");
-                    // Если пароль сменился, а мы пытались авто-войти, стираем старые данные
-                    if(isAuto) localStorage.removeItem('op_user'); 
+                    if(!isAuto) document.getElementById('loginError').innerText = "Неверный пароль";
+                    if(isAuto) localStorage.removeItem('op_user');
                 }
             } else {
-                if(!isAuto) showError("Пользователь не найден");
+                if(!isAuto) document.getElementById('loginError').innerText = "Пользователь не найден";
             }
         }).catch((error) => {
-            // Если офлайн и есть сохраненные данные - пускаем (для работы без инета)
-            if(isAuto) {
-                 document.getElementById('login-overlay').style.display = 'none';
-            } else {
-                 showError("Ошибка сети");
-            }
+            if(isAuto) document.getElementById('login-overlay').style.display = 'none'; 
+            else document.getElementById('loginError').innerText = "Ошибка сети";
         });
-    }
-
-    function performLogin(nick, pass, remember) {
-        document.getElementById('login-overlay').style.display = 'none';
-        if(remember) {
-            localStorage.setItem('op_user', JSON.stringify({nick, pass}));
-        }
     }
 
     window.logout = function() {
@@ -432,11 +458,7 @@
         }
     }
 
-    function showError(msg) {
-        document.getElementById('loginError').innerText = msg;
-    }
-
-    // --- ОСТАЛЬНОЙ КОД ИГРЫ ---
+    // --- ИГРА ---
     
     const connectedRef = ref(db, ".info/connected");
     const connectionsRef = ref(db, "connections");
@@ -448,35 +470,26 @@
         if(statusEl) statusEl.style.display = 'none';
 
         if (snap.val() === true) {
-            dotMobile.classList.add('online');
-            dotDesktop.classList.add('online');
-            const con = push(connectionsRef);
-            onDisconnect(con).remove();
-            set(con, true);
+            dotMobile.classList.add('online'); dotDesktop.classList.add('online');
+            const con = push(connectionsRef); onDisconnect(con).remove(); set(con, true);
         } else {
-            dotMobile.classList.remove('online');
-            dotDesktop.classList.remove('online');
+            dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
         }
     });
 
     onValue(connectionsRef, (snap) => {
-        const countDisplay = document.getElementById('onlineCounter');
-        if (snap.exists()) {
-            countDisplay.innerText = `👁️ Онлайн: ${snap.size}`;
-        } else {
-            countDisplay.innerText = `👁️ Онлайн: 0`;
-        }
+        document.getElementById('onlineCounter').innerText = `👁️ Онлайн: ${snap.exists() ? snap.size : 0}`;
     });
 
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v46'); 
+        const localData = localStorage.getItem('poker_data_v47'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v46', JSON.stringify(data));
+        localStorage.setItem('poker_data_v47', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -559,7 +572,7 @@
         let change = val * multiplier;
         push(ref(db, 'players/' + id + '/history'), change);
         set(ref(db, 'players/' + id + '/redoStack'), null);
-
+        
         const row = inputElem.closest('tr');
         const totalCell = row.querySelector('.score-cell');
         const historyCell = row.querySelector('.history-log');
@@ -679,7 +692,6 @@
         entries.forEach(([id, entry]) => {
             const card = document.createElement('div');
             card.className = 'journal-card';
-            
             const header = document.createElement('div');
             header.className = 'journal-header';
             header.innerHTML = `
@@ -689,7 +701,6 @@
                 </div>
                 <span class="journal-total">Банк: ${entry.grandTotal}</span>
             `;
-            
             const details = document.createElement('div');
             details.className = 'journal-details';
             let detailsHtml = `<div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px; display:flex; justify-content:space-between;"><span>Игрок</span><span>Итог</span></div>`;
