@@ -22,6 +22,7 @@
             --accent-undo: #d4af37;
             --accent-redo: #008b8b;
             --accent-purple: #6a0dad;
+            --accent-orange: #e65100; /* Цвет для сброса игрока */
         }
 
         body {
@@ -234,6 +235,27 @@
             cursor: pointer;
         }
 
+        /* Кнопка сброса игрока */
+        .btn-reset-player {
+            background-color: var(--accent-orange);
+            color: white;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 30px; height: 30px; padding: 0;
+            border: 2px solid #bf360c;
+            font-family: sans-serif;
+            cursor: pointer;
+        }
+        .btn-reset-player:hover { background-color: #ff6d00; }
+
+        /* Ячейка для кнопок удаления */
+        .actions-cell-right {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            align-items: center;
+        }
+
         table { width: 100%; border-collapse: separate; border-spacing: 0 10px; margin-top: 10px; }
         th { padding: 15px 10px; text-align: left; background-color: #6b523d; color: var(--accent-gold); font-family: 'Rye', cursive; letter-spacing: 1px; border-top: 3px solid #3e2b1f; border-bottom: 3px solid #3e2b1f; }
         tbody tr { background-color: rgba(255, 255, 255, 0.4); box-shadow: 2px 2px 4px rgba(0,0,0,0.1); border: 1px solid var(--accent-brown); }
@@ -250,16 +272,7 @@
 
         @media screen and (max-width: 768px) {
             .brand-container { flex-direction: column; gap: 10px; }
-            
-            /* --- ИСПРАВЛЕНИЕ ЗДЕСЬ: ДОБАВИЛ ОТСТУП СВЕРХУ ДЛЯ ЗАГОЛОВКА --- */
-            .header-title { 
-                margin-right: 0; 
-                font-size: 1.8em; 
-                padding-top: 15px; /* Чтобы "й" не залезала наверх */
-                line-height: 1.4;
-            }
-            /* ------------------------------------------------------------- */
-
+            .header-title { margin-right: 0; font-size: 1.8em; padding-top: 15px; line-height: 1.4; }
             .container { padding: 10px; border-width: 5px; }
             table, thead, tbody, th, td, tr { display: block; }
             thead tr { position: absolute; top: -9999px; left: -9999px; }
@@ -286,7 +299,7 @@
 <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 <div id="networkStatus" class="network-badge status-offline">⏳ Connect...</div>
 
-<div class="version-tag">OrelPoker v26.0</div>
+<div class="version-tag">OrelPoker v27.0</div>
 
 <div class="container">
     
@@ -340,7 +353,7 @@
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
                     newWorker.onstatechange = () => {
-                       // Ожидаем смены контроллера
+                       // Waiting for controller change
                     };
                 };
             });
@@ -396,14 +409,14 @@
     });
 
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v26'); 
+        const localData = localStorage.getItem('poker_data_v27'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v26', JSON.stringify(data));
+        localStorage.setItem('poker_data_v27', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -477,9 +490,17 @@
         }
 
         const cellDelete = newRow.insertCell(4);
+        cellDelete.className = 'actions-cell-right'; // Применяем класс для flexbox
+        
+        // Кнопка сброса игрока
+        const btnResetPlayer = createBtn('♻️', 'btn-reset-player', () => resetPlayer(id));
+        
+        // Кнопка удаления игрока
         const btnDelete = createBtn('✕', 'btn-delete', () => {
             if(confirm("Удалить запись навсегда?")) remove(ref(db, 'players/' + id));
         });
+        
+        cellDelete.appendChild(btnResetPlayer);
         cellDelete.appendChild(btnDelete);
     }
 
@@ -554,6 +575,21 @@
 
     window.createNewPlayer = function() {
         push(playersRef, { name: "Новый игрок", history: {} });
+    }
+
+    // НОВАЯ ФУНКЦИЯ: Сброс одного игрока
+    window.resetPlayer = function(id) {
+        const pass = prompt("Сбросить этого игрока в 0?\nВведите код:");
+        if (pass !== "108020") {
+            if(pass !== null) alert("Неверный код!");
+            return;
+        }
+        
+        // Очищаем историю и redo для конкретного игрока
+        update(ref(db, 'players/' + id), {
+            history: null,
+            redoStack: null
+        });
     }
 
     window.extremeReset = async function() {
