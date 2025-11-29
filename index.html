@@ -44,7 +44,6 @@
             background: #2a1b0f; z-index: 9999;
             display: flex; justify-content: center; align-items: center; flex-direction: column;
         }
-        
         .login-card {
             background-image: var(--paper-texture);
             background-color: var(--paper-bg);
@@ -55,24 +54,20 @@
             width: 300px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
-
         .login-card h2 {
             font-family: 'Rye', cursive; color: var(--accent-brown);
             margin-bottom: 20px; border-bottom: 2px double var(--accent-brown);
         }
-
         .login-input {
             width: 100%; padding: 10px; margin-bottom: 15px;
             border: 2px solid var(--accent-brown); background: rgba(255,255,255,0.5);
             font-family: 'Special Elite', monospace; font-size: 1.1em;
             box-sizing: border-box;
         }
-
         .login-checkbox {
             display: flex; align-items: center; justify-content: center;
             gap: 10px; margin-bottom: 20px; font-size: 0.9em; color: var(--accent-brown);
         }
-
         .btn-login-action {
             width: 100%; padding: 12px; margin-bottom: 10px;
             background: var(--accent-green); color: white;
@@ -320,7 +315,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v50.0 (Offline Auth)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v51.0 (Robust Offline Auth)</div>
 </div>
 
 <script>
@@ -338,7 +333,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=50').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=51').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -374,7 +369,7 @@
     const journalRef = ref(db, 'journal');
     const usersRef = ref(db, 'users');
 
-    // --- АВТОРИЗАЦИЯ ---
+    // --- АВТОРИЗАЦИЯ (ИСПРАВЛЕННАЯ) ---
 
     window.switchAuthView = function(view) {
         document.getElementById('loginError').innerText = "";
@@ -427,17 +422,39 @@
         });
     }
     
-    // --- ГЛАВНОЕ ИЗМЕНЕНИЕ: ЛОГИКА ВХОДА (ОФЛАЙН/ОНЛАЙН) ---
-    function checkLogin(nick, pass, isAuto, remember = false) {
+    // --- ГЛАВНОЕ ИЗМЕНЕНИЕ: УМНЫЙ ВХОД (ОФЛАЙН/ОНЛАЙН) ---
+    async function checkLogin(nick, pass, isAuto, remember = false) {
         
-        // 1. Сначала проверяем онлайн
-        get(child(ref(db), `users/${nick}`)).then((snapshot) => {
+        // 1. Вспомогательная функция проверки локально
+        const tryLocalLogin = () => {
+            const knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
+            if (knownUsers[nick] && knownUsers[nick] === pass) {
+                performLogin(nick, pass, remember || isAuto);
+                return true;
+            }
+            return false;
+        };
+
+        // 2. Если браузер говорит "нет сети" - сразу пробуем локально
+        if (!navigator.onLine) {
+            if (!tryLocalLogin()) {
+                if(!isAuto) document.getElementById('loginError').innerText = "Нет сети и данные не сохранены";
+            }
+            return;
+        }
+
+        // 3. Если сеть есть, пробуем Firebase с тайм-аутом 3 сек
+        // (на случай "висячего" интернета)
+        try {
+            const snapshot = await Promise.race([
+                get(child(ref(db), `users/${nick}`)),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
+            ]);
+
             if (snapshot.exists()) {
                 const userData = snapshot.val();
                 if(userData.pass === pass) {
-                    // УСПЕХ ОНЛАЙН
-                    
-                    // Сохраняем в список известных пользователей для будущего офлайна
+                    // Успех онлайн -> Сохраняем в "известные"
                     let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
                     knownUsers[nick] = pass;
                     localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
@@ -450,17 +467,12 @@
             } else {
                 if(!isAuto) document.getElementById('loginError').innerText = "Пользователь не найден";
             }
-        }).catch((error) => {
-            // 2. ЕСЛИ ОШИБКА СЕТИ (ОФЛАЙН) - ПРОВЕРЯЕМ ЛОКАЛЬНО
-            const knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
-            
-            if (knownUsers[nick] && knownUsers[nick] === pass) {
-                // УСПЕХ ОФЛАЙН
-                performLogin(nick, pass, remember || isAuto);
-            } else {
-                if(!isAuto) document.getElementById('loginError').innerText = "Ошибка сети (Войдите онлайн хотя бы раз)";
+        } catch (error) {
+            // Ошибка сети или тайм-аут -> пробуем локально
+            if (!tryLocalLogin()) {
+                if(!isAuto) document.getElementById('loginError').innerText = "Ошибка сети. Войдите онлайн хотя бы раз.";
             }
-        });
+        }
     }
 
     function performLogin(nick, pass, remember) {
@@ -503,14 +515,14 @@
     });
 
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v50'); 
+        const localData = localStorage.getItem('poker_data_v51'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v50', JSON.stringify(data));
+        localStorage.setItem('poker_data_v51', JSON.stringify(data));
         renderTable(data);
     });
 
