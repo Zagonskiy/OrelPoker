@@ -40,14 +40,9 @@
 
         /* --- LOGIN OVERLAY --- */
         #login-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #2a1b0f;
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #2a1b0f; z-index: 9999;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
         }
         .login-card {
             background-image: var(--paper-texture);
@@ -60,50 +55,30 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
         .login-card h2 {
-            font-family: 'Rye', cursive;
-            color: var(--accent-brown);
-            margin-bottom: 20px;
-            border-bottom: 2px double var(--accent-brown);
+            font-family: 'Rye', cursive; color: var(--accent-brown);
+            margin-bottom: 20px; border-bottom: 2px double var(--accent-brown);
         }
         .login-input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 2px solid var(--accent-brown);
-            background: rgba(255,255,255,0.5);
-            font-family: 'Special Elite', monospace;
-            font-size: 1.1em;
+            width: 100%; padding: 10px; margin-bottom: 15px;
+            border: 2px solid var(--accent-brown); background: rgba(255,255,255,0.5);
+            font-family: 'Special Elite', monospace; font-size: 1.1em;
             box-sizing: border-box;
         }
         .login-checkbox {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            font-size: 0.9em;
-            color: var(--accent-brown);
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px; margin-bottom: 20px; font-size: 0.9em; color: var(--accent-brown);
         }
         .btn-login-action {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 10px;
-            background: var(--accent-green);
-            color: white;
-            border: 2px solid #1b5e20;
-            font-family: 'Rye', cursive;
-            cursor: pointer;
-            font-size: 1.1em;
+            width: 100%; padding: 12px; margin-bottom: 10px;
+            background: var(--accent-green); color: white;
+            border: 2px solid #1b5e20; font-family: 'Rye', cursive;
+            cursor: pointer; font-size: 1.1em;
         }
-        .btn-register {
-            background: var(--accent-brown);
-            border-color: #5d4037;
-        }
-        /* -------------------- */
+        .btn-register { background: var(--accent-brown); border-color: #5d4037; }
 
         .version-tag {
-            position: fixed; bottom: 5px; right: 10px; font-size: 0.7em; color: #5a3a22;
-            font-family: 'Special Elite', monospace; z-index: 2000;
+            position: fixed; bottom: 5px; right: 10px; font-size: 0.7em;
+            color: #5a3a22; font-family: 'Special Elite', monospace; z-index: 2000;
             background: rgba(244, 228, 188, 0.9); padding: 2px 6px;
             border-radius: 4px; border: 1px solid #8b4513; pointer-events: none; opacity: 0.8;
         }
@@ -115,7 +90,6 @@
         }
         .btn-extreme-reset:hover { background-color: #ff0000; color: white; box-shadow: 0 0 15px rgba(255, 0, 0, 0.5); }
 
-        /* Кнопка выхода */
         .btn-logout {
             margin-top: 10px; background-color: var(--accent-brown); color: var(--accent-gold);
             border: 1px solid var(--accent-gold); padding: 10px; font-family: 'Rye', cursive;
@@ -321,7 +295,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v45.0 (Accounts)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v46.0 (Accounts)</div>
 </div>
 
 <script>
@@ -340,7 +314,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=45').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=46').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -374,16 +348,15 @@
     const db = getDatabase(app);
     const playersRef = ref(db, 'players');
     const journalRef = ref(db, 'journal');
-    const usersRef = ref(db, 'users'); // Новая ветка для пользователей
+    const usersRef = ref(db, 'users');
 
-    // --- ЛОГИКА АККАУНТОВ ---
+    // --- СИСТЕМА АККАУНТОВ ---
 
-    // Проверка при запуске
     window.addEventListener('DOMContentLoaded', () => {
         const savedUser = localStorage.getItem('op_user');
         if(savedUser) {
             const user = JSON.parse(savedUser);
-            // Пытаемся авто-войти
+            // Авто-логин, если есть данные
             checkLogin(user.nick, user.pass, true);
         }
     });
@@ -393,10 +366,7 @@
         const pass = document.getElementById('loginPass').value.trim();
         const remember = document.getElementById('rememberMe').checked;
         
-        if(!nick || !pass) {
-            showError("Введите ник и пароль");
-            return;
-        }
+        if(!nick || !pass) { showError("Введите данные"); return; }
         checkLogin(nick, pass, false, remember);
     }
 
@@ -405,22 +375,19 @@
         const pass = document.getElementById('loginPass').value.trim();
         const remember = document.getElementById('rememberMe').checked;
         
-        if(!nick || !pass) {
-            showError("Заполните все поля");
-            return;
-        }
+        if(!nick || !pass) { showError("Введите данные"); return; }
         
-        // Проверяем, есть ли такой юзер
+        // Проверка на существование
         get(child(ref(db), `users/${nick}`)).then((snapshot) => {
             if (snapshot.exists()) {
-                showError("Ник занят!");
+                showError("Ник уже занят!");
             } else {
-                // Создаем юзера
+                // Создаем аккаунт
                 set(ref(db, 'users/' + nick), {
-                    pass: pass, // В реальном проекте тут нужен хэш! Но для закрытого клуба сойдет.
+                    pass: pass,
                     created: Date.now()
                 }).then(() => {
-                    alert("Регистрация успешна!");
+                    alert("Аккаунт создан!");
                     performLogin(nick, pass, remember);
                 });
             }
@@ -432,37 +399,44 @@
             if (snapshot.exists()) {
                 const userData = snapshot.val();
                 if(userData.pass === pass) {
-                    performLogin(nick, pass, remember || isAuto); // Если автологин, сохраняем состояние
+                    performLogin(nick, pass, remember || isAuto);
                 } else {
                     if(!isAuto) showError("Неверный пароль");
+                    // Если пароль сменился, а мы пытались авто-войти, стираем старые данные
+                    if(isAuto) localStorage.removeItem('op_user'); 
                 }
             } else {
-                if(!isAuto) showError("Игрок не найден");
+                if(!isAuto) showError("Пользователь не найден");
             }
         }).catch((error) => {
-            if(!isAuto) showError("Ошибка сети");
+            // Если офлайн и есть сохраненные данные - пускаем (для работы без инета)
+            if(isAuto) {
+                 document.getElementById('login-overlay').style.display = 'none';
+            } else {
+                 showError("Ошибка сети");
+            }
         });
     }
 
     function performLogin(nick, pass, remember) {
-        document.getElementById('login-overlay').style.display = 'none'; // Скрываем шторку
+        document.getElementById('login-overlay').style.display = 'none';
         if(remember) {
             localStorage.setItem('op_user', JSON.stringify({nick, pass}));
         }
     }
 
     window.logout = function() {
-        localStorage.removeItem('op_user');
-        location.reload();
+        if(confirm("Выйти из аккаунта?")) {
+            localStorage.removeItem('op_user');
+            location.reload();
+        }
     }
 
     function showError(msg) {
         document.getElementById('loginError').innerText = msg;
     }
 
-    // ------------------------
-
-    // --- ДАЛЕЕ СТАРЫЙ КОД ИГРЫ ---
+    // --- ОСТАЛЬНОЙ КОД ИГРЫ ---
     
     const connectedRef = ref(db, ".info/connected");
     const connectionsRef = ref(db, "connections");
@@ -495,14 +469,14 @@
     });
 
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v45'); 
+        const localData = localStorage.getItem('poker_data_v46'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v45', JSON.stringify(data));
+        localStorage.setItem('poker_data_v46', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -583,11 +557,9 @@
         let val = parseFloat(inputElem.value);
         if (isNaN(val)) return;
         let change = val * multiplier;
-        // Push вместо Transaction (для офлайна)
         push(ref(db, 'players/' + id + '/history'), change);
         set(ref(db, 'players/' + id + '/redoStack'), null);
 
-        // Optimistic UI
         const row = inputElem.closest('tr');
         const totalCell = row.querySelector('.score-cell');
         const historyCell = row.querySelector('.history-log');
@@ -707,6 +679,7 @@
         entries.forEach(([id, entry]) => {
             const card = document.createElement('div');
             card.className = 'journal-card';
+            
             const header = document.createElement('div');
             header.className = 'journal-header';
             header.innerHTML = `
@@ -716,6 +689,7 @@
                 </div>
                 <span class="journal-total">Банк: ${entry.grandTotal}</span>
             `;
+            
             const details = document.createElement('div');
             details.className = 'journal-details';
             let detailsHtml = `<div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px; display:flex; justify-content:space-between;"><span>Игрок</span><span>Итог</span></div>`;
@@ -736,4 +710,50 @@
     }
 
     window.showView = function(viewName) {
-        document.getElementById('sidebar').classList.remove
+        document.getElementById('sidebar').classList.remove('open');
+        if (viewName === 'game') {
+            document.getElementById('view-game').classList.remove('hidden');
+            document.getElementById('view-journal').classList.add('hidden');
+            document.querySelectorAll('.nav-btn')[0].classList.add('active');
+            document.querySelectorAll('.nav-btn')[1].classList.remove('active');
+        } else {
+            document.getElementById('view-game').classList.add('hidden');
+            document.getElementById('view-journal').classList.remove('hidden');
+            document.querySelectorAll('.nav-btn')[0].classList.remove('active');
+            document.querySelectorAll('.nav-btn')[1].classList.add('active');
+        }
+    }
+
+    window.downloadCSV = function() {
+        const rows = document.querySelectorAll('#scoreTable tbody tr');
+        if (rows.length === 0) { alert("Пусто!"); return; }
+        const selectedDate = document.getElementById('gameDate').value;
+        let formattedDate = selectedDate;
+        if(selectedDate) {
+             const parts = selectedDate.split('-');
+             formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
+        }
+        let csvContent = `Дата выписки:;${formattedDate}\n\n`;
+        csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n";
+        rows.forEach(row => {
+            let name = row.querySelector('.player-name').value.trim();
+            if (!name) name = "Без имени";
+            let total = row.querySelector('.score-cell').innerText;
+            let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); 
+            csvContent += `"${name}";${total};${opsString}\n`;
+        });
+        let grandTotal = document.getElementById('grandTotal').innerText;
+        csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`;
+        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Выписка за ${formattedDate}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+
+</body>
+</html>
