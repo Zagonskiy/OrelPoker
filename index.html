@@ -38,6 +38,26 @@
             overflow: hidden; 
         }
 
+        /* --- СТАТУСНАЯ ТОЧКА --- */
+        .status-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #d32f2f; /* Красный по умолчанию (офлайн) */
+            border: 2px solid rgba(0,0,0,0.3);
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+        
+        .status-dot.online {
+            background-color: #00e676; /* Ярко-зеленый */
+            box-shadow: 0 0 8px #00e676;
+            border-color: #1b5e20;
+        }
+
         /* --- SIDEBAR --- */
         .sidebar {
             width: var(--sidebar-width);
@@ -53,7 +73,11 @@
 
         .sidebar-logo { text-align: center; margin-bottom: 40px; }
         .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
-        .sidebar-title { font-family: 'Rye', cursive; color: var(--accent-gold); font-size: 1.2em; margin-top: 10px; text-transform: uppercase; }
+        .sidebar-title { 
+            font-family: 'Rye', cursive; color: var(--accent-gold); font-size: 1.2em; 
+            margin-top: 10px; text-transform: uppercase; 
+            display: flex; align-items: center; justify-content: center;
+        }
 
         .nav-btn {
             background: transparent; border: 1px solid var(--accent-brown); color: #d4c5a3;
@@ -79,6 +103,7 @@
             background: var(--accent-brown); color: var(--accent-gold);
             border: 2px solid #5a3a22; padding: 5px 10px; font-size: 1.5em;
             z-index: 3000; border-radius: 4px; cursor: pointer;
+            line-height: 1;
         }
 
         /* --- ОБЩИЕ СТИЛИ --- */
@@ -104,8 +129,38 @@
         }
         .center-wrap { text-align: center; }
 
-        .controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
-        
+        .date-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: rgba(139, 69, 19, 0.1);
+            padding: 10px;
+            border: 2px dashed var(--accent-brown);
+            flex-wrap: wrap;
+        }
+        .date-section label { font-weight: bold; font-size: 1.2em; color: var(--accent-brown); }
+        input[type="date"] {
+            padding: 8px;
+            border: 2px solid var(--accent-brown);
+            background-color: #f9f3e3;
+            font-family: 'Special Elite', monospace;
+            color: var(--ink-color);
+            outline: none;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            margin-bottom: 25px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--accent-brown);
+        }
+
         button {
             padding: 10px 15px; border: 2px solid rgba(0,0,0,0.3); border-radius: 3px;
             cursor: pointer; font-family: 'Rye', cursive; text-transform: uppercase;
@@ -152,14 +207,15 @@
         .hidden { display: none; }
         .version-tag { position: fixed; bottom: 5px; right: 5px; font-size: 0.6em; opacity: 0.7; pointer-events: none; z-index: 5000; }
 
-        /* --- НОВЫЙ ДИЗАЙН МОБИЛЬНЫХ КАРТОЧЕК --- */
+        /* --- МОБИЛЬНЫЙ ДИЗАЙН --- */
         @media screen and (max-width: 768px) {
             .sidebar { position: fixed; height: 100%; left: 0; top: 0; transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); }
             .menu-toggle { display: block; }
             .main-content { padding-top: 50px; }
             
-            .header-title { font-size: 1.6em; padding-top: 15px; }
+            .brand-container { flex-direction: column; gap: 10px; }
+            .header-title { margin-right: 0; font-size: 1.8em; padding-top: 15px; line-height: 1.4; }
             
             /* Скрываем заголовки таблицы */
             thead { display: none; }
@@ -172,90 +228,26 @@
                 border-radius: 8px;
                 margin-bottom: 20px;
                 padding: 10px;
-                position: relative; /* Для кнопок удаления */
+                position: relative;
                 box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
             }
 
             td { padding: 5px 0; border: none; text-align: center; }
 
-            /* 1. Имя */
-            td:nth-of-type(1) {
-                text-align: left;
-                padding-right: 70px; /* Место под кнопки */
-                border-bottom: 2px solid rgba(139, 69, 19, 0.2);
-                margin-bottom: 10px;
-            }
-            td:nth-of-type(1) input {
-                font-weight: bold;
-                font-size: 1.3em;
-                color: var(--accent-brown);
-                border-bottom: none;
-            }
+            td:nth-of-type(1) { text-align: left; padding-right: 70px; border-bottom: 2px solid rgba(139, 69, 19, 0.2); margin-bottom: 10px; }
+            td:nth-of-type(1) input { font-weight: bold; font-size: 1.3em; color: var(--accent-brown); border-bottom: none; }
 
-            /* 2. Кнопки управления */
-            td:nth-of-type(2) {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                background: rgba(0,0,0,0.05);
-                border-radius: 6px;
-                padding: 8px;
-                margin-bottom: 10px;
-            }
-            .input-val {
-                background: #fff;
-                width: 55px;
-                height: 35px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                font-size: 1.1em;
-            }
+            td:nth-of-type(2) { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.05); border-radius: 6px; padding: 8px; margin-bottom: 10px; }
+            .input-val { background: #fff; width: 55px; height: 35px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.1em; }
 
-            /* 3. Итог */
-            td:nth-of-type(3) {
-                font-size: 2.2em;
-                font-weight: bold;
-                color: var(--accent-red);
-                margin: 5px 0;
-            }
-            /* Лейбл над цифрой */
-            td:nth-of-type(3)::before {
-                content: "Баланс";
-                display: block;
-                font-size: 0.4em;
-                color: #8b4513;
-                text-transform: uppercase;
-                letter-spacing: 2px;
-                margin-bottom: -5px;
-            }
+            td:nth-of-type(3) { font-size: 2.2em; font-weight: bold; color: var(--accent-red); margin: 5px 0; }
+            td:nth-of-type(3)::before { content: "Баланс"; display: block; font-size: 0.4em; color: #8b4513; text-transform: uppercase; letter-spacing: 2px; margin-bottom: -5px; }
 
-            /* 4. История */
-            td:nth-of-type(4) {
-                font-size: 0.8em;
-                color: #666;
-                background: rgba(255,255,255,0.5);
-                padding: 5px;
-                border-radius: 4px;
-                max-width: 100%;
-            }
+            td:nth-of-type(4) { font-size: 0.8em; color: #666; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 4px; max-width: 100%; }
 
-            /* 5. Кнопки удаления/сброса (Абсолютно в углу) */
-            td:nth-of-type(5) {
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                display: flex;
-                gap: 5px;
-                padding: 0;
-            }
-            /* Уменьшаем кнопки в углу */
-            .btn-reset-player, .btn-delete {
-                width: 28px; 
-                height: 28px;
-                font-size: 0.9em;
-            }
+            td:nth-of-type(5) { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; padding: 0; }
+            .btn-reset-player, .btn-delete { width: 28px; height: 28px; font-size: 0.9em; }
 
-            /* Футер с общим итогом */
             tfoot { margin-top: 10px; }
             tfoot tr { display: flex; justify-content: space-between; padding: 15px; border-radius: 8px; align-items: center; }
             tfoot td:nth-child(4), tfoot td:nth-child(5) { display: none; }
@@ -266,12 +258,17 @@
 </head>
 <body>
 
-<button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+<button class="menu-toggle" onclick="toggleSidebar()">
+    ☰ <span id="mobileStatusDot" class="status-dot"></span>
+</button>
 
 <div class="sidebar" id="sidebar">
     <div class="sidebar-logo">
         <img src="./logo.png" alt="Лого">
-        <div class="sidebar-title">Созвездие Орла</div>
+        <div class="sidebar-title">
+            Созвездие Орла
+            <span id="desktopStatusDot" class="status-dot"></span>
+        </div>
     </div>
     
     <button class="nav-btn active" onclick="showView('game')">🎲 Игровой стол</button>
@@ -330,37 +327,17 @@
         </div>
     </div>
 
-    <div class="version-tag">v32.0 (Mobile Cards)</div>
+    <div class="version-tag">v33.0 (Status Dot)</div>
 </div>
 
 <script>
-    // --- UI ЛОГИКА ---
-    function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('open');
-    }
-
-    function showView(viewName) {
-        document.getElementById('sidebar').classList.remove('open');
-        if (viewName === 'game') {
-            document.getElementById('view-game').classList.remove('hidden');
-            document.getElementById('view-journal').classList.add('hidden');
-            document.querySelectorAll('.nav-btn')[0].classList.add('active');
-            document.querySelectorAll('.nav-btn')[1].classList.remove('active');
-        } else {
-            document.getElementById('view-game').classList.add('hidden');
-            document.getElementById('view-journal').classList.remove('hidden');
-            document.querySelectorAll('.nav-btn')[0].classList.remove('active');
-            document.querySelectorAll('.nav-btn')[1].classList.add('active');
-        }
-    }
-
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=32').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=33').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
-                    newWorker.onstatechange = () => {};
+                    newWorker.onstatechange = () => { };
                 };
             });
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
@@ -387,28 +364,46 @@
     const playersRef = ref(db, 'players');
     const journalRef = ref(db, 'journal');
     
+    // --- СТАТУС СЕТИ (ТОЧКА) ---
     const connectedRef = ref(db, ".info/connected");
     const connectionsRef = ref(db, "connections");
+
     onValue(connectedRef, (snap) => {
+        // Находим обе точки
+        const dotMobile = document.getElementById('mobileStatusDot');
+        const dotDesktop = document.getElementById('desktopStatusDot');
+        
         if (snap.val() === true) {
+            dotMobile.classList.add('online');
+            dotDesktop.classList.add('online');
+            
             const con = push(connectionsRef);
             onDisconnect(con).remove();
             set(con, true);
+        } else {
+            dotMobile.classList.remove('online');
+            dotDesktop.classList.remove('online');
         }
     });
+
     onValue(connectionsRef, (snap) => {
-        document.getElementById('onlineCounter').innerText = `👁️ Онлайн: ${snap.exists() ? snap.size : 0}`;
+        const countDisplay = document.getElementById('onlineCounter');
+        if (snap.exists()) {
+            countDisplay.innerText = `👁️ Онлайн: ${snap.size}`;
+        } else {
+            countDisplay.innerText = `👁️ Онлайн: 0`;
+        }
     });
 
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v32'); 
+        const localData = localStorage.getItem('poker_data_v33'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v32', JSON.stringify(data));
+        localStorage.setItem('poker_data_v33', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -473,12 +468,7 @@
 
         const cellDelete = newRow.insertCell(4);
         
-        // ВАЖНО: Удаляем классы и обертки, оставляем чистый append для мобильных стилей
-        // НО, так как у нас теперь absolute positioning на мобилах, нам не нужна обертка div wrapper 
-        // для десктопа лучше оставить wrapper
-        
         const wrapper = document.createElement('div');
-        // Стили для десктопа (на мобилах они перекроются абсолютным позиционированием ячейки)
         wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
         
         wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
@@ -572,6 +562,7 @@
         ["EAGLE_THUNDER", "Zagonskiy", "ceme4ko", "Леонид Стручков", "Машмар", "Егор", "Федя"].forEach(n => push(playersRef, { name: n, history: {} }));
     }
 
+    // --- ЖУРНАЛ ---
     window.addToJournal = async function() {
         if(!confirm("В Журнал?")) return;
         const snapshot = await get(playersRef);
@@ -626,6 +617,26 @@
             listDiv.appendChild(card);
         });
     });
+
+    // --- UI ЛОГИКА ---
+    window.toggleSidebar = function() {
+        document.getElementById('sidebar').classList.toggle('open');
+    }
+
+    window.showView = function(viewName) {
+        document.getElementById('sidebar').classList.remove('open');
+        if (viewName === 'game') {
+            document.getElementById('view-game').classList.remove('hidden');
+            document.getElementById('view-journal').classList.add('hidden');
+            document.querySelectorAll('.nav-btn')[0].classList.add('active');
+            document.querySelectorAll('.nav-btn')[1].classList.remove('active');
+        } else {
+            document.getElementById('view-game').classList.add('hidden');
+            document.getElementById('view-journal').classList.remove('hidden');
+            document.querySelectorAll('.nav-btn')[0].classList.remove('active');
+            document.querySelectorAll('.nav-btn')[1].classList.add('active');
+        }
+    }
 </script>
 
 </body>
