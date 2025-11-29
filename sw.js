@@ -1,5 +1,5 @@
-// Я изменил версию кэша на v5 - это заставит телефон обновить код
-const CACHE_NAME = 'orelpoker-v5-force-update';
+// Версия v8 - Fix Offline UI
+const CACHE_NAME = 'orelpoker-v8-offline-fix';
 const ASSETS = [
     './',
     './index.html',
@@ -8,7 +8,7 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-    self.skipWaiting(); // Новая версия сразу вступает в силу
+    self.skipWaiting();
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(ASSETS);
@@ -17,7 +17,6 @@ self.addEventListener('install', (e) => {
 });
 
 self.addEventListener('activate', (e) => {
-    // Удаляем старый кэш, чтобы не мешал
     e.waitUntil(
         caches.keys().then((keyList) => {
             return Promise.all(keyList.map((key) => {
