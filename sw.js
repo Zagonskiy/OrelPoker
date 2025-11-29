@@ -1,5 +1,5 @@
-// Версия v61 - Display Name & Edit Pencil
-const CACHE_NAME = 'orelpoker-v61-displayname';
+// Версия v62 - Fix Nickname Edit Logic
+const CACHE_NAME = 'orelpoker-v62-nick-fix';
 const ASSETS = [
     './',
     './index.html',
