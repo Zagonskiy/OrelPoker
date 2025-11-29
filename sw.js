@@ -1,5 +1,5 @@
-// Версия v66 - Fix Mobile Footer Style (Light)
-const CACHE_NAME = 'orelpoker-v66-footer-light';
+// Версия v64 - Fix Online Status after Rename
+const CACHE_NAME = 'orelpoker-v64-status-fix';
 const ASSETS = [
     './',
     './index.html',
