@@ -290,7 +290,7 @@
 <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 <div id="networkStatus" class="network-badge status-offline">⏳ Connect...</div>
 
-<div class="version-tag">OrelPoker v29.0</div>
+<div class="version-tag">OrelPoker v30.0</div>
 
 <div class="container">
     
@@ -339,29 +339,17 @@
 <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            // ИСПОЛЬЗУЕМ ВЕРСИЮ v=29 ЧТОБЫ СБРОСИТЬ КЭШ БРАУЗЕРА
-            navigator.serviceWorker.register('./sw.js?v=29').then(reg => {
-                
-                // Проверяем обновления при каждой загрузке
+            navigator.serviceWorker.register('./sw.js?v=30').then(reg => {
                 reg.update();
-
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
                     newWorker.onstatechange = () => {
-                        // Ждем смены контроллера
+                        // Ожидаем смены контроллера
                     };
                 };
             });
-
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 window.location.reload();
-            });
-
-            // Проверяем обновления, когда пользователь возвращается на вкладку
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible') {
-                    navigator.serviceWorker.ready.then(reg => reg.update());
-                }
             });
         });
     }
@@ -385,7 +373,6 @@
     const db = getDatabase(app);
     const playersRef = ref(db, 'players');
     
-    // --- СТАТУС СЕТИ + СЧЕТЧИК ОНЛАЙНА ---
     const connectedRef = ref(db, ".info/connected");
     const connectionsRef = ref(db, "connections");
 
@@ -406,23 +393,21 @@
     onValue(connectionsRef, (snap) => {
         const countDisplay = document.getElementById('onlineCounter');
         if (snap.exists()) {
-            const count = snap.size;
-            countDisplay.innerText = `👁️ Онлайн: ${count}`;
+            countDisplay.innerText = `👁️ Онлайн: ${snap.size}`;
         } else {
             countDisplay.innerText = `👁️ Онлайн: 0`;
         }
     });
 
-    // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v29'); 
+        const localData = localStorage.getItem('poker_data_v30'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v29', JSON.stringify(data));
+        localStorage.setItem('poker_data_v30', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -636,4 +621,45 @@
 
     function initDefaultPlayers() {
         const defaultPlayers = ["EAGLE_THUNDER", "Zagonskiy", "ceme4ko", "Леонид Стручков", "Машмар", "Егор", "Федя"];
-        defaultPlayers.forEach
+        defaultPlayers.forEach(name => { push(playersRef, { name: name, history: {} }); });
+    }
+    
+    window.onload = function() {
+        const dateInput = document.getElementById('gameDate');
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+    }
+
+    window.downloadCSV = function() {
+        const rows = document.querySelectorAll('#scoreTable tbody tr');
+        if (rows.length === 0) { alert("Пусто!"); return; }
+        const selectedDate = document.getElementById('gameDate').value;
+        let formattedDate = selectedDate;
+        if(selectedDate) {
+             const parts = selectedDate.split('-');
+             formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
+        }
+        let csvContent = `Дата выписки:;${formattedDate}\n\n`;
+        csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n";
+        rows.forEach(row => {
+            let name = row.querySelector('.player-name').value.trim();
+            if (!name) name = "Без имени";
+            let total = row.querySelector('.score-cell').innerText;
+            let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); 
+            csvContent += `"${name}";${total};${opsString}\n`;
+        });
+        let grandTotal = document.getElementById('grandTotal').innerText;
+        csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`;
+        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Выписка за ${formattedDate}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+
+</body>
+</html>
