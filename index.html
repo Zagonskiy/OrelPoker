@@ -22,7 +22,7 @@
             --accent-undo: #d4af37;
             --accent-redo: #008b8b;
             --accent-purple: #6a0dad;
-            --accent-orange: #e65100; /* Цвет для сброса игрока */
+            --accent-orange: #e65100;
         }
 
         body {
@@ -235,7 +235,6 @@
             cursor: pointer;
         }
 
-        /* Кнопка сброса игрока */
         .btn-reset-player {
             background-color: var(--accent-orange);
             color: white;
@@ -247,14 +246,6 @@
             cursor: pointer;
         }
         .btn-reset-player:hover { background-color: #ff6d00; }
-
-        /* Ячейка для кнопок удаления */
-        .actions-cell-right {
-            display: flex;
-            gap: 5px;
-            justify-content: center;
-            align-items: center;
-        }
 
         table { width: 100%; border-collapse: separate; border-spacing: 0 10px; margin-top: 10px; }
         th { padding: 15px 10px; text-align: left; background-color: #6b523d; color: var(--accent-gold); font-family: 'Rye', cursive; letter-spacing: 1px; border-top: 3px solid #3e2b1f; border-bottom: 3px solid #3e2b1f; }
@@ -299,7 +290,7 @@
 <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 <div id="networkStatus" class="network-badge status-offline">⏳ Connect...</div>
 
-<div class="version-tag">OrelPoker v27.0</div>
+<div class="version-tag">OrelPoker v28.0</div>
 
 <div class="container">
     
@@ -409,14 +400,14 @@
     });
 
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v27'); 
+        const localData = localStorage.getItem('poker_data_v28'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v27', JSON.stringify(data));
+        localStorage.setItem('poker_data_v28', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -490,18 +481,24 @@
         }
 
         const cellDelete = newRow.insertCell(4);
-        cellDelete.className = 'actions-cell-right'; // Применяем класс для flexbox
         
-        // Кнопка сброса игрока
+        // --- ИЗМЕНЕНИЕ ЗДЕСЬ: БОЛЬШЕ НЕТ FLEX CLASS НА TD ---
+        cellDelete.style.textAlign = 'center';
+        
+        // Создаем div-обертку для кнопок, чтобы они стояли ровно
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex';
+        wrapper.style.justifyContent = 'center';
+        wrapper.style.gap = '5px';
+        
         const btnResetPlayer = createBtn('♻️', 'btn-reset-player', () => resetPlayer(id));
-        
-        // Кнопка удаления игрока
         const btnDelete = createBtn('✕', 'btn-delete', () => {
             if(confirm("Удалить запись навсегда?")) remove(ref(db, 'players/' + id));
         });
         
-        cellDelete.appendChild(btnResetPlayer);
-        cellDelete.appendChild(btnDelete);
+        wrapper.appendChild(btnResetPlayer);
+        wrapper.appendChild(btnDelete);
+        cellDelete.appendChild(wrapper);
     }
 
     function createBtn(text, cls, onClick) {
@@ -577,15 +574,12 @@
         push(playersRef, { name: "Новый игрок", history: {} });
     }
 
-    // НОВАЯ ФУНКЦИЯ: Сброс одного игрока
     window.resetPlayer = function(id) {
         const pass = prompt("Сбросить этого игрока в 0?\nВведите код:");
         if (pass !== "108020") {
             if(pass !== null) alert("Неверный код!");
             return;
         }
-        
-        // Очищаем историю и redo для конкретного игрока
         update(ref(db, 'players/' + id), {
             history: null,
             redoStack: null
