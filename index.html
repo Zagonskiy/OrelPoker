@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Винтажный журнал (OrelPoker)</title>
+    <title>Игорный клуб "Созвездие орла"</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#8b4513">
@@ -35,7 +35,6 @@
             padding-bottom: 60px;
         }
 
-        /* Версия и название справа снизу */
         .version-tag {
             position: fixed;
             bottom: 5px;
@@ -88,8 +87,6 @@
         .status-online { background-color: var(--accent-green); color: #fff; border-color: #1b5e20; }
         .status-offline { background-color: #d32f2f; color: #fff; border-color: #b71c1c; animation: pulse 2s infinite; }
 
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
-
         .container {
             max-width: 1050px;
             margin: 0 auto;
@@ -107,18 +104,37 @@
             margin-top: 60px;
         }
 
-        h2 {
+        .brand-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            border-bottom: 3px double var(--accent-brown);
+            padding-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .header-title {
             font-family: 'Rye', cursive;
             text-align: center;
             color: var(--accent-brown);
-            font-size: 2.5em;
-            margin-bottom: 5px;
+            font-size: 2.2em;
+            margin: 0;
             text-shadow: 2px 2px 0px var(--paper-bg), 4px 4px 0px rgba(0,0,0,0.2);
             text-transform: uppercase;
             letter-spacing: 2px;
-            border-bottom: 3px double var(--accent-brown);
-            padding-bottom: 15px;
             line-height: 1.2;
+            margin-right: 15px;
+        }
+
+        .header-logo-round {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 3px solid var(--accent-brown);
+            object-fit: cover;
+            filter: sepia(0.3) contrast(0.9);
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
         }
         
         .online-counter {
@@ -233,8 +249,9 @@
         .grand-total-cell { font-family: 'Rye', cursive; font-size: 2em; color: var(--accent-brown); text-align: center; font-weight: bold; }
 
         @media screen and (max-width: 768px) {
+            .brand-container { flex-direction: column; gap: 10px; }
+            .header-title { margin-right: 0; font-size: 1.8em; }
             .container { padding: 10px; border-width: 5px; }
-            h2 { font-size: 1.8em; }
             table, thead, tbody, th, td, tr { display: block; }
             thead tr { position: absolute; top: -9999px; left: -9999px; }
             tbody tr { margin-bottom: 20px; position: relative; padding-bottom: 10px; border: 2px solid var(--accent-brown); }
@@ -243,11 +260,10 @@
             td:nth-of-type(1) input { font-weight: bold; font-size: 1.2em; }
             td:nth-of-type(2) { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 5px; margin: 5px 0; }
             td:nth-of-type(2) input { width: 60px; }
-            td:nth-of-type(3) { margin: 5px 0; } /* Рамки убраны */
+            td:nth-of-type(3) { margin: 5px 0; }
             td:nth-of-type(4) { width: auto; max-width: 100%; }
             .history-log { max-width: 100%; }
             td:nth-of-type(5) { position: absolute; top: 5px; right: 5px; width: auto; padding: 0; }
-            
             tfoot { display: block; margin-top: 20px; }
             tfoot tr { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-radius: 4px;}
             .total-label { text-align: left; font-size: 1.2em; }
@@ -261,11 +277,15 @@
 <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 <div id="networkStatus" class="network-badge status-offline">⏳ Connect...</div>
 
-<div class="version-tag">OrelPoker v22.0</div>
+<div class="version-tag">OrelPoker v25.0</div>
 
 <div class="container">
-    <h2>— OrelPoker Журнал —</h2>
     
+    <div class="brand-container">
+        <h1 class="header-title">Игорный клуб "Созвездие орла"</h1>
+        <img src="./logo.png" alt="Логотип" class="header-logo-round">
+    </div>
+
     <div class="center-wrap">
         <div id="onlineCounter" class="online-counter">👁️ Онлайн: ...</div>
     </div>
@@ -304,22 +324,23 @@
 </div>
 
 <script>
-    // --- АВТОМАТИЧЕСКОЕ ОБНОВЛЕНИЕ (БЕЗ ВОПРОСОВ) ---
+    // --- ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ПРИ ЗАПУСКЕ ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./sw.js').then(reg => {
-                
-                // Слушаем, когда новый воркер установится
+                // Заставляем браузер проверить наличие обновлений прямо сейчас
+                reg.update();
+
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
                     newWorker.onstatechange = () => {
-                        // Как только он установился — он сам вызовет skipWaiting (в sw.js)
-                        // и мы просто ждем смены контроллера
+                        // Как только новый SW установился (благодаря skipWaiting в sw.js),
+                        // он сразу перехватит контроль, и сработает controllerchange ниже
                     };
                 };
             });
 
-            // Как только sw.js обновился и перехватил управление -> перезагрузка
+            // Как только SW обновился — перезагружаем страницу
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 window.location.reload();
             });
@@ -377,7 +398,7 @@
 
     // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v22'); 
+        const localData = localStorage.getItem('poker_data_v25'); // Обновил ключ
         if (localData) renderTable(JSON.parse(localData));
     });
 
@@ -387,7 +408,7 @@
             initDefaultPlayers();
             return;
         }
-        localStorage.setItem('poker_data_v22', JSON.stringify(data));
+        localStorage.setItem('poker_data_v25', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -497,6 +518,7 @@
             return player;
         });
 
+        // Optimistic UI
         const row = inputElem.closest('tr');
         const totalCell = row.querySelector('.score-cell');
         const historyCell = row.querySelector('.history-log');
