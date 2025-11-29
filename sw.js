@@ -1,5 +1,5 @@
-// Версия v34 - Preload Logo & Clean Header
-const CACHE_NAME = 'orelpoker-v34-instant';
+// Версия v35 - Fix Sidebar Layout
+const CACHE_NAME = 'orelpoker-v35-layout-fix';
 const ASSETS = [
     './',
     './index.html',
