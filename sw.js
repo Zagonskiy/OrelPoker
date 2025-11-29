@@ -1,5 +1,5 @@
-// Версия v55 - Optimistic Login Fix
-const CACHE_NAME = 'orelpoker-v55-optimistic';
+// Версия v56 - Real Users Sync (+1000 bonus)
+const CACHE_NAME = 'orelpoker-v56-users-sync';
 const ASSETS = [
     './',
     './index.html',
