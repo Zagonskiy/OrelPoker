@@ -24,6 +24,7 @@
             --accent-redo: #008b8b;
             --accent-purple: #6a0dad;
             --accent-orange: #e65100;
+            --accent-teal: #009688;
             --sidebar-width: 260px;
         }
 
@@ -136,6 +137,8 @@
         .btn-download { background-color: var(--accent-brown); color: var(--accent-gold); border-color: #5c300e; }
         .btn-newday { background-color: var(--accent-purple); color: #fff; border-color: #4b0082; }
         .btn-newday:hover { background-color: #5a0a94; }
+        .btn-refresh { background-color: var(--accent-teal); color: white; border-color: #00796b; }
+        .btn-refresh:hover { background-color: #00796b; }
         .btn-calc, .btn-undo, .btn-redo { width: 40px; height: 40px; padding: 0; font-family: 'Special Elite', monospace; font-weight: bold; font-size: 1.5em; border-radius: 50%; border: 2px solid #3e2b1f; display: inline-flex; align-items: center; justify-content: center; margin: 0 2px; }
         .btn-calc { background-color: #6b523d; color: var(--accent-gold); }
         .btn-undo { background-color: var(--accent-undo); color: #3e2b1f; font-size: 1.2em; }
@@ -145,6 +148,7 @@
         .btn-reset-player { background-color: var(--accent-orange); color: white; font-weight: bold; border-radius: 50%; width: 30px; height: 30px; padding: 0; border: 2px solid #bf360c; font-family: sans-serif; cursor: pointer; }
         .btn-reset-player:hover { background-color: #ff6d00; }
 
+        /* --- SIDEBAR --- */
         .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-width); background: #1a1008; border-right: 4px solid var(--accent-brown); display: flex; flex-direction: column; padding: 20px; box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 2000; transition: transform 0.3s ease; box-sizing: border-box; }
         .sidebar-logo { text-align: center; margin-bottom: 40px; }
         .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
@@ -169,6 +173,7 @@
         tbody tr { background-color: rgba(255, 255, 255, 0.4); box-shadow: 2px 2px 4px rgba(0,0,0,0.1); border: 1px solid var(--accent-brown); }
         td { padding: 15px 10px; border-top: 1px dashed rgba(139, 69, 19, 0.3); border-bottom: 2px solid var(--accent-brown); vertical-align: middle; }
         input[type="text"], input[type="number"] { padding: 8px; background: transparent; border: none; border-bottom: 2px dashed var(--accent-brown); font-family: 'Special Elite', monospace; font-size: 1.1em; color: var(--ink-color); box-sizing: border-box; outline: none; }
+        input[type="text"].player-name { width: 100%; cursor: default; color: var(--accent-brown); font-weight: bold; }
         input[type="text"] { width: 100%; }
         input[type="number"] { width: 70px; margin-right: 5px; text-align: center; border: 2px solid var(--accent-brown); background-color: #f9f3e3; }
         .score-cell { font-family: 'Rye', cursive; font-size: 1.8em; color: var(--accent-red); text-align: center; }
@@ -211,37 +216,44 @@
             td:nth-of-type(5) { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; padding: 0; }
             .btn-reset-player, .btn-delete { width: 28px; height: 28px; font-size: 0.9em; }
             
-            /* --- ИСПРАВЛЕННЫЙ МОБИЛЬНЫЙ ИТОГ --- */
-            tfoot { 
-                display: block; 
-                margin-top: 20px; 
-                width: 100%; /* Явно задаем ширину */
-            }
+            /* --- ИСПРАВЛЕННЫЙ МОБИЛЬНЫЙ ИТОГ (СВЕТЛЫЙ) --- */
+            tfoot { display: block; margin-top: 20px; }
             tfoot tr { 
                 display: flex; 
                 flex-direction: column; 
                 align-items: center; 
                 justify-content: center; 
-                background: #3e2b1f; 
-                border: 2px solid #cba135; 
+                background: rgba(255, 255, 255, 0.8); /* Светлый фон */
+                border: 3px double var(--accent-brown);
                 border-radius: 12px; 
                 padding: 15px; 
-                box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-                width: 100%; /* Растягиваем */
-                box-sizing: border-box; /* Учитываем padding */
-                margin: 0;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                width: 100%; 
+                box-sizing: border-box;
             }
             tfoot td { display: block; padding: 0; border: none; width: 100%; }
             tfoot td:nth-child(4), tfoot td:nth-child(5) { display: none; }
             .total-label { display: none; }
+            
+            /* Красная цифра итога */
             .grand-total-cell { 
                 text-align: center; 
-                font-size: 2.8em; 
-                color: #fff; 
+                font-size: 3em; 
+                color: var(--accent-red); /* Красный цвет */
                 font-weight: bold; 
-                text-shadow: 0 0 10px rgba(203, 161, 53, 0.6); 
+                text-shadow: 1px 1px 0px rgba(0,0,0,0.2); 
                 margin-top: 0; 
-                width: 100%;
+                line-height: 1;
+            }
+            /* Добавим подпись "ОБЩИЙ БАНК" маленькими буквами над цифрой для красоты */
+            .grand-total-cell::before {
+                content: "ОБЩИЙ БАНК";
+                display: block;
+                font-size: 0.4em;
+                color: var(--accent-brown);
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                margin-bottom: 5px;
             }
         }
     </style>
@@ -249,40 +261,30 @@
 <body>
 
 <div id="login-overlay">
-    
     <div id="login-view-card" class="login-card">
         <h2>ВХОД В КЛУБ</h2>
         <div class="brand-container" style="border:none; margin:0; padding:0;">
              <img src="./logo.png" class="header-logo-round" style="margin-bottom:15px;">
         </div>
-        
         <input type="text" id="loginNick" class="login-input" placeholder="Никнейм">
         <input type="password" id="loginPass" class="login-input" placeholder="Пароль">
-        
         <div class="login-checkbox">
             <input type="checkbox" id="rememberMe" style="width:auto;">
             <label for="rememberMe">Запомнить меня</label>
         </div>
-        
         <button class="btn-login-action" onclick="handleLogin()">ВОЙТИ</button>
         <button class="btn-register-link" onclick="switchAuthView('register')">Нет аккаунта? Регистрация</button>
-        
         <div id="loginError" class="error-msg"></div>
     </div>
-
     <div id="register-view-card" class="login-card hidden">
         <h2>РЕГИСТРАЦИЯ</h2>
-        
         <input type="text" id="regNick" class="login-input" placeholder="Придумайте Ник">
         <input type="password" id="regPass" class="login-input" placeholder="Пароль">
         <input type="password" id="regPassRepeat" class="login-input" placeholder="Повторите пароль">
-        
         <button class="btn-login-action btn-register" onclick="handleRegister()">СОЗДАТЬ АККАУНТ</button>
         <button class="btn-login-action btn-back" onclick="switchAuthView('login')">НАЗАД</button>
-        
         <div id="regError" class="error-msg"></div>
     </div>
-
 </div>
 
 <div id="networkStatus" class="network-badge status-offline" style="display:none;">⏳</div>
@@ -303,32 +305,26 @@
             <div class="login-name-row" id="menuLoginName">@...</div>
         </div>
     </div>
-    
     <button class="nav-btn active" onclick="showView('game')">🎲 Игровой стол</button>
     <button class="nav-btn" onclick="showView('journal')">📜 Журнал архива</button>
-    
     <button class="nav-btn" onclick="logout()" style="margin-top: 20px;">🚪 ВЫЙТИ</button>
-    
     <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 </div>
 
 <div class="main-content">
-    
     <div id="view-game">
         <div class="brand-container">
             <h1 class="header-title">Игорный клуб "Созвездие орла"</h1>
         </div>
-        
         <div class="center-wrap">
             <div id="onlineCounter" class="online-counter">👁️ Онлайн: ...</div>
         </div>
-
         <div class="controls">
             <button class="btn-add" onclick="createNewPlayer()">+ Игрок</button>
+            <button class="btn-refresh" onclick="refreshTable()">🔄 Обновить</button>
             <button class="btn-newday" onclick="startNewDay()">🌅 Новый день</button>
             <button class="btn-journal-add" onclick="addToJournal()">💾 В Журнал</button>
         </div>
-
         <table id="scoreTable">
             <thead>
                 <tr>
@@ -349,7 +345,6 @@
             </tfoot>
         </table>
     </div>
-
     <div id="view-journal" class="hidden">
         <div class="brand-container">
             <h1 class="header-title">Архив Журнала</h1>
@@ -358,8 +353,7 @@
             <div style="text-align:center;">Загрузка архива...</div>
         </div>
     </div>
-
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v65.0 (Full Width Footer)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v66.0 (Final UI)</div>
 </div>
 
 <script>
@@ -377,7 +371,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=65').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=66').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -412,55 +406,15 @@
     const playersRef = ref(db, 'players');
     const journalRef = ref(db, 'journal');
     const usersRef = ref(db, 'users');
-    
     const connectedRef = ref(db, ".info/connected");
     const onlineUsersRef = ref(db, "online_users");
     let currentConnectionRef = null;
     let onlineNicknames = new Set();
 
-    function setOnlineStatus(nickname) {
-        const myUserRef = ref(db, `online_users/${nickname}`);
-        currentConnectionRef = push(myUserRef);
-        onDisconnect(currentConnectionRef).remove();
-        set(currentConnectionRef, true);
-    }
-
-    onValue(connectedRef, (snap) => {
-        const dotMobile = document.getElementById('mobileStatusDot');
-        const dotDesktop = document.getElementById('desktopStatusDot');
-        const statusEl = document.getElementById('networkStatus');
-        if(statusEl) statusEl.style.display = 'none';
-
-        if (snap.val() === true) {
-            dotMobile.classList.add('online'); dotDesktop.classList.add('online');
-            const savedUser = localStorage.getItem('op_user');
-            if (savedUser) {
-                // Re-apply online status on reconnect if logged in
-            }
-        } else {
-            dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
-        }
-    });
-
-    onValue(onlineUsersRef, (snap) => {
-        const countDisplay = document.getElementById('onlineCounter');
-        onlineNicknames.clear();
-        if (snap.exists()) {
-            const data = snap.val();
-            Object.keys(data).forEach(n => onlineNicknames.add(n));
-            countDisplay.innerText = `👁️ Онлайн: ${onlineNicknames.size}`;
-        } else { countDisplay.innerText = `👁️ Онлайн: 0`; }
-        updateTableStatusDots();
-    });
-
-    function updateTableStatusDots() {
-        document.querySelectorAll('.player-status-indicator').forEach(dot => {
-            const name = dot.getAttribute('data-player-name');
-            const login = dot.getAttribute('data-player-login');
-            const keyToCheck = login || name;
-            if (onlineNicknames.has(keyToCheck)) dot.classList.add('is-online');
-            else dot.classList.remove('is-online');
-        });
+    window.refreshTable = async function() {
+        const pass = prompt("Для обновления введите код доступа:");
+        if (pass !== "108020") { if(pass !== null) alert("Ошибка доступа"); return; }
+        try { await syncUsersToTable(); alert("Таблица синхронизирована!"); } catch(e) { alert("Ошибка: " + e.message); }
     }
 
     async function syncUsersToTable(currentDisplayName) {
@@ -484,6 +438,30 @@
             }
             if(hasUpdates) { await update(ref(db), updates); }
         } catch(e) { console.error("Sync error", e); }
+    }
+
+    window.editNickname = async function() {
+        let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (!sessionUser) sessionUser = JSON.parse(localStorage.getItem('op_user'));
+        if (!sessionUser) return;
+        const oldDisplayName = sessionUser.displayName || sessionUser.nick;
+        const newName = prompt("Новое имя:", oldDisplayName);
+        if(!newName || newName.trim() === "") return;
+        const trimmedName = newName.trim();
+        try {
+            await update(ref(db, 'users/' + sessionUser.nick), { displayName: trimmedName });
+            sessionUser.displayName = trimmedName;
+            sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
+            if(localStorage.getItem('op_user')) localStorage.setItem('op_user', JSON.stringify(sessionUser));
+            updateMenuUI(trimmedName, sessionUser.nick);
+            const playersSnap = await get(playersRef);
+            playersSnap.forEach(child => {
+                const p = child.val();
+                if (p.login === sessionUser.nick || p.name === oldDisplayName) {
+                     update(ref(db, 'players/' + child.key), { name: trimmedName, login: sessionUser.nick });
+                }
+            });
+        } catch(e) { alert("Error: " + e.message); }
     }
 
     window.switchAuthView = function(view) {
@@ -636,34 +614,50 @@
         }
     }
 
-    window.editNickname = async function() {
-        let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        if (!sessionUser) sessionUser = JSON.parse(localStorage.getItem('op_user'));
-        if (!sessionUser) return;
-        const oldDisplayName = sessionUser.displayName || sessionUser.nick;
-        const newName = prompt("Новое имя:", oldDisplayName);
-        if(!newName || newName.trim() === "") return;
-        const trimmedName = newName.trim();
-        try {
-            await update(ref(db, 'users/' + sessionUser.nick), { displayName: trimmedName });
-            sessionUser.displayName = trimmedName;
-            sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
-            if(localStorage.getItem('op_user')) localStorage.setItem('op_user', JSON.stringify(sessionUser));
-            updateMenuUI(trimmedName, sessionUser.nick);
-            const playersSnap = await get(playersRef);
-            playersSnap.forEach(child => {
-                const p = child.val();
-                if (p.login === sessionUser.nick || p.name === oldDisplayName) {
-                     update(ref(db, 'players/' + child.key), { name: trimmedName, login: sessionUser.nick });
-                }
-            });
-        } catch(e) { alert("Error: " + e.message); }
+    function setOnlineStatus(nickname) {
+        const myUserRef = ref(db, `online_users/${nickname}`);
+        currentConnectionRef = push(myUserRef);
+        onDisconnect(currentConnectionRef).remove();
+        set(currentConnectionRef, true);
+    }
+
+    onValue(connectedRef, (snap) => {
+        const dotMobile = document.getElementById('mobileStatusDot');
+        const dotDesktop = document.getElementById('desktopStatusDot');
+        const statusEl = document.getElementById('networkStatus');
+        if(statusEl) statusEl.style.display = 'none';
+        if (snap.val() === true) {
+            dotMobile.classList.add('online'); dotDesktop.classList.add('online');
+        } else {
+            dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
+        }
+    });
+
+    onValue(onlineUsersRef, (snap) => {
+        const countDisplay = document.getElementById('onlineCounter');
+        onlineNicknames.clear();
+        if (snap.exists()) {
+            const data = snap.val();
+            Object.keys(data).forEach(n => onlineNicknames.add(n));
+            countDisplay.innerText = `👁️ Онлайн: ${onlineNicknames.size}`;
+        } else { countDisplay.innerText = `👁️ Онлайн: 0`; }
+        updateTableStatusDots();
+    });
+
+    function updateTableStatusDots() {
+        document.querySelectorAll('.player-status-indicator').forEach(dot => {
+            const name = dot.getAttribute('data-player-name');
+            const login = dot.getAttribute('data-player-login');
+            const keyToCheck = login || name;
+            if (onlineNicknames.has(keyToCheck)) dot.classList.add('is-online');
+            else dot.classList.remove('is-online');
+        });
     }
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
-        localStorage.setItem('poker_data_v65', JSON.stringify(data));
+        localStorage.setItem('poker_data_v66', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -709,7 +703,6 @@
         statusDot.className = 'player-status-indicator';
         statusDot.setAttribute('data-player-name', player.name);
         if(player.login) statusDot.setAttribute('data-player-login', player.login);
-        
         const keyToCheck = player.login || player.name;
         if (onlineNicknames.has(keyToCheck)) statusDot.classList.add('is-online');
 
@@ -718,6 +711,7 @@
         inputName.readOnly = true;
 
         nameWrapper.appendChild(statusDot); nameWrapper.appendChild(inputName); cellName.appendChild(nameWrapper);
+
         const cellAction = newRow.insertCell(1);
         const inputNum = document.createElement('input');
         inputNum.type = 'number'; inputNum.className = 'input-val'; inputNum.placeholder = '0';
@@ -728,12 +722,15 @@
             createBtn('↩', 'btn-undo', () => undoLast(id)),
             createBtn('↪', 'btn-redo', () => redoLast(id))
         );
+
         const cellTotal = newRow.insertCell(2);
         cellTotal.className = 'score-cell';
         cellTotal.innerText = total;
+
         const cellHistory = newRow.insertCell(3);
         cellHistory.className = 'history-log';
         cellHistory.innerText = historyArray.length > 0 ? historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ') : 'Пусто';
+
         const cellDelete = newRow.insertCell(4);
         const wrapper = document.createElement('div');
         wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
@@ -799,6 +796,15 @@
     window.toggleSidebar = function() { document.getElementById('sidebar').classList.toggle('open'); }
     window.showView = function(viewName) { document.getElementById('sidebar').classList.remove('open'); if (viewName === 'game') { document.getElementById('view-game').classList.remove('hidden'); document.getElementById('view-journal').classList.add('hidden'); document.querySelectorAll('.nav-btn')[0].classList.add('active'); document.querySelectorAll('.nav-btn')[1].classList.remove('active'); } else { document.getElementById('view-game').classList.add('hidden'); document.getElementById('view-journal').classList.remove('hidden'); document.querySelectorAll('.nav-btn')[0].classList.remove('active'); document.querySelectorAll('.nav-btn')[1].classList.add('active'); } }
     window.downloadCSV = function() { const rows = document.querySelectorAll('#scoreTable tbody tr'); if (rows.length === 0) { alert("Пусто!"); return; } const selectedDate = document.getElementById('gameDate').value; let formattedDate = selectedDate; if(selectedDate) { const parts = selectedDate.split('-'); formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`; } let csvContent = `Дата выписки:;${formattedDate}\n\n`; csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n"; rows.forEach(row => { let name = row.querySelector('.player-name').value.trim(); if (!name) name = "Без имени"; let total = row.querySelector('.score-cell').innerText; let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); csvContent += `"${name}";${total};${opsString}\n`; }); let grandTotal = document.getElementById('grandTotal').innerText; csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`; const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `Выписка за ${formattedDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+    
+    // --- ADMIN: Delete User ---
+    window.deleteUserAccount = function(nickname) {
+        const pass = prompt(`Удалить аккаунт "${nickname}"? (Код 108020):`);
+        if (pass !== "108020") { alert("Ошибка доступа"); return; }
+        remove(ref(db, 'users/' + nickname))
+        .then(() => { alert(`Аккаунт ${nickname} удален.`); })
+        .catch((error) => { alert("Ошибка: " + error.message); });
+    }
 </script>
 
 </body>
