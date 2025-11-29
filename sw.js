@@ -1,15 +1,16 @@
-// Версия v22 - Silent Auto Update
-const CACHE_NAME = 'orelpoker-v22-silent';
+// Версия v24 - New Header Layout (Text + Round Logo)
+const CACHE_NAME = 'orelpoker-v24-header';
 const ASSETS = [
     './',
     './index.html',
     './manifest.json',
+    './logo.png', // Убедитесь, что файл logo.png есть на сервере
     'https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap'
 ];
 
-// 1. Установка: Сразу активируемся, не ждем
+// 1. Установка: Сразу активируемся
 self.addEventListener('install', (e) => {
-    self.skipWaiting(); // Самая важная команда: "Не ждать, обновить сразу"
+    self.skipWaiting(); 
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(ASSETS);
@@ -28,7 +29,7 @@ self.addEventListener('activate', (e) => {
             }));
         })
     );
-    return self.clients.claim(); // Немедленно берем под контроль открытую страницу
+    return self.clients.claim();
 });
 
 // 3. Работа с сетью
