@@ -99,12 +99,6 @@
         }
         .btn-extreme-reset:hover { background-color: #ff0000; color: white; box-shadow: 0 0 15px rgba(255, 0, 0, 0.5); }
 
-        .btn-logout {
-            margin-top: 10px; background-color: var(--accent-brown); color: var(--accent-gold);
-            border: 1px solid var(--accent-gold); padding: 10px; font-family: 'Rye', cursive;
-            cursor: pointer; width: 100%; border-radius: 4px; text-align: center;
-        }
-
         .network-badge {
             position: fixed; top: 15px; right: 15px; padding: 8px 15px; font-family: 'Rye', cursive; font-size: 0.9em;
             border-radius: 4px; z-index: 1000; box-shadow: 2px 2px 5px rgba(0,0,0,0.7); border: 2px solid #3e2b1f;
@@ -113,42 +107,18 @@
         .status-online { background-color: var(--accent-green); color: #fff; border-color: #1b5e20; }
         .status-offline { background-color: #d32f2f; color: #fff; border-color: #b71c1c; animation: pulse 2s infinite; }
 
-        /* --- SIDEBAR --- */
-        .sidebar {
-            position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-width);
-            background: #1a1008; border-right: 4px solid var(--accent-brown);
-            display: flex; flex-direction: column; padding: 20px;
-            box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 2000;
-            transition: transform 0.3s ease; box-sizing: border-box;
+        .container {
+            max-width: 1050px; margin: 0 auto; background-color: var(--paper-bg);
+            background-image: var(--paper-texture), linear-gradient(to right, rgba(139, 69, 19, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(139, 69, 19, 0.1) 1px, transparent 1px);
+            background-size: 100px 100px, 20px 20px, 20px 20px; padding: 20px; border-radius: 2px;
+            box-shadow: 0 0 0 5px #5a3a22 inset, 0 15px 20px rgba(0,0,0,0.5), 0 0 50px rgba(0,0,0,0.3) inset;
+            border: 8px solid #462c1a; border-image: repeating-linear-gradient(45deg, #462c1a, #462c1a 10px, #332013 10px, #332013 20px) 20;
+            margin-top: 60px;
         }
-        .sidebar-logo { text-align: center; margin-bottom: 40px; }
-        .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
-        
-        .user-info-container { margin-top: 10px; text-align: center; }
-        .display-name-row { font-family: 'Rye', cursive; color: var(--accent-gold); font-size: 1.3em; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .login-name-row { font-family: 'Special Elite', monospace; color: #d4c5a3; font-size: 0.8em; opacity: 0.6; margin-top: 4px; }
-        .edit-icon { cursor: pointer; font-size: 0.8em; opacity: 0.7; transition: 0.2s; }
-        .edit-icon:hover { opacity: 1; transform: scale(1.1); }
-
-        .nav-btn { background: transparent; border: 1px solid var(--accent-brown); color: #d4c5a3; padding: 15px; margin-bottom: 10px; text-align: left; font-family: 'Rye', cursive; font-size: 1.1em; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
-        .nav-btn:hover, .nav-btn.active { background: var(--accent-brown); color: var(--accent-gold); border-color: var(--accent-gold); }
-
-        /* --- MAIN CONTENT --- */
-        .main-content {
-            margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width));
-            min-height: 100vh; padding: 20px;
-            background-image: var(--paper-texture); background-color: var(--paper-bg);
-            box-sizing: border-box; padding-bottom: 60px;
-        }
-
-        .menu-toggle { display: none; position: fixed; top: 10px; left: 10px; background: var(--accent-brown); color: var(--accent-gold); border: 2px solid #5a3a22; padding: 5px 10px; font-size: 1.5em; z-index: 3000; border-radius: 4px; cursor: pointer; line-height: 1; }
-        .status-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: #d32f2f; border: 2px solid rgba(0,0,0,0.3); box-shadow: 0 0 5px rgba(0,0,0,0.5); transition: all 0.3s ease; vertical-align: middle; margin-left: 8px; }
-        .status-dot.online { background-color: #00e676; box-shadow: 0 0 8px #00e676; border-color: #1b5e20; }
-
-        .container { max-width: 1050px; margin: 0 auto; }
 
         .brand-container { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; border-bottom: 3px double var(--accent-brown); padding-bottom: 15px; flex-wrap: wrap; text-align: center; }
         .header-title { font-family: 'Rye', cursive; text-align: center; color: var(--accent-brown); font-size: 2.2em; margin: 0; text-shadow: 2px 2px 0px var(--paper-bg), 4px 4px 0px rgba(0,0,0,0.2); text-transform: uppercase; letter-spacing: 2px; line-height: 1.2; width: 100%; }
+        .header-logo-round { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--accent-brown); object-fit: cover; filter: sepia(0.3) contrast(0.9); box-shadow: 2px 2px 5px rgba(0,0,0,0.3); }
         .online-counter { text-align: center; font-family: 'Special Elite', monospace; font-size: 1.1em; color: var(--accent-green); background: rgba(46, 125, 50, 0.1); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--accent-green); display: inline-block; margin: 0 auto 15px auto; font-weight: bold; }
         .center-wrap { text-align: center; }
         .date-section { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px; background: rgba(139, 69, 19, 0.1); padding: 10px; border: 2px dashed var(--accent-brown); flex-wrap: wrap; }
@@ -171,6 +141,24 @@
         .btn-delete { background-color: var(--accent-red); color: #f4e4bc; font-weight: bold; border-radius: 50%; width: 30px; height: 30px; padding: 0; border: 2px solid #500000; font-family: sans-serif; cursor: pointer; }
         .btn-reset-player { background-color: var(--accent-orange); color: white; font-weight: bold; border-radius: 50%; width: 30px; height: 30px; padding: 0; border: 2px solid #bf360c; font-family: sans-serif; cursor: pointer; }
         .btn-reset-player:hover { background-color: #ff6d00; }
+
+        .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-width); background: #1a1008; border-right: 4px solid var(--accent-brown); display: flex; flex-direction: column; padding: 20px; box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 2000; transition: transform 0.3s ease; box-sizing: border-box; }
+        .sidebar-logo { text-align: center; margin-bottom: 40px; }
+        .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
+        .sidebar-title { font-family: 'Rye', cursive; color: var(--accent-gold); font-size: 1.2em; margin-top: 10px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; }
+        #menuUserName { margin-right: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; display: inline-block; }
+        .nav-btn { background: transparent; border: 1px solid var(--accent-brown); color: #d4c5a3; padding: 15px; margin-bottom: 10px; text-align: left; font-family: 'Rye', cursive; font-size: 1.1em; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+        .nav-btn:hover, .nav-btn.active { background: var(--accent-brown); color: var(--accent-gold); border-color: var(--accent-gold); }
+        
+        .user-info-container { margin-top: 10px; text-align: center; }
+        .display-name-row { font-family: 'Rye', cursive; color: var(--accent-gold); font-size: 1.3em; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .login-name-row { font-family: 'Special Elite', monospace; color: #d4c5a3; font-size: 0.8em; opacity: 0.6; margin-top: 4px; }
+        .edit-icon { cursor: pointer; font-size: 0.8em; opacity: 0.7; transition: 0.2s; }
+        .edit-icon:hover { opacity: 1; transform: scale(1.1); }
+        
+        .name-wrapper { display: flex; align-items: center; width: 100%; }
+        .player-status-indicator { width: 10px; height: 10px; border-radius: 50%; background-color: #d32f2f; border: 1px solid rgba(0,0,0,0.3); margin-right: 8px; box-shadow: 0 0 2px rgba(0,0,0,0.5); transition: all 0.3s ease; flex-shrink: 0; }
+        .player-status-indicator.is-online { background-color: #00e676; box-shadow: 0 0 6px #00e676; border-color: #1b5e20; }
 
         table { width: 100%; border-collapse: separate; border-spacing: 0 10px; margin-top: 10px; }
         th { padding: 15px 10px; text-align: left; background-color: #6b523d; color: var(--accent-gold); font-family: 'Rye', cursive; letter-spacing: 1px; border-top: 3px solid #3e2b1f; border-bottom: 3px solid #3e2b1f; }
@@ -198,10 +186,6 @@
         .hidden { display: none; }
         .btn-journal-delete { background: var(--accent-red); color: #fff; border: 1px solid #500; border-radius: 4px; padding: 3px 8px; font-size: 0.8em; margin-left: 10px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
         .btn-journal-delete:hover { background: #a00000; }
-        
-        .name-wrapper { display: flex; align-items: center; width: 100%; }
-        .player-status-indicator { width: 10px; height: 10px; border-radius: 50%; background-color: #d32f2f; border: 1px solid rgba(0,0,0,0.3); margin-right: 8px; box-shadow: 0 0 2px rgba(0,0,0,0.5); transition: all 0.3s ease; flex-shrink: 0; }
-        .player-status-indicator.is-online { background-color: #00e676; box-shadow: 0 0 6px #00e676; border-color: #1b5e20; }
 
         @media screen and (max-width: 768px) {
             .sidebar { transform: translateX(-100%); width: 260px; }
@@ -223,11 +207,50 @@
             td:nth-of-type(4) { font-size: 0.8em; color: #666; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 4px; max-width: 100%; }
             td:nth-of-type(5) { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; padding: 0; }
             .btn-reset-player, .btn-delete { width: 28px; height: 28px; font-size: 0.9em; }
-            tfoot { margin-top: 10px; }
-            tfoot tr { display: flex; justify-content: space-between; padding: 15px; border-radius: 8px; align-items: center; }
+            
+            /* --- МОБИЛЬНЫЙ ДИЗАЙН "ОБЩИЙ БАНК" (ИСПРАВЛЕНО) --- */
+            tfoot { 
+                display: block; 
+                margin-top: 20px; 
+                width: 100%; 
+            }
+            tfoot tr { 
+                display: flex; 
+                flex-direction: column; 
+                align-items: center; 
+                justify-content: center; 
+                background: #3e2b1f; 
+                border: 2px solid #cba135; 
+                border-radius: 12px; 
+                padding: 15px; 
+                box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+                width: 100%; 
+                box-sizing: border-box;
+            }
+            tfoot td { display: block; padding: 0; border: none; width: 100%; }
             tfoot td:nth-child(4), tfoot td:nth-child(5) { display: none; }
-            .total-label { font-size: 1.1em; }
-            .grand-total-cell { font-size: 1.6em; }
+            .total-label { display: none; } /* Скрываем старый label */
+            
+            /* Добавляем надпись через псевдоэлемент */
+            .grand-total-cell::before {
+                content: "ОБЩИЙ БАЛАНС";
+                display: block;
+                font-size: 0.4em;
+                color: #cba135;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                margin-bottom: 5px;
+                font-weight: normal;
+            }
+            .grand-total-cell { 
+                text-align: center; 
+                font-size: 2.8em; 
+                color: #fff; 
+                font-weight: bold; 
+                text-shadow: 0 0 10px rgba(203, 161, 53, 0.6); 
+                margin-top: 0; 
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -249,7 +272,6 @@
         <button class="btn-register-link" onclick="switchAuthView('register')">Нет аккаунта? Регистрация</button>
         <div id="loginError" class="error-msg"></div>
     </div>
-
     <div id="register-view-card" class="login-card hidden">
         <h2>РЕГИСТРАЦИЯ</h2>
         <input type="text" id="regNick" class="login-input" placeholder="Придумайте Ник">
@@ -329,7 +351,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v64.0 (Status Fix)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v66.0 (Footer Label)</div>
 </div>
 
 <script>
@@ -347,7 +369,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=64').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=66').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -387,107 +409,59 @@
     let currentConnectionRef = null;
     let onlineNicknames = new Set();
 
-    // --- СТАТУС ОНЛАЙН ---
-    function setOnlineStatus(nickname) {
-        // Статус пишем по ЛОГИНУ
-        const myUserRef = ref(db, `online_users/${nickname}`);
-        currentConnectionRef = push(myUserRef);
-        onDisconnect(currentConnectionRef).remove();
-        set(currentConnectionRef, true);
+    // --- REFRESH ---
+    window.refreshTable = async function() {
+        const pass = prompt("Для обновления введите код доступа:");
+        if (pass !== "108020") { if(pass !== null) alert("Ошибка доступа"); return; }
+        try { await syncUsersToTable(); alert("Таблица синхронизирована!"); } catch(e) { alert("Ошибка: " + e.message); }
     }
 
-    onValue(connectedRef, (snap) => {
-        const dotMobile = document.getElementById('mobileStatusDot');
-        const dotDesktop = document.getElementById('desktopStatusDot');
-        const statusEl = document.getElementById('networkStatus');
-        if(statusEl) statusEl.style.display = 'none';
-
-        if (snap.val() === true) {
-            dotMobile.classList.add('online'); dotDesktop.classList.add('online');
-        } else {
-            dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
-        }
-    });
-
-    onValue(onlineUsersRef, (snap) => {
-        const countDisplay = document.getElementById('onlineCounter');
-        onlineNicknames.clear();
-        if (snap.exists()) {
-            const data = snap.val();
-            Object.keys(data).forEach(n => onlineNicknames.add(n));
-            countDisplay.innerText = `👁️ Онлайн: ${onlineNicknames.size}`;
-        } else { countDisplay.innerText = `👁️ Онлайн: 0`; }
-        updateTableStatusDots();
-    });
-
-    // --- ВАЖНОЕ ИЗМЕНЕНИЕ ЗДЕСЬ: Проверяем наличие ЛОГИНА в сете ---
-    function updateTableStatusDots() {
-        document.querySelectorAll('.player-status-indicator').forEach(dot => {
-            // Пытаемся достать логин из атрибута
-            const playerLogin = dot.getAttribute('data-player-login');
-            // Если логина нет (старые данные), берем имя
-            const keyToCheck = playerLogin || dot.getAttribute('data-player-name');
-            
-            if (onlineNicknames.has(keyToCheck)) dot.classList.add('is-online');
-            else dot.classList.remove('is-online');
-        });
-    }
-
-    // --- АВТОМАТИЧЕСКОЕ ДОБАВЛЕНИЕ ПОЛЬЗОВАТЕЛЕЙ ---
     async function syncUsersToTable(currentDisplayName) {
-        // ... (Логика синхронизации, используем set для сохранения login)
         try {
             const usersSnap = await get(usersRef);
             const playersSnap = await get(playersRef);
             const users = usersSnap.val() || {};
             const players = playersSnap.val() || {};
-
             const existingLogins = new Set();
-            for(let id in players) {
-                 // Если есть поле login, используем его. Если нет - считаем что login = name (старый формат)
-                 const pLogin = players[id].login || players[id].name;
-                 existingLogins.add(pLogin);
-            }
-
+            for(let id in players) { const pLogin = players[id].login || players[id].name; existingLogins.add(pLogin); }
             const updates = {};
             let hasUpdates = false;
-
             for(let login in users) {
-                // Если такого логина еще нет в таблице
                 if(!existingLogins.has(login)) {
                     const userData = users[login];
                     const dispName = userData.displayName || login;
-                    
                     const newKey = push(ref(db, 'players')).key;
-                    updates['players/' + newKey] = {
-                        name: dispName,
-                        login: login, // СОХРАНЯЕМ ЛОГИН
-                        history: { 'start_bonus': 1000 }
-                    };
+                    updates['players/' + newKey] = { name: dispName, login: login, history: { 'start_bonus': 1000 } };
                     hasUpdates = true;
                 }
             }
-
-            if(hasUpdates) {
-                await update(ref(db), updates);
-            }
+            if(hasUpdates) { await update(ref(db), updates); }
         } catch(e) { console.error("Sync error", e); }
     }
 
-    // --- НОВАЯ ФУНКЦИЯ ОБНОВЛЕНИЯ (ВОЗВРАЩАЕТ ПОТЕРЯННЫХ) ---
-    window.refreshTable = async function() {
-        const pass = prompt("Для обновления введите код доступа:");
-        if (pass !== "108020") {
-            if(pass !== null) alert("Ошибка доступа");
-            return;
-        }
-        
+    // --- NICKNAME EDIT ---
+    window.editNickname = async function() {
+        let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (!sessionUser) sessionUser = JSON.parse(localStorage.getItem('op_user'));
+        if (!sessionUser) return;
+        const oldDisplayName = sessionUser.displayName || sessionUser.nick;
+        const newName = prompt("Новое имя:", oldDisplayName);
+        if(!newName || newName.trim() === "") return;
+        const trimmedName = newName.trim();
         try {
-            await syncUsersToTable();
-            alert("Таблица синхронизирована! Удаленные игроки возвращены.");
-        } catch(e) {
-            alert("Ошибка: " + e.message);
-        }
+            await update(ref(db, 'users/' + sessionUser.nick), { displayName: trimmedName });
+            sessionUser.displayName = trimmedName;
+            sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
+            if(localStorage.getItem('op_user')) localStorage.setItem('op_user', JSON.stringify(sessionUser));
+            updateMenuUI(trimmedName, sessionUser.nick);
+            const playersSnap = await get(playersRef);
+            playersSnap.forEach(child => {
+                const p = child.val();
+                if (p.login === sessionUser.nick || p.name === oldDisplayName) {
+                     update(ref(db, 'players/' + child.key), { name: trimmedName, login: sessionUser.nick });
+                }
+            });
+        } catch(e) { alert("Error: " + e.message); }
     }
 
     // --- AUTH ---
@@ -530,8 +504,7 @@
             if (snapshot.exists()) {
                 const userData = snapshot.val();
                 if(userData.pass !== pass) {
-                    alert("Пароль изменен.");
-                    logout();
+                    alert("Пароль изменен."); logout();
                 } else {
                     const currentDisplayName = userData.displayName || nick;
                     updateMenuUI(currentDisplayName, nick);
@@ -560,19 +533,15 @@
         const nick = document.getElementById('regNick').value.trim();
         const pass = document.getElementById('regPass').value.trim();
         const passRepeat = document.getElementById('regPassRepeat').value.trim();
-        if(!nick || !pass) { document.getElementById('regError').innerText = "Заполните все поля"; return; }
+        if(!nick || !pass) { document.getElementById('regError').innerText = "Заполните поля"; return; }
         if(pass !== passRepeat) { document.getElementById('regError').innerText = "Пароли не совпадают!"; return; }
-
         get(child(ref(db), `users/${nick}`)).then((snapshot) => {
             if (snapshot.exists()) { document.getElementById('regError').innerText = "Ник занят!"; }
             else {
-                set(ref(db, 'users/' + nick), { pass: pass, created: Date.now(), displayName: nick })
-                .then(() => {
+                set(ref(db, 'users/' + nick), { pass: pass, created: Date.now(), displayName: nick }).then(() => {
                     const newPlayerRef = push(ref(db, 'players'));
-                    // ПРИ РЕГИСТРАЦИИ СОХРАНЯЕМ И login И name
                     return set(newPlayerRef, { name: nick, login: nick, history: { 'start_bonus': 1000 } });
-                })
-                .then(() => {
+                }).then(() => {
                     alert("Аккаунт создан! +1000 фишек.");
                     switchAuthView('login');
                     document.getElementById('loginNick').value = nick;
@@ -646,43 +615,51 @@
         }
     }
 
-    // --- ИЗМЕНЕНИЕ НИКА (С ОБНОВЛЕНИЕМ ПОЛЯ LOGIN ЕСЛИ НАДО) ---
-    window.editNickname = async function() {
-        let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        if (!sessionUser) sessionUser = JSON.parse(localStorage.getItem('op_user'));
-        if (!sessionUser) return;
-        
-        const oldDisplayName = sessionUser.displayName || sessionUser.nick;
-        const newName = prompt("Новое имя:", oldDisplayName);
-        if(!newName || newName.trim() === "") return;
-        const trimmedName = newName.trim();
-        
-        try {
-            await update(ref(db, 'users/' + sessionUser.nick), { displayName: trimmedName });
-            sessionUser.displayName = trimmedName;
-            sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
-            if(localStorage.getItem('op_user')) localStorage.setItem('op_user', JSON.stringify(sessionUser));
-            updateMenuUI(trimmedName, sessionUser.nick);
-            
-            const playersSnap = await get(playersRef);
-            playersSnap.forEach(child => {
-                const p = child.val();
-                // Если нашли игрока (по логину или по старому имени)
-                if (p.login === sessionUser.nick || p.name === oldDisplayName) {
-                     // Обновляем имя И гарантируем, что login прописан
-                     update(ref(db, 'players/' + child.key), { 
-                         name: trimmedName,
-                         login: sessionUser.nick 
-                     });
-                }
-            });
-        } catch(e) { alert("Error: " + e.message); }
+    // --- STATUS & GAME ---
+    function setOnlineStatus(nickname) {
+        const myUserRef = ref(db, `online_users/${nickname}`);
+        currentConnectionRef = push(myUserRef);
+        onDisconnect(currentConnectionRef).remove();
+        set(currentConnectionRef, true);
+    }
+
+    onValue(connectedRef, (snap) => {
+        const dotMobile = document.getElementById('mobileStatusDot');
+        const dotDesktop = document.getElementById('desktopStatusDot');
+        const statusEl = document.getElementById('networkStatus');
+        if(statusEl) statusEl.style.display = 'none';
+        if (snap.val() === true) {
+            dotMobile.classList.add('online'); dotDesktop.classList.add('online');
+        } else {
+            dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
+        }
+    });
+
+    onValue(onlineUsersRef, (snap) => {
+        const countDisplay = document.getElementById('onlineCounter');
+        onlineNicknames.clear();
+        if (snap.exists()) {
+            const data = snap.val();
+            Object.keys(data).forEach(n => onlineNicknames.add(n));
+            countDisplay.innerText = `👁️ Онлайн: ${onlineNicknames.size}`;
+        } else { countDisplay.innerText = `👁️ Онлайн: 0`; }
+        updateTableStatusDots();
+    });
+
+    function updateTableStatusDots() {
+        document.querySelectorAll('.player-status-indicator').forEach(dot => {
+            const name = dot.getAttribute('data-player-name');
+            const login = dot.getAttribute('data-player-login');
+            const keyToCheck = login || name;
+            if (onlineNicknames.has(keyToCheck)) dot.classList.add('is-online');
+            else dot.classList.remove('is-online');
+        });
     }
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
-        localStorage.setItem('poker_data_v64', JSON.stringify(data));
+        localStorage.setItem('poker_data_v66', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -726,11 +703,8 @@
         nameWrapper.className = 'name-wrapper';
         const statusDot = document.createElement('div');
         statusDot.className = 'player-status-indicator';
-        
-        // Сохраняем и имя и логин в атрибуты для проверки статуса
         statusDot.setAttribute('data-player-name', player.name);
         if(player.login) statusDot.setAttribute('data-player-login', player.login);
-        
         const keyToCheck = player.login || player.name;
         if (onlineNicknames.has(keyToCheck)) statusDot.classList.add('is-online');
         
@@ -739,8 +713,6 @@
         inputName.readOnly = true;
 
         nameWrapper.appendChild(statusDot); nameWrapper.appendChild(inputName); cellName.appendChild(nameWrapper);
-        
-        // ... (Остальная часть renderPlayerRow без изменений)
         const cellAction = newRow.insertCell(1);
         const inputNum = document.createElement('input');
         inputNum.type = 'number'; inputNum.className = 'input-val'; inputNum.placeholder = '0';
