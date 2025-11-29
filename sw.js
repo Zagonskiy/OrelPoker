@@ -1,5 +1,5 @@
-// Версия v32 - New Mobile Cards Design
-const CACHE_NAME = 'orelpoker-v32-mobile-cards';
+// Версия v33 - Status Dot Indicator
+const CACHE_NAME = 'orelpoker-v33-status-dot';
 const ASSETS = [
     './',
     './index.html',
