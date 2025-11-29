@@ -53,22 +53,22 @@
             opacity: 0.8;
         }
 
+        /* --- ИСПРАВЛЕННАЯ КНОПКА СБРОСА (ВНИЗУ МЕНЮ) --- */
         .btn-extreme-reset {
-            position: fixed;
-            top: 15px;
-            left: 15px;
+            margin-top: auto; /* Прижимает кнопку к низу флекс-контейнера */
             background-color: #500000;
             color: #ffcccc;
             border: 2px solid #ff0000;
-            padding: 8px 12px;
+            padding: 12px;
             font-family: 'Special Elite', monospace;
             font-weight: bold;
-            font-size: 0.8em;
+            font-size: 0.9em;
             cursor: pointer;
-            z-index: 1000;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.7);
+            width: 100%;
+            box-sizing: border-box;
             border-radius: 4px;
             transition: all 0.2s;
+            text-align: center;
         }
         .btn-extreme-reset:hover { background-color: #ff0000; color: white; box-shadow: 0 0 15px rgba(255, 0, 0, 0.5); }
 
@@ -89,21 +89,76 @@
         .status-online { background-color: var(--accent-green); color: #fff; border-color: #1b5e20; }
         .status-offline { background-color: #d32f2f; color: #fff; border-color: #b71c1c; animation: pulse 2s infinite; }
 
+        /* --- SIDEBAR --- */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: #1a1008;
+            border-right: 4px solid var(--accent-brown);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            z-index: 2000;
+            transition: transform 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .sidebar-logo { text-align: center; margin-bottom: 40px; }
+        .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
+        .sidebar-title { 
+            font-family: 'Rye', cursive; color: var(--accent-gold); font-size: 1.2em; 
+            margin-top: 10px; text-transform: uppercase; 
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .nav-btn {
+            background: transparent; border: 1px solid var(--accent-brown); color: #d4c5a3;
+            padding: 15px; margin-bottom: 10px; text-align: left;
+            font-family: 'Rye', cursive; font-size: 1.1em; cursor: pointer;
+            transition: 0.2s; display: flex; align-items: center; gap: 10px;
+        }
+        .nav-btn:hover, .nav-btn.active { background: var(--accent-brown); color: var(--accent-gold); border-color: var(--accent-gold); }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            min-height: 100vh;
+            padding: 20px;
+            background-image: var(--paper-texture);
+            background-color: var(--paper-bg);
+            box-sizing: border-box;
+            padding-bottom: 60px;
+        }
+
+        .menu-toggle {
+            display: none; 
+            position: fixed; top: 10px; left: 10px;
+            background: var(--accent-brown); color: var(--accent-gold);
+            border: 2px solid #5a3a22; padding: 5px 10px; font-size: 1.5em;
+            z-index: 3000; border-radius: 4px; cursor: pointer;
+            line-height: 1;
+        }
+
+        /* --- СТАТУСНАЯ ТОЧКА --- */
+        .status-dot {
+            display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+            background-color: #d32f2f; border: 2px solid rgba(0,0,0,0.3);
+            box-shadow: 0 0 5px rgba(0,0,0,0.5); transition: all 0.3s ease;
+            vertical-align: middle; margin-left: 8px;
+        }
+        .status-dot.online {
+            background-color: #00e676; box-shadow: 0 0 8px #00e676; border-color: #1b5e20;
+        }
+
         .container {
             max-width: 1050px;
             margin: 0 auto;
-            background-color: var(--paper-bg);
-            background-image: var(--paper-texture), linear-gradient(to right, rgba(139, 69, 19, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(139, 69, 19, 0.1) 1px, transparent 1px);
-            background-size: 100px 100px, 20px 20px, 20px 20px;
-            padding: 20px;
-            border-radius: 2px;
-            box-shadow: 
-                0 0 0 5px #5a3a22 inset,
-                0 15px 20px rgba(0,0,0,0.5),
-                0 0 50px rgba(0,0,0,0.3) inset;
-            border: 8px solid #462c1a;
-            border-image: repeating-linear-gradient(45deg, #462c1a, #462c1a 10px, #332013 10px, #332013 20px) 20;
-            margin-top: 60px;
+            /* Стили для фона и текстуры уже в main-content */
         }
 
         .brand-container {
@@ -249,72 +304,6 @@
         }
         .btn-reset-player:hover { background-color: #ff6d00; }
 
-        /* --- SIDEBAR --- */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            width: var(--sidebar-width);
-            background: #1a1008;
-            border-right: 4px solid var(--accent-brown);
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
-            z-index: 2000;
-            transition: transform 0.3s ease;
-            box-sizing: border-box;
-        }
-
-        .sidebar-logo { text-align: center; margin-bottom: 40px; }
-        .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
-        .sidebar-title { 
-            font-family: 'Rye', cursive; color: var(--accent-gold); font-size: 1.2em; 
-            margin-top: 10px; text-transform: uppercase; 
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        .nav-btn {
-            background: transparent; border: 1px solid var(--accent-brown); color: #d4c5a3;
-            padding: 15px; margin-bottom: 10px; text-align: left;
-            font-family: 'Rye', cursive; font-size: 1.1em; cursor: pointer;
-            transition: 0.2s; display: flex; align-items: center; gap: 10px;
-        }
-        .nav-btn:hover, .nav-btn.active { background: var(--accent-brown); color: var(--accent-gold); border-color: var(--accent-gold); }
-
-        /* --- MAIN CONTENT --- */
-        .main-content {
-            margin-left: var(--sidebar-width);
-            width: calc(100% - var(--sidebar-width));
-            min-height: 100vh;
-            padding: 20px;
-            background-image: var(--paper-texture);
-            background-color: var(--paper-bg);
-            box-sizing: border-box;
-            padding-bottom: 60px;
-        }
-
-        .menu-toggle {
-            display: none; 
-            position: fixed; top: 10px; left: 10px;
-            background: var(--accent-brown); color: var(--accent-gold);
-            border: 2px solid #5a3a22; padding: 5px 10px; font-size: 1.5em;
-            z-index: 3000; border-radius: 4px; cursor: pointer;
-            line-height: 1;
-        }
-
-        /* --- СТАТУСНАЯ ТОЧКА --- */
-        .status-dot {
-            display: inline-block; width: 12px; height: 12px; border-radius: 50%;
-            background-color: #d32f2f; border: 2px solid rgba(0,0,0,0.3);
-            box-shadow: 0 0 5px rgba(0,0,0,0.5); transition: all 0.3s ease;
-            vertical-align: middle; margin-left: 8px;
-        }
-        .status-dot.online {
-            background-color: #00e676; box-shadow: 0 0 8px #00e676; border-color: #1b5e20;
-        }
-
         table { width: 100%; border-collapse: separate; border-spacing: 0 10px; margin-top: 10px; }
         th { padding: 15px 10px; text-align: left; background-color: #6b523d; color: var(--accent-gold); font-family: 'Rye', cursive; letter-spacing: 1px; border-top: 3px solid #3e2b1f; border-bottom: 3px solid #3e2b1f; }
         tbody tr { background-color: rgba(255, 255, 255, 0.4); box-shadow: 2px 2px 4px rgba(0,0,0,0.1); border: 1px solid var(--accent-brown); }
@@ -455,7 +444,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v41.0 (Tap to Update)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v42.0 (Tap to Update)</div>
 </div>
 
 <script>
@@ -478,7 +467,7 @@
     // 2. АВТОМАТИЧЕСКОЕ ОБНОВЛЕНИЕ
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=41').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=42').then(reg => {
                 reg.update(); 
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -547,14 +536,14 @@
 
     // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v41'); 
+        const localData = localStorage.getItem('poker_data_v42'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v41', JSON.stringify(data));
+        localStorage.setItem('poker_data_v42', JSON.stringify(data));
         renderTable(data);
     });
 
