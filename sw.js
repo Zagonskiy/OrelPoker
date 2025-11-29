@@ -1,5 +1,5 @@
-// Версия v43 - Offline Mode Fixed (No Transactions)
-const CACHE_NAME = 'orelpoker-v43-offline-fix';
+// Версия v44 - Favicon & App Icon Added
+const CACHE_NAME = 'orelpoker-v44-icons';
 const ASSETS = [
     './',
     './index.html',
