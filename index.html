@@ -31,7 +31,7 @@
             color: var(--ink-color);
             margin: 0;
             overscroll-behavior: none;
-            padding-bottom: 50px;
+            padding-bottom: 50px; /* Место для прокрутки */
         }
 
         .btn-extreme-reset {
@@ -195,9 +195,25 @@
         .score-cell { font-family: 'Rye', cursive; font-size: 1.8em; color: var(--accent-red); text-align: center; }
         .history-log { font-size: 0.9em; color: #6b523d; font-style: italic; max-width: 250px; overflow-x: auto; white-space: nowrap; padding: 5px; background-color: rgba(139, 69, 19, 0.05); border-radius: 4px; }
         
-        tfoot tr { background-color: rgba(139, 69, 19, 0.2); border: 2px solid #8b4513; }
-        .total-label { text-align: right; font-family: 'Rye', cursive; font-size: 1.5em; color: var(--accent-brown); padding-right: 20px; }
-        .grand-total-cell { font-family: 'Rye', cursive; font-size: 2em; color: var(--accent-brown); text-align: center; font-weight: bold; }
+        /* Стили для Общего итога */
+        tfoot tr {
+            background-color: rgba(139, 69, 19, 0.2);
+            border: 2px solid #8b4513;
+        }
+        .total-label {
+            text-align: right;
+            font-family: 'Rye', cursive;
+            font-size: 1.5em;
+            color: var(--accent-brown);
+            padding-right: 20px;
+        }
+        .grand-total-cell {
+            font-family: 'Rye', cursive;
+            font-size: 2em;
+            color: var(--accent-brown);
+            text-align: center;
+            font-weight: bold;
+        }
 
         @media screen and (max-width: 768px) {
             .container { padding: 10px; border-width: 5px; }
@@ -216,10 +232,12 @@
             .history-log { max-width: 100%; }
             td:nth-of-type(5) { position: absolute; top: 5px; right: 5px; width: auto; padding: 0; }
             
+            /* Адаптация футера для мобильных */
             tfoot { display: block; margin-top: 20px; }
             tfoot tr { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-radius: 4px;}
             .total-label { text-align: left; font-size: 1.2em; }
             .grand-total-cell { font-size: 1.5em; }
+            /* Скрываем пустые ячейки в футере на мобилках */
             tfoot td:nth-child(4), tfoot td:nth-child(5) { display: none; }
         }
     </style>
@@ -231,7 +249,7 @@
 
 <div class="container">
     <h2>— OrelPoker Журнал —</h2>
-    <div class="sync-info">Version v10.0 (New Day Fixed)</div>
+    <div class="sync-info">Version v9.0 (Grand Total)</div>
 
     <div class="date-section">
         <label for="gameDate">Дата игры:</label>
@@ -317,7 +335,7 @@
 
     // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v10'); // Обновляем ключ
+        const localData = localStorage.getItem('poker_data_v9');
         if (localData) renderTable(JSON.parse(localData));
     });
 
@@ -327,7 +345,7 @@
             initDefaultPlayers();
             return;
         }
-        localStorage.setItem('poker_data_v10', JSON.stringify(data));
+        localStorage.setItem('poker_data_v9', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -336,12 +354,16 @@
 
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
-        let globalSum = 0;
+        
+        let globalSum = 0; // Переменная для общего банка
 
         for (let id in data) {
+            // Отрисовка строки
             const playerSum = renderPlayerRow(id, data[id]);
-            globalSum += playerSum;
+            globalSum += playerSum; // Складываем итоги
         }
+        
+        // Обновляем общий итог на экране
         document.getElementById('grandTotal').innerText = globalSum;
     }
 
@@ -404,7 +426,7 @@
         });
         cellDelete.appendChild(btnDelete);
 
-        return total; 
+        return total; // Возвращаем сумму игрока для общего подсчета
     }
 
     function createBtn(text, cls, onClick) {
@@ -420,9 +442,10 @@
         if (isNaN(val)) return;
         let change = val * multiplier;
 
+        // Отправка в базу
         push(ref(db, 'players/' + id + '/history'), change);
 
-        // Visual update
+        // Мгновенное визуальное обновление (в том числе ОБЩЕГО ИТОГА)
         const row = inputElem.closest('tr');
         const totalCell = row.querySelector('.score-cell');
         const historyCell = row.querySelector('.history-log');
@@ -430,15 +453,22 @@
 
         let currentTotal = parseFloat(totalCell.innerText || 0);
         let newTotal = currentTotal + change;
+        
+        // Обновляем игрока
         totalCell.innerText = newTotal;
         
+        // Обновляем общий банк
         let currentGrand = parseFloat(grandTotalCell.innerText || 0);
         grandTotalCell.innerText = currentGrand + change;
 
+        // Обновляем текст истории
         let text = historyCell.innerText;
         let newEntry = (change >= 0 ? `+${change}` : change);
-        if (text === 'Пусто') historyCell.innerText = newEntry;
-        else historyCell.innerText = text + ' ' + newEntry;
+        if (text === 'Пусто') {
+            historyCell.innerText = newEntry;
+        } else {
+            historyCell.innerText = text + ' ' + newEntry;
+        }
 
         inputElem.value = '';
         inputElem.focus();
@@ -470,35 +500,22 @@
         await update(ref(db), updates);
     }
 
-    // --- ИСПРАВЛЕННЫЙ НОВЫЙ ДЕНЬ ---
     window.startNewDay = async function() {
         const pass = prompt("Код подтверждения (НОВЫЙ ДЕНЬ):");
         if (pass !== "108020") { alert("Ошибка: Неверный код!"); return; }
-        
         const snapshot = await get(playersRef);
         const data = snapshot.val();
         if (!data) return;
-        
         const updates = {};
         for (let id in data) {
             let player = data[id];
             const stats = calculatePlayerStats(player);
             const currentTotal = stats.total;
-            
-            // 1. Создаем новый объект истории
-            const newHistory = {};
-            
-            // 2. Генерируем два уникальных ключа
-            // Используем push для генерации, но не записываем сразу
-            const key1 = push(ref(db)).key;
-            const key2 = push(ref(db)).key;
-            
-            // 3. Заполняем объект
-            newHistory[key1] = currentTotal;
-            newHistory[key2] = 500;
-            
-            // 4. Заменяем старую историю новой
-            updates['players/' + id + '/history'] = newHistory;
+            updates['players/' + id + '/history'] = null;
+            const key1 = push(ref(db, 'players/' + id + '/history')).key;
+            const key2 = push(ref(db, 'players/' + id + '/history')).key;
+            updates['players/' + id + '/history/' + key1] = currentTotal;
+            updates['players/' + id + '/history/' + key2] = 500;
         }
         await update(ref(db), updates);
         alert("День начат! +500 начислено.");
@@ -534,6 +551,7 @@
             csvContent += `"${name}";${total};${opsString}\n`;
         });
         
+        // Добавляем общий итог в CSV
         let grandTotal = document.getElementById('grandTotal').innerText;
         csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`;
 
