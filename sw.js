@@ -1,5 +1,5 @@
-// Версия v50 - Offline Login System
-const CACHE_NAME = 'orelpoker-v50-offline-auth';
+// Версия v51 - Robust Offline Login
+const CACHE_NAME = 'orelpoker-v51-robust-auth';
 const ASSETS = [
     './',
     './index.html',
