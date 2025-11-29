@@ -1,5 +1,5 @@
-// Версия v26 - Fix Mobile Title Padding
-const CACHE_NAME = 'orelpoker-v26-css-fix';
+// Версия v27 - Player Reset Button
+const CACHE_NAME = 'orelpoker-v27-reset-player';
 const ASSETS = [
     './',
     './index.html',
