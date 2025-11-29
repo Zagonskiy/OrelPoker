@@ -1,5 +1,5 @@
-// Версия v18 - Version Tag Bottom Right
-const CACHE_NAME = 'orelpoker-v18-ui-fix';
+// Версия v19 - Remove Mobile Label
+const CACHE_NAME = 'orelpoker-v19-clean-ui';
 const ASSETS = [
     './',
     './index.html',
