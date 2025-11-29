@@ -691,4 +691,132 @@
         document.getElementById('grandTotal').innerText = totalSum;
     }
 
-    function calculatePlayerStats
+    function calculatePlayerStats(player) {
+        let historyArray = [];
+        let total = 0;
+        if (player.history) {
+            if (typeof player.history === 'object' && !Array.isArray(player.history)) {
+                historyArray = Object.values(player.history);
+            } else if (Array.isArray(player.history)) {
+                historyArray = player.history;
+            }
+        }
+        historyArray.forEach(val => total += val);
+        return { total, historyArray };
+    }
+
+    function renderPlayerRow(id, player) {
+        const tableBody = document.getElementById('tableBody');
+        const newRow = tableBody.insertRow();
+        const { total, historyArray } = calculatePlayerStats(player);
+
+        const cellName = newRow.insertCell(0);
+        const nameWrapper = document.createElement('div');
+        nameWrapper.className = 'name-wrapper';
+        const statusDot = document.createElement('div');
+        statusDot.className = 'player-status-indicator';
+        statusDot.setAttribute('data-player-name', player.name);
+        
+        const inputName = document.createElement('input');
+        inputName.type = 'text'; inputName.className = 'player-name'; inputName.value = player.name || "";
+        inputName.readOnly = true;
+
+        nameWrapper.appendChild(statusDot); nameWrapper.appendChild(inputName); cellName.appendChild(nameWrapper);
+
+        const cellAction = newRow.insertCell(1);
+        const inputNum = document.createElement('input');
+        inputNum.type = 'number'; inputNum.className = 'input-val'; inputNum.placeholder = '0';
+        cellAction.append(
+            inputNum, 
+            createBtn('+', 'btn-calc', () => handleScore(id, inputNum, 1)),
+            createBtn('-', 'btn-calc', () => handleScore(id, inputNum, -1)),
+            createBtn('↩', 'btn-undo', () => undoLast(id)),
+            createBtn('↪', 'btn-redo', () => redoLast(id))
+        );
+
+        const cellTotal = newRow.insertCell(2);
+        cellTotal.className = 'score-cell';
+        cellTotal.innerText = total;
+
+        const cellHistory = newRow.insertCell(3);
+        cellHistory.className = 'history-log';
+        cellHistory.innerText = historyArray.length > 0 ? historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ') : 'Пусто';
+
+        const cellDelete = newRow.insertCell(4);
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
+        wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
+        wrapper.appendChild(createBtn('✕', 'btn-delete', () => { if(confirm("Удалить?")) remove(ref(db, 'players/' + id)); }));
+        cellDelete.appendChild(wrapper);
+    }
+
+    function createBtn(text, cls, onClick) {
+        const btn = document.createElement('button');
+        btn.innerText = text; btn.className = cls; btn.onclick = onClick;
+        return btn;
+    }
+
+    window.handleScore = function(id, inputElem, multiplier) {
+        let val = parseFloat(inputElem.value);
+        if (isNaN(val)) return;
+        let change = val * multiplier;
+        push(ref(db, 'players/' + id + '/history'), change);
+        set(ref(db, 'players/' + id + '/redoStack'), null);
+        const row = inputElem.closest('tr');
+        const totalCell = row.querySelector('.score-cell');
+        const historyCell = row.querySelector('.history-log');
+        let currentTotal = parseFloat(totalCell.innerText || 0);
+        totalCell.innerText = currentTotal + change;
+        let text = historyCell.innerText;
+        let newEntry = (change >= 0 ? `+${change}` : change);
+        if (text === 'Пусто') historyCell.innerText = newEntry;
+        else historyCell.innerText = text + ' ' + newEntry;
+        inputElem.value = ''; inputElem.focus();
+        recalculateGrandTotal();
+    }
+
+    window.undoLast = async function(id) {
+        const historyRef = ref(db, 'players/' + id + '/history');
+        const lastItemQuery = query(historyRef, orderByKey(), limitToLast(1));
+        const snapshot = await get(lastItemQuery);
+        snapshot.forEach((child) => {
+            const val = child.val();
+            remove(child.ref);
+            push(ref(db, 'players/' + id + '/redoStack'), val);
+        });
+    }
+
+    window.redoLast = async function(id) {
+        const redoRef = ref(db, 'players/' + id + '/redoStack');
+        const lastRedoQuery = query(redoRef, orderByKey(), limitToLast(1));
+        const snapshot = await get(lastRedoQuery);
+        snapshot.forEach((child) => {
+            const val = child.val();
+            remove(child.ref);
+            push(ref(db, 'players/' + id + '/history'), val);
+        });
+    }
+
+    window.createNewPlayer = () => push(playersRef, { name: "Новый игрок", history: {} });
+    window.resetPlayer = (id) => { if (prompt("Сбросить игрока (Код)?") === "108020") update(ref(db, 'players/' + id), { history: null, redoStack: null }); else alert("Ошибка"); };
+    window.extremeReset = async () => { if (prompt("ПОЛНЫЙ СБРОС (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { updates['players/' + child.key + '/history'] = null; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); } };
+    window.startNewDay = async () => { if (prompt("НОВЫЙ ДЕНЬ (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { const { total } = calculatePlayerStats(child.val()); const key1 = push(ref(db)).key; const key2 = push(ref(db)).key; const newHistory = {}; newHistory[key1] = total; newHistory[key2] = 500; updates['players/' + child.key + '/history'] = newHistory; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); alert("День начат! +500"); } };
+    window.addToJournal = async function() { if(!confirm("В Журнал?")) return; const snapshot = await get(playersRef); const data = snapshot.val(); if (!data) return; let grandTotal = 0; const savedPlayers = []; for (let id in data) { const player = data[id]; const { total, historyArray } = calculatePlayerStats(player); grandTotal += total; savedPlayers.push({ name: player.name || "Без имени", total: total, history: historyArray.join(' ') }); } const now = new Date(); const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString(); push(journalRef, { date: dateStr, timestamp: Date.now(), grandTotal: grandTotal, players: savedPlayers }); alert("Сохранено!"); }
+    window.deleteJournalEntry = function(id) { const pass = prompt("Удалить запись (Код)?"); if (pass === "108020") { remove(ref(db, 'journal/' + id)); } else if (pass !== null) { alert("Ошибка"); } }
+    onValue(journalRef, (snapshot) => { const listDiv = document.getElementById('journalList'); listDiv.innerHTML = ''; const data = snapshot.val(); if (!data) { listDiv.innerHTML = '<div style="text-align:center;">Пусто</div>'; return; } const entries = Object.entries(data).sort((a, b) => b[1].timestamp - a[1].timestamp); entries.forEach(([id, entry]) => { const card = document.createElement('div'); card.className = 'journal-card'; const header = document.createElement('div'); header.className = 'journal-header'; header.innerHTML = `<div style="display:flex; align-items:center;"><span>📅 ${entry.date}</span><button class="btn-journal-delete" onclick="event.stopPropagation(); deleteJournalEntry('${id}')">🗑️</button></div><span class="journal-total">Банк: ${entry.grandTotal}</span>`; const details = document.createElement('div'); details.className = 'journal-details'; let detailsHtml = `<div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px; display:flex; justify-content:space-between;"><span>Игрок</span><span>Итог</span></div>`; if (entry.players) { entry.players.forEach(p => { detailsHtml += `<div class="detail-row"><span style="font-weight:bold;">${p.name}</span><span style="color:${p.total >= 0 ? 'green' : 'red'}">${p.total}</span></div><div style="font-size:0.8em; color:#666; margin-bottom:5px;">${p.history}</div>`; }); } details.innerHTML = detailsHtml; card.appendChild(header); card.appendChild(details); card.onclick = () => card.classList.toggle('open'); listDiv.appendChild(card); }); });
+    window.toggleSidebar = function() { document.getElementById('sidebar').classList.toggle('open'); }
+    window.showView = function(viewName) { document.getElementById('sidebar').classList.remove('open'); if (viewName === 'game') { document.getElementById('view-game').classList.remove('hidden'); document.getElementById('view-journal').classList.add('hidden'); document.querySelectorAll('.nav-btn')[0].classList.add('active'); document.querySelectorAll('.nav-btn')[1].classList.remove('active'); } else { document.getElementById('view-game').classList.add('hidden'); document.getElementById('view-journal').classList.remove('hidden'); document.querySelectorAll('.nav-btn')[0].classList.remove('active'); document.querySelectorAll('.nav-btn')[1].classList.add('active'); } }
+    window.downloadCSV = function() { const rows = document.querySelectorAll('#scoreTable tbody tr'); if (rows.length === 0) { alert("Пусто!"); return; } const selectedDate = document.getElementById('gameDate').value; let formattedDate = selectedDate; if(selectedDate) { const parts = selectedDate.split('-'); formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`; } let csvContent = `Дата выписки:;${formattedDate}\n\n`; csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n"; rows.forEach(row => { let name = row.querySelector('.player-name').value.trim(); if (!name) name = "Без имени"; let total = row.querySelector('.score-cell').innerText; let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); csvContent += `"${name}";${total};${opsString}\n`; }); let grandTotal = document.getElementById('grandTotal').innerText; csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`; const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `Выписка за ${formattedDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+    
+    // --- ADMIN: Delete User ---
+    window.deleteUserAccount = function(nickname) {
+        const pass = prompt(`Удалить аккаунт "${nickname}"? (Код 108020):`);
+        if (pass !== "108020") { alert("Ошибка доступа"); return; }
+        remove(ref(db, 'users/' + nickname))
+        .then(() => { alert(`Аккаунт ${nickname} удален.`); })
+        .catch((error) => { alert("Ошибка: " + error.message); });
+    }
+</script>
+
+</body>
+</html>
