@@ -31,7 +31,7 @@
             color: var(--ink-color);
             margin: 0;
             overscroll-behavior: none;
-            padding-bottom: 50px;
+            padding-bottom: 60px;
         }
 
         .btn-extreme-reset {
@@ -231,7 +231,7 @@
 
 <div class="container">
     <h2>— OrelPoker Журнал —</h2>
-    <div class="sync-info">Version v11.0 (Correct Math)</div>
+    <div class="sync-info">Version v12.0 (Perfect Math)</div>
 
     <div class="date-section">
         <label for="gameDate">Дата игры:</label>
@@ -317,7 +317,7 @@
 
     // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v11'); 
+        const localData = localStorage.getItem('poker_data_v12'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
@@ -327,7 +327,7 @@
             initDefaultPlayers();
             return;
         }
-        localStorage.setItem('poker_data_v11', JSON.stringify(data));
+        localStorage.setItem('poker_data_v12', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -422,14 +422,16 @@
         return btn;
     }
 
+    // --- ОБНОВЛЕННАЯ ФУНКЦИЯ ДЕЙСТВИЙ ---
     window.handleScore = function(id, inputElem, multiplier) {
         let val = parseFloat(inputElem.value);
         if (isNaN(val)) return;
         let change = val * multiplier;
 
+        // 1. Отправляем в базу
         push(ref(db, 'players/' + id + '/history'), change);
 
-        // Мгновенное визуальное обновление (используем только DOM)
+        // 2. Обновляем экран визуально (для игрока)
         const row = inputElem.closest('tr');
         const totalCell = row.querySelector('.score-cell');
         const historyCell = row.querySelector('.history-log');
@@ -447,7 +449,7 @@
         inputElem.value = '';
         inputElem.focus();
         
-        // ВАЖНО: Вызываем пересчет общего итога
+        // 3. ПЕРЕСЧИТЫВАЕМ ОБЩИЙ ИТОГ (Просто суммируем то, что сейчас на экране)
         recalculateGrandTotal();
     }
 
@@ -458,8 +460,6 @@
         snapshot.forEach((child) => {
             remove(child.ref);
         });
-        // Пересчет произойдет автоматически при ответе базы,
-        // но для визуала можно бы и тут, но undo реже используется офлайн.
     }
 
     window.createNewPlayer = function() {
