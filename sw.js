@@ -1,5 +1,5 @@
-// Версия v63 - Refresh Table Button
-const CACHE_NAME = 'orelpoker-v63-refresh';
+// Версия v64 - Fix Online Status after Rename
+const CACHE_NAME = 'orelpoker-v64-status-fix';
 const ASSETS = [
     './',
     './index.html',
