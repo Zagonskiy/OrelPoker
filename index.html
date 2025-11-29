@@ -38,6 +38,32 @@
             padding-bottom: 60px;
         }
 
+        /* --- СТАТУС ИГРОКА В ТАБЛИЦЕ --- */
+        .name-wrapper {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        
+        .player-status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #d32f2f; /* Красный (офлайн) */
+            border: 1px solid rgba(0,0,0,0.3);
+            margin-right: 8px;
+            box-shadow: 0 0 2px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+            flex-shrink: 0; /* Чтобы не сплющивался */
+        }
+        
+        .player-status-indicator.is-online {
+            background-color: #00e676; /* Зеленый (онлайн) */
+            box-shadow: 0 0 6px #00e676;
+            border-color: #1b5e20;
+        }
+        /* ----------------------------- */
+
         /* --- LOGIN OVERLAY --- */
         #login-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -169,7 +195,7 @@
         .score-cell { font-family: 'Rye', cursive; font-size: 1.8em; color: var(--accent-red); text-align: center; }
         .history-log { font-size: 0.9em; color: #6b523d; font-style: italic; max-width: 250px; overflow-x: auto; white-space: nowrap; padding: 5px; background-color: rgba(139, 69, 19, 0.05); border-radius: 4px; }
         
-        /* ПК ИТОГ (Стандартный) */
+        /* ПК ИТОГ */
         tfoot tr { background-color: rgba(139, 69, 19, 0.2); border: 2px solid #8b4513; }
         .total-label { text-align: right; font-family: 'Rye', cursive; font-size: 1.5em; color: var(--accent-brown); padding-right: 20px; }
         .grand-total-cell { font-family: 'Rye', cursive; font-size: 2em; color: var(--accent-brown); text-align: center; font-weight: bold; }
@@ -206,72 +232,48 @@
             td:nth-of-type(5) { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; padding: 0; }
             .btn-reset-player, .btn-delete { width: 28px; height: 28px; font-size: 0.9em; }
             
-            /* --- МОБИЛЬНЫЙ ДИЗАЙН "ОБЩИЙ БАНК" --- */
             tfoot { display: block; margin-top: 20px; }
             tfoot tr { 
-                display: flex; 
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                background: #3e2b1f;
-                border: 2px solid #cba135;
-                border-radius: 12px;
-                padding: 15px;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                background: #3e2b1f; border: 2px solid #cba135; border-radius: 12px; padding: 15px;
                 box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-                width: 100%;
-                box-sizing: border-box; /* Fix padding issue */
+                width: 100%; box-sizing: border-box;
             }
             tfoot td { display: block; padding: 0; border: none; width: 100%; }
             tfoot td:nth-child(4), tfoot td:nth-child(5) { display: none; }
             .total-label { display: none; }
-            .grand-total-cell { 
-                text-align: center; 
-                font-size: 2.8em; 
-                color: #fff; 
-                font-weight: bold; 
-                text-shadow: 0 0 10px rgba(203, 161, 53, 0.6); 
-                margin-top: 0; 
-            }
+            .grand-total-cell { text-align: center; font-size: 2.8em; color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(203, 161, 53, 0.6); margin-top: 0; }
         }
     </style>
 </head>
 <body>
 
 <div id="login-overlay">
-    
     <div id="login-view-card" class="login-card">
         <h2>ВХОД В КЛУБ</h2>
         <div class="brand-container" style="border:none; margin:0; padding:0;">
              <img src="./logo.png" class="header-logo-round" style="margin-bottom:15px;">
         </div>
-        
         <input type="text" id="loginNick" class="login-input" placeholder="Никнейм">
         <input type="password" id="loginPass" class="login-input" placeholder="Пароль">
-        
         <div class="login-checkbox">
             <input type="checkbox" id="rememberMe" style="width:auto;">
             <label for="rememberMe">Запомнить меня</label>
         </div>
-        
         <button class="btn-login-action" onclick="handleLogin()">ВОЙТИ</button>
         <button class="btn-register-link" onclick="switchAuthView('register')">Нет аккаунта? Регистрация</button>
-        
         <div id="loginError" class="error-msg"></div>
     </div>
 
     <div id="register-view-card" class="login-card hidden">
         <h2>РЕГИСТРАЦИЯ</h2>
-        
         <input type="text" id="regNick" class="login-input" placeholder="Придумайте Ник">
         <input type="password" id="regPass" class="login-input" placeholder="Пароль">
         <input type="password" id="regPassRepeat" class="login-input" placeholder="Повторите пароль">
-        
         <button class="btn-login-action btn-register" onclick="handleRegister()">СОЗДАТЬ АККАУНТ</button>
         <button class="btn-login-action btn-back" onclick="switchAuthView('login')">НАЗАД</button>
-        
         <div id="regError" class="error-msg"></div>
     </div>
-
 </div>
 
 <div id="networkStatus" class="network-badge status-offline" style="display:none;">⏳</div>
@@ -288,12 +290,9 @@
             <span id="desktopStatusDot" class="status-dot"></span>
         </div>
     </div>
-    
     <button class="nav-btn active" onclick="showView('game')">🎲 Игровой стол</button>
     <button class="nav-btn" onclick="showView('journal')">📜 Журнал архива</button>
-    
     <button class="nav-btn" onclick="logout()" style="margin-top: 20px;">🚪 ВЫЙТИ</button>
-    
     <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 </div>
 
@@ -340,7 +339,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v59.0 (Mobile Total Fix)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v60.0 (Online Dots)</div>
 </div>
 
 <script>
@@ -358,7 +357,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=59').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=60').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -393,9 +392,64 @@
     const playersRef = ref(db, 'players');
     const journalRef = ref(db, 'journal');
     const usersRef = ref(db, 'users');
+    const onlineUsersRef = ref(db, "online_users");
+    
+    // --- СПИСОК ОНЛАЙН ИГРОКОВ ---
+    let onlineNicknames = new Set();
 
-    // --- АВТОРИЗАЦИЯ (OPTIMISTIC) ---
+    onValue(onlineUsersRef, (snap) => {
+        onlineNicknames.clear();
+        if (snap.exists()) {
+            const data = snap.val();
+            // Ключи этого объекта - это никнеймы
+            Object.keys(data).forEach(nick => onlineNicknames.add(nick));
+            
+            // Обновляем счетчик
+            const count = onlineNicknames.size;
+            document.getElementById('onlineCounter').innerText = `👁️ Онлайн: ${count}`;
+        } else {
+            document.getElementById('onlineCounter').innerText = `👁️ Онлайн: 0`;
+        }
+        // Перерисовываем точки в таблице
+        updateTableStatusDots();
+    });
 
+    function updateTableStatusDots() {
+        const dots = document.querySelectorAll('.player-status-indicator');
+        dots.forEach(dot => {
+            const name = dot.getAttribute('data-player-name');
+            if (onlineNicknames.has(name)) {
+                dot.classList.add('is-online');
+            } else {
+                dot.classList.remove('is-online');
+            }
+        });
+    }
+    // -----------------------------
+
+    // --- АВТОМАТИЧЕСКОЕ ДОБАВЛЕНИЕ ПОЛЬЗОВАТЕЛЕЙ ---
+    async function syncUsersToTable() {
+        try {
+            const usersSnap = await get(usersRef);
+            const playersSnap = await get(playersRef);
+            const users = usersSnap.val() || {};
+            const players = playersSnap.val() || {};
+            const existingNames = new Set();
+            for(let id in players) { if(players[id].name) existingNames.add(players[id].name); }
+            const updates = {};
+            let hasUpdates = false;
+            for(let nick in users) {
+                if(!existingNames.has(nick)) {
+                    const newKey = push(ref(db, 'players')).key;
+                    updates['players/' + newKey] = { name: nick, history: { 'start_bonus': 1000 } };
+                    hasUpdates = true;
+                }
+            }
+            if(hasUpdates) { await update(ref(db), updates); }
+        } catch(e) {}
+    }
+
+    // --- AUTH ---
     window.switchAuthView = function(view) {
         document.getElementById('loginError').innerText = "";
         document.getElementById('regError').innerText = "";
@@ -409,7 +463,6 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-        // 1. Проверяем постоянную память
         const savedUser = localStorage.getItem('op_user');
         if(savedUser) {
             const user = JSON.parse(savedUser);
@@ -417,14 +470,13 @@
             verifySessionInBackground(user.nick, user.pass);
             return;
         }
-        
-        // 2. Проверяем сессию
         const sessionUser = sessionStorage.getItem('op_session_user');
         if(sessionUser) {
             const user = JSON.parse(sessionUser);
             performLogin(user.nick, user.pass, false);
             verifySessionInBackground(user.nick, user.pass);
         }
+        if(navigator.onLine) syncUsersToTable();
     });
 
     async function verifySessionInBackground(nick, pass) {
@@ -444,6 +496,7 @@
                     knownUsers[nick] = pass;
                     localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
                     setOnlineStatus(nick);
+                    syncUsersToTable();
                 }
             } else {
                 alert("Аккаунт не найден.");
@@ -466,6 +519,7 @@
         const passRepeat = document.getElementById('regPassRepeat').value.trim();
         if(!nick || !pass) { document.getElementById('regError').innerText = "Заполните все поля"; return; }
         if(pass !== passRepeat) { document.getElementById('regError').innerText = "Пароли не совпадают!"; return; }
+
         get(child(ref(db), `users/${nick}`)).then((snapshot) => {
             if (snapshot.exists()) {
                 document.getElementById('regError').innerText = "Ник занят!";
@@ -539,7 +593,6 @@
 
     // --- ИГРА ---
     const connectedRef = ref(db, ".info/connected");
-    const onlineUsersRef = ref(db, "online_users");
     let currentConnectionRef = null;
 
     function setOnlineStatus(nickname) {
@@ -554,28 +607,23 @@
         const dotDesktop = document.getElementById('desktopStatusDot');
         const statusEl = document.getElementById('networkStatus');
         if(statusEl) statusEl.style.display = 'none';
+
         if (snap.val() === true) {
             dotMobile.classList.add('online'); dotDesktop.classList.add('online');
+            // Если уже есть сохраненная сессия - обновляем статус
+            const sessionUser = sessionStorage.getItem('op_session_user');
+            if (sessionUser && !currentConnectionRef) {
+                setOnlineStatus(JSON.parse(sessionUser).nick);
+            }
         } else {
             dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
         }
     });
 
-    onValue(onlineUsersRef, (snap) => {
-        const countDisplay = document.getElementById('onlineCounter');
-        if (snap.exists()) {
-            const count = Object.keys(snap.val()).length;
-            countDisplay.innerText = `👁️ Онлайн: ${count}`;
-        } else {
-            countDisplay.innerText = `👁️ Онлайн: 0`;
-        }
-    });
-
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
-        // Если пусто, пробуем добавить игроков (но это теперь делает handleRegister)
-        // if (!data) { ... }
-        localStorage.setItem('poker_data_v59', JSON.stringify(data));
+        if (!data) return;
+        localStorage.setItem('poker_data_v60', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -583,10 +631,9 @@
         if (document.activeElement.tagName === 'INPUT') return; 
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
-        if(data) {
-            for (let id in data) { renderPlayerRow(id, data[id]); }
-        }
+        for (let id in data) { renderPlayerRow(id, data[id]); }
         recalculateGrandTotal();
+        updateTableStatusDots(); // Обновить точки после рендера
     }
 
     function recalculateGrandTotal() {
@@ -616,10 +663,24 @@
         const { total, historyArray } = calculatePlayerStats(player);
 
         const cellName = newRow.insertCell(0);
+        // Контейнер для имени и статуса
+        const nameWrapper = document.createElement('div');
+        nameWrapper.className = 'name-wrapper';
+
+        // Кружок статуса
+        const statusDot = document.createElement('div');
+        statusDot.className = 'player-status-indicator';
+        statusDot.setAttribute('data-player-name', player.name); // Чтобы находить его
+        // Проверяем сразу при рендере
+        if (onlineNicknames.has(player.name)) statusDot.classList.add('is-online');
+
         const inputName = document.createElement('input');
         inputName.type = 'text'; inputName.className = 'player-name'; inputName.value = player.name || "";
         inputName.readOnly = true;
-        cellName.appendChild(inputName);
+
+        nameWrapper.appendChild(statusDot);
+        nameWrapper.appendChild(inputName);
+        cellName.appendChild(nameWrapper);
 
         const cellAction = newRow.insertCell(1);
         const inputNum = document.createElement('input');
