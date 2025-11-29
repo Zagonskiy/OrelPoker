@@ -95,7 +95,7 @@
             text-align: center;
             color: var(--accent-brown);
             font-size: 2.5em;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             text-shadow: 2px 2px 0px var(--paper-bg), 4px 4px 0px rgba(0,0,0,0.2);
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -104,7 +104,21 @@
             line-height: 1.2;
         }
         
-        .sync-info { text-align: center; font-size: 0.8em; color: #666; margin-bottom: 15px; font-style: italic; }
+        /* СЧЕТЧИК ОНЛАЙНА */
+        .online-counter {
+            text-align: center;
+            font-family: 'Special Elite', monospace;
+            font-size: 1.1em;
+            color: var(--accent-green);
+            background: rgba(46, 125, 50, 0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 1px solid var(--accent-green);
+            display: inline-block;
+            margin: 0 auto 15px auto;
+            font-weight: bold;
+        }
+        .center-wrap { text-align: center; }
 
         .date-section {
             display: flex;
@@ -234,7 +248,10 @@
 
 <div class="container">
     <h2>— OrelPoker Журнал —</h2>
-    <div class="sync-info">Version v16.0 (Atomic Transactions)</div>
+    
+    <div class="center-wrap">
+        <div id="onlineCounter" class="online-counter">👁️ Онлайн: ...</div>
+    </div>
 
     <div class="date-section">
         <label for="gameDate">Дата игры:</label>
@@ -289,7 +306,8 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, onValue, push, set, remove, update, get, query, limitToLast, orderByKey, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    // ДОБАВИЛ onDisconnect
+    import { getDatabase, ref, onValue, push, set, remove, update, get, query, limitToLast, orderByKey, runTransaction, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyD9E8XsdjGx275Es6HwdCo5jy2l0kJoNXg",
@@ -305,22 +323,43 @@
     const db = getDatabase(app);
     const playersRef = ref(db, 'players');
     
-    // Статус сети
+    // --- СТАТУС СЕТИ + СЧЕТЧИК ОНЛАЙНА ---
     const connectedRef = ref(db, ".info/connected");
+    const connectionsRef = ref(db, "connections");
+
     onValue(connectedRef, (snap) => {
         const statusEl = document.getElementById('networkStatus');
         if (snap.val() === true) {
             statusEl.innerText = "🟢 ONLINE";
             statusEl.className = "network-badge status-online";
+
+            // Добавляем себя в список подключений
+            const con = push(connectionsRef);
+            // При отключении (закрытии вкладки) удаляем себя
+            onDisconnect(con).remove();
+            set(con, true);
+
         } else {
             statusEl.innerText = "🔴 OFFLINE";
             statusEl.className = "network-badge status-offline";
         }
     });
 
+    // Слушаем, сколько людей в списке connections
+    onValue(connectionsRef, (snap) => {
+        const countDisplay = document.getElementById('onlineCounter');
+        if (snap.exists()) {
+            const count = snap.size; // Размер списка ключей
+            countDisplay.innerText = `👁️ Онлайн: ${count}`;
+        } else {
+            countDisplay.innerText = `👁️ Онлайн: 0`;
+        }
+    });
+    // ----------------------------------------
+
     // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v16'); 
+        const localData = localStorage.getItem('poker_data_v17'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
@@ -330,7 +369,7 @@
             initDefaultPlayers();
             return;
         }
-        localStorage.setItem('poker_data_v16', JSON.stringify(data));
+        localStorage.setItem('poker_data_v17', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -390,8 +429,8 @@
         
         const btnPlus = createBtn('+', 'btn-calc', () => handleScore(id, inputNum, 1));
         const btnMinus = createBtn('-', 'btn-calc', () => handleScore(id, inputNum, -1));
-        const btnUndo = createBtn('↩', 'btn-undo', () => undoLast(id, inputNum));
-        const btnRedo = createBtn('↪', 'btn-redo', () => redoLast(id, inputNum)); 
+        const btnUndo = createBtn('↩', 'btn-undo', () => undoLast(id));
+        const btnRedo = createBtn('↪', 'btn-redo', () => redoLast(id));
 
         cellAction.append(inputNum, btnPlus, btnMinus, btnUndo, btnRedo);
 
@@ -430,22 +469,17 @@
         if (isNaN(val)) return;
         let change = val * multiplier;
 
-        // Используем runTransaction для атомарного обновления
         runTransaction(ref(db, 'players/' + id), (player) => {
             if (player) {
-                // Добавляем в историю
                 if (!player.history) player.history = {};
-                // Генерируем уникальный ключ внутри транзакции
                 const newKey = 'move_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
                 player.history[newKey] = change;
-                
-                // Очищаем стек возврата
                 player.redoStack = null;
             }
             return player;
         });
 
-        // Визуальное обновление (Optimistic UI)
+        // Optimistic UI
         const row = inputElem.closest('tr');
         const totalCell = row.querySelector('.score-cell');
         const historyCell = row.querySelector('.history-log');
@@ -463,7 +497,7 @@
         recalculateGrandTotal();
     }
 
-    // --- ТРАНЗАКЦИЯ: ОТМЕНА (UNDO) ---
+    // --- ТРАНЗАКЦИЯ: ОТМЕНА ---
     window.undoLast = function(id) {
         runTransaction(ref(db, 'players/' + id), (player) => {
             if (player && player.history) {
@@ -471,11 +505,8 @@
                 if (keys.length > 0) {
                     const lastKey = keys[keys.length - 1];
                     const val = player.history[lastKey];
-                    
-                    // Удаляем из истории
                     delete player.history[lastKey];
                     
-                    // Добавляем в Redo
                     if (!player.redoStack) player.redoStack = {};
                     const redoKey = 'redo_' + Date.now();
                     player.redoStack[redoKey] = val;
@@ -485,7 +516,7 @@
         });
     }
 
-    // --- ТРАНЗАКЦИЯ: ВОЗВРАТ (REDO) ---
+    // --- ТРАНЗАКЦИЯ: ВОЗВРАТ ---
     window.redoLast = function(id) {
         runTransaction(ref(db, 'players/' + id), (player) => {
             if (player && player.redoStack) {
@@ -493,11 +524,8 @@
                 if (keys.length > 0) {
                     const lastKey = keys[keys.length - 1];
                     const val = player.redoStack[lastKey];
-                    
-                    // Удаляем из Redo
                     delete player.redoStack[lastKey];
                     
-                    // Возвращаем в историю
                     if (!player.history) player.history = {};
                     const newKey = 'move_' + Date.now();
                     player.history[newKey] = val;
