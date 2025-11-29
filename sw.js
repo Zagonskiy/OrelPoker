@@ -1,5 +1,5 @@
-// Версия v9 - Added Grand Total
-const CACHE_NAME = 'orelpoker-v9-total';
+// Версия v10 - Fix New Day Button
+const CACHE_NAME = 'orelpoker-v10-fix';
 const ASSETS = [
     './',
     './index.html',
