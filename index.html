@@ -167,8 +167,6 @@
         input[type="number"] { width: 70px; margin-right: 5px; text-align: center; border: 2px solid var(--accent-brown); background-color: #f9f3e3; }
         .score-cell { font-family: 'Rye', cursive; font-size: 1.8em; color: var(--accent-red); text-align: center; }
         .history-log { font-size: 0.9em; color: #6b523d; font-style: italic; max-width: 250px; overflow-x: auto; white-space: nowrap; padding: 5px; background-color: rgba(139, 69, 19, 0.05); border-radius: 4px; }
-        
-        /* ПК ИТОГ (Стандартный) */
         tfoot tr { background-color: rgba(139, 69, 19, 0.2); border: 2px solid #8b4513; }
         .total-label { text-align: right; font-family: 'Rye', cursive; font-size: 1.5em; color: var(--accent-brown); padding-right: 20px; }
         .grand-total-cell { font-family: 'Rye', cursive; font-size: 2em; color: var(--accent-brown); text-align: center; font-weight: bold; }
@@ -184,7 +182,6 @@
         .btn-journal-delete { background: var(--accent-red); color: #fff; border: 1px solid #500; border-radius: 4px; padding: 3px 8px; font-size: 0.8em; margin-left: 10px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
         .btn-journal-delete:hover { background: #a00000; }
 
-        /* --- МОБИЛЬНЫЙ ДИЗАЙН --- */
         @media screen and (max-width: 768px) {
             .sidebar { transform: translateX(-100%); width: 260px; }
             .sidebar.open { transform: translateX(0); }
@@ -206,45 +203,34 @@
             td:nth-of-type(5) { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; padding: 0; }
             .btn-reset-player, .btn-delete { width: 28px; height: 28px; font-size: 0.9em; }
             
-            /* --- МОБИЛЬНЫЙ ДИЗАЙН "ОБЩИЙ БАНК" (НОВЫЙ) --- */
+            /* --- МОБИЛЬНЫЙ ДИЗАЙН "ОБЩИЙ БАНК" --- */
             tfoot { display: block; margin-top: 20px; }
             tfoot tr { 
                 display: flex; 
-                flex-direction: column; /* В колонку */
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                background: #3e2b1f; /* Темный фон */
-                border: 2px solid #cba135; /* Золотая рамка */
+                background: #3e2b1f;
+                border: 2px solid #cba135;
                 border-radius: 12px;
                 padding: 15px;
                 box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             }
             
             tfoot td { display: block; padding: 0; border: none; width: 100%; }
-            
-            /* Скрываем пустые ячейки */
             tfoot td:nth-child(4), tfoot td:nth-child(5) { display: none; }
             
-            /* Надпись "Общий банк" */
             .total-label { 
-                text-align: center; 
-                font-size: 1.2em; 
-                color: #cba135; /* Золотой текст */
-                margin-bottom: 5px;
-                padding: 0;
-                width: 100%;
-                text-transform: uppercase;
-                letter-spacing: 2px;
+                display: none; /* СКРЫВАЕМ ТЕКСТОВУЮ НАДПИСЬ */
             }
             
-            /* Сама цифра */
             .grand-total-cell { 
                 text-align: center; 
                 font-size: 2.8em; 
-                color: #fff; /* Белая цифра */
+                color: #fff;
                 font-weight: bold;
                 text-shadow: 0 0 10px rgba(203, 161, 53, 0.6);
-                margin-top: 5px;
+                margin-top: 0; /* Убираем лишний отступ, так как текста сверху нет */
             }
         }
     </style>
@@ -354,7 +340,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v52.0 (Bank Facelift)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v53.0 (No Label Mobile)</div>
 </div>
 
 <script>
@@ -372,7 +358,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=52').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=53').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -409,11 +395,9 @@
     const usersRef = ref(db, 'users');
 
     // --- АВТОРИЗАЦИЯ ---
-
     window.switchAuthView = function(view) {
         document.getElementById('loginError').innerText = "";
         document.getElementById('regError').innerText = "";
-        
         if(view === 'register') {
             document.getElementById('login-view-card').classList.add('hidden');
             document.getElementById('register-view-card').classList.remove('hidden');
@@ -443,10 +427,8 @@
         const nick = document.getElementById('regNick').value.trim();
         const pass = document.getElementById('regPass').value.trim();
         const passRepeat = document.getElementById('regPassRepeat').value.trim();
-        
         if(!nick || !pass) { document.getElementById('regError').innerText = "Заполните все поля"; return; }
         if(pass !== passRepeat) { document.getElementById('regError').innerText = "Пароли не совпадают!"; return; }
-
         get(child(ref(db), `users/${nick}`)).then((snapshot) => {
             if (snapshot.exists()) {
                 document.getElementById('regError').innerText = "Этот ник уже занят!";
@@ -470,20 +452,17 @@
             }
             return false;
         };
-
         if (!navigator.onLine) {
             if (!tryLocalLogin()) {
                 if(!isAuto) document.getElementById('loginError').innerText = "Нет сети и данные не сохранены";
             }
             return;
         }
-
         try {
             const snapshot = await Promise.race([
                 get(child(ref(db), `users/${nick}`)),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
             ]);
-
             if (snapshot.exists()) {
                 const userData = snapshot.val();
                 if(userData.pass === pass) {
@@ -521,7 +500,6 @@
     }
 
     // --- ИГРА ---
-    
     const connectedRef = ref(db, ".info/connected");
     const connectionsRef = ref(db, "connections");
 
@@ -530,7 +508,6 @@
         const dotDesktop = document.getElementById('desktopStatusDot');
         const statusEl = document.getElementById('networkStatus');
         if(statusEl) statusEl.style.display = 'none';
-
         if (snap.val() === true) {
             dotMobile.classList.add('online'); dotDesktop.classList.add('online');
             const con = push(connectionsRef); onDisconnect(con).remove(); set(con, true);
@@ -544,14 +521,14 @@
     });
 
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v52'); 
+        const localData = localStorage.getItem('poker_data_v53'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v52', JSON.stringify(data));
+        localStorage.setItem('poker_data_v53', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -634,7 +611,6 @@
         let change = val * multiplier;
         push(ref(db, 'players/' + id + '/history'), change);
         set(ref(db, 'players/' + id + '/redoStack'), null);
-        
         const row = inputElem.closest('tr');
         const totalCell = row.querySelector('.score-cell');
         const historyCell = row.querySelector('.history-log');
@@ -671,161 +647,16 @@
     }
 
     window.createNewPlayer = () => push(playersRef, { name: "Новый игрок", history: {} });
-    
-    window.resetPlayer = (id) => {
-        if (prompt("Сбросить игрока (Код)?") === "108020") update(ref(db, 'players/' + id), { history: null, redoStack: null });
-        else alert("Ошибка");
-    };
-    
-    window.extremeReset = async () => {
-        if (prompt("ПОЛНЫЙ СБРОС (Код)?") === "108020") {
-            const snap = await get(playersRef);
-            const updates = {};
-            snap.forEach(child => { updates['players/' + child.key + '/history'] = null; updates['players/' + child.key + '/redoStack'] = null; });
-            await update(ref(db), updates);
-        }
-    };
-    
-    window.startNewDay = async () => {
-        if (prompt("НОВЫЙ ДЕНЬ (Код)?") === "108020") {
-            const snap = await get(playersRef);
-            const updates = {};
-            snap.forEach(child => {
-                const { total } = calculatePlayerStats(child.val());
-                const key1 = push(ref(db)).key;
-                const key2 = push(ref(db)).key;
-                const newHistory = {};
-                newHistory[key1] = total; newHistory[key2] = 500;
-                updates['players/' + child.key + '/history'] = newHistory;
-                updates['players/' + child.key + '/redoStack'] = null;
-            });
-            await update(ref(db), updates);
-            alert("День начат! +500");
-        }
-    };
-
-    function initDefaultPlayers() {
-        ["EAGLE_THUNDER", "Zagonskiy", "ceme4ko", "Леонид Стручков", "Машмар", "Егор", "Федя"].forEach(n => push(playersRef, { name: n, history: {} }));
-    }
-
-    window.addToJournal = async function() {
-        if(!confirm("В Журнал?")) return;
-        const snapshot = await get(playersRef);
-        const data = snapshot.val();
-        if (!data) return;
-        let grandTotal = 0;
-        const savedPlayers = [];
-        for (let id in data) {
-            const player = data[id];
-            const { total, historyArray } = calculatePlayerStats(player);
-            grandTotal += total;
-            savedPlayers.push({
-                name: player.name || "Без имени",
-                total: total,
-                history: historyArray.join(' ')
-            });
-        }
-        const now = new Date();
-        const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
-        push(journalRef, {
-            date: dateStr,
-            timestamp: Date.now(),
-            grandTotal: grandTotal,
-            players: savedPlayers
-        });
-        alert("Сохранено!");
-    }
-    
-    window.deleteJournalEntry = function(id) {
-        const pass = prompt("Удалить запись (Код)?");
-        if (pass === "108020") {
-            remove(ref(db, 'journal/' + id));
-        } else if (pass !== null) {
-            alert("Ошибка");
-        }
-    }
-
-    onValue(journalRef, (snapshot) => {
-        const listDiv = document.getElementById('journalList');
-        listDiv.innerHTML = '';
-        const data = snapshot.val();
-        if (!data) { listDiv.innerHTML = '<div style="text-align:center;">Пусто</div>'; return; }
-        const entries = Object.entries(data).sort((a, b) => b[1].timestamp - a[1].timestamp);
-        entries.forEach(([id, entry]) => {
-            const card = document.createElement('div');
-            card.className = 'journal-card';
-            const header = document.createElement('div');
-            header.className = 'journal-header';
-            header.innerHTML = `
-                <div style="display:flex; align-items:center;">
-                    <span>📅 ${entry.date}</span>
-                    <button class="btn-journal-delete" onclick="event.stopPropagation(); deleteJournalEntry('${id}')">🗑️</button>
-                </div>
-                <span class="journal-total">Банк: ${entry.grandTotal}</span>
-            `;
-            const details = document.createElement('div');
-            details.className = 'journal-details';
-            let detailsHtml = `<div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px; display:flex; justify-content:space-between;"><span>Игрок</span><span>Итог</span></div>`;
-            if (entry.players) {
-                entry.players.forEach(p => {
-                    detailsHtml += `<div class="detail-row"><span style="font-weight:bold;">${p.name}</span><span style="color:${p.total >= 0 ? 'green' : 'red'}">${p.total}</span></div><div style="font-size:0.8em; color:#666; margin-bottom:5px;">${p.history}</div>`;
-                });
-            }
-            details.innerHTML = detailsHtml;
-            card.appendChild(header); card.appendChild(details);
-            card.onclick = () => card.classList.toggle('open');
-            listDiv.appendChild(card);
-        });
-    });
-
-    window.toggleSidebar = function() {
-        document.getElementById('sidebar').classList.toggle('open');
-    }
-
-    window.showView = function(viewName) {
-        document.getElementById('sidebar').classList.remove('open');
-        if (viewName === 'game') {
-            document.getElementById('view-game').classList.remove('hidden');
-            document.getElementById('view-journal').classList.add('hidden');
-            document.querySelectorAll('.nav-btn')[0].classList.add('active');
-            document.querySelectorAll('.nav-btn')[1].classList.remove('active');
-        } else {
-            document.getElementById('view-game').classList.add('hidden');
-            document.getElementById('view-journal').classList.remove('hidden');
-            document.querySelectorAll('.nav-btn')[0].classList.remove('active');
-            document.querySelectorAll('.nav-btn')[1].classList.add('active');
-        }
-    }
-
-    window.downloadCSV = function() {
-        const rows = document.querySelectorAll('#scoreTable tbody tr');
-        if (rows.length === 0) { alert("Пусто!"); return; }
-        const selectedDate = document.getElementById('gameDate').value;
-        let formattedDate = selectedDate;
-        if(selectedDate) {
-             const parts = selectedDate.split('-');
-             formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
-        }
-        let csvContent = `Дата выписки:;${formattedDate}\n\n`;
-        csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n";
-        rows.forEach(row => {
-            let name = row.querySelector('.player-name').value.trim();
-            if (!name) name = "Без имени";
-            let total = row.querySelector('.score-cell').innerText;
-            let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); 
-            csvContent += `"${name}";${total};${opsString}\n`;
-        });
-        let grandTotal = document.getElementById('grandTotal').innerText;
-        csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`;
-        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", `Выписка за ${formattedDate}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
+    window.resetPlayer = (id) => { if (prompt("Сбросить игрока (Код)?") === "108020") update(ref(db, 'players/' + id), { history: null, redoStack: null }); else alert("Ошибка"); };
+    window.extremeReset = async () => { if (prompt("ПОЛНЫЙ СБРОС (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { updates['players/' + child.key + '/history'] = null; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); } };
+    window.startNewDay = async () => { if (prompt("НОВЫЙ ДЕНЬ (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { const { total } = calculatePlayerStats(child.val()); const key1 = push(ref(db)).key; const key2 = push(ref(db)).key; const newHistory = {}; newHistory[key1] = total; newHistory[key2] = 500; updates['players/' + child.key + '/history'] = newHistory; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); alert("День начат! +500"); } };
+    function initDefaultPlayers() { ["EAGLE_THUNDER", "Zagonskiy", "ceme4ko", "Леонид Стручков", "Машмар", "Егор", "Федя"].forEach(n => push(playersRef, { name: n, history: {} })); }
+    window.addToJournal = async function() { if(!confirm("В Журнал?")) return; const snapshot = await get(playersRef); const data = snapshot.val(); if (!data) return; let grandTotal = 0; const savedPlayers = []; for (let id in data) { const player = data[id]; const { total, historyArray } = calculatePlayerStats(player); grandTotal += total; savedPlayers.push({ name: player.name || "Без имени", total: total, history: historyArray.join(' ') }); } const now = new Date(); const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString(); push(journalRef, { date: dateStr, timestamp: Date.now(), grandTotal: grandTotal, players: savedPlayers }); alert("Сохранено!"); }
+    window.deleteJournalEntry = function(id) { const pass = prompt("Удалить запись (Код)?"); if (pass === "108020") { remove(ref(db, 'journal/' + id)); } else if (pass !== null) { alert("Ошибка"); } }
+    onValue(journalRef, (snapshot) => { const listDiv = document.getElementById('journalList'); listDiv.innerHTML = ''; const data = snapshot.val(); if (!data) { listDiv.innerHTML = '<div style="text-align:center;">Пусто</div>'; return; } const entries = Object.entries(data).sort((a, b) => b[1].timestamp - a[1].timestamp); entries.forEach(([id, entry]) => { const card = document.createElement('div'); card.className = 'journal-card'; const header = document.createElement('div'); header.className = 'journal-header'; header.innerHTML = `<div style="display:flex; align-items:center;"><span>📅 ${entry.date}</span><button class="btn-journal-delete" onclick="event.stopPropagation(); deleteJournalEntry('${id}')">🗑️</button></div><span class="journal-total">Банк: ${entry.grandTotal}</span>`; const details = document.createElement('div'); details.className = 'journal-details'; let detailsHtml = `<div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px; display:flex; justify-content:space-between;"><span>Игрок</span><span>Итог</span></div>`; if (entry.players) { entry.players.forEach(p => { detailsHtml += `<div class="detail-row"><span style="font-weight:bold;">${p.name}</span><span style="color:${p.total >= 0 ? 'green' : 'red'}">${p.total}</span></div><div style="font-size:0.8em; color:#666; margin-bottom:5px;">${p.history}</div>`; }); } details.innerHTML = detailsHtml; card.appendChild(header); card.appendChild(details); card.onclick = () => card.classList.toggle('open'); listDiv.appendChild(card); }); });
+    window.toggleSidebar = function() { document.getElementById('sidebar').classList.toggle('open'); }
+    window.showView = function(viewName) { document.getElementById('sidebar').classList.remove('open'); if (viewName === 'game') { document.getElementById('view-game').classList.remove('hidden'); document.getElementById('view-journal').classList.add('hidden'); document.querySelectorAll('.nav-btn')[0].classList.add('active'); document.querySelectorAll('.nav-btn')[1].classList.remove('active'); } else { document.getElementById('view-game').classList.add('hidden'); document.getElementById('view-journal').classList.remove('hidden'); document.querySelectorAll('.nav-btn')[0].classList.remove('active'); document.querySelectorAll('.nav-btn')[1].classList.add('active'); } }
+    window.downloadCSV = function() { const rows = document.querySelectorAll('#scoreTable tbody tr'); if (rows.length === 0) { alert("Пусто!"); return; } const selectedDate = document.getElementById('gameDate').value; let formattedDate = selectedDate; if(selectedDate) { const parts = selectedDate.split('-'); formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`; } let csvContent = `Дата выписки:;${formattedDate}\n\n`; csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n"; rows.forEach(row => { let name = row.querySelector('.player-name').value.trim(); if (!name) name = "Без имени"; let total = row.querySelector('.score-cell').innerText; let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); csvContent += `"${name}";${total};${opsString}\n`; }); let grandTotal = document.getElementById('grandTotal').innerText; csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`; const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `Выписка за ${formattedDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
 </script>
 
 </body>
