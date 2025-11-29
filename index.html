@@ -250,7 +250,16 @@
 
         @media screen and (max-width: 768px) {
             .brand-container { flex-direction: column; gap: 10px; }
-            .header-title { margin-right: 0; font-size: 1.8em; }
+            
+            /* --- ИСПРАВЛЕНИЕ ЗДЕСЬ: ДОБАВИЛ ОТСТУП СВЕРХУ ДЛЯ ЗАГОЛОВКА --- */
+            .header-title { 
+                margin-right: 0; 
+                font-size: 1.8em; 
+                padding-top: 15px; /* Чтобы "й" не залезала наверх */
+                line-height: 1.4;
+            }
+            /* ------------------------------------------------------------- */
+
             .container { padding: 10px; border-width: 5px; }
             table, thead, tbody, th, td, tr { display: block; }
             thead tr { position: absolute; top: -9999px; left: -9999px; }
@@ -277,7 +286,7 @@
 <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 <div id="networkStatus" class="network-badge status-offline">⏳ Connect...</div>
 
-<div class="version-tag">OrelPoker v25.0</div>
+<div class="version-tag">OrelPoker v26.0</div>
 
 <div class="container">
     
@@ -324,23 +333,17 @@
 </div>
 
 <script>
-    // --- ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ПРИ ЗАПУСКЕ ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./sw.js').then(reg => {
-                // Заставляем браузер проверить наличие обновлений прямо сейчас
-                reg.update();
-
+                if (reg.waiting) { window.location.reload(); return; }
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
                     newWorker.onstatechange = () => {
-                        // Как только новый SW установился (благодаря skipWaiting в sw.js),
-                        // он сразу перехватит контроль, и сработает controllerchange ниже
+                       // Ожидаем смены контроллера
                     };
                 };
             });
-
-            // Как только SW обновился — перезагружаем страницу
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 window.location.reload();
             });
@@ -366,7 +369,6 @@
     const db = getDatabase(app);
     const playersRef = ref(db, 'players');
     
-    // --- СТАТУС СЕТИ + СЧЕТЧИК ОНЛАЙНА ---
     const connectedRef = ref(db, ".info/connected");
     const connectionsRef = ref(db, "connections");
 
@@ -375,11 +377,9 @@
         if (snap.val() === true) {
             statusEl.innerText = "🟢 ONLINE";
             statusEl.className = "network-badge status-online";
-
             const con = push(connectionsRef);
             onDisconnect(con).remove();
             set(con, true);
-
         } else {
             statusEl.innerText = "🔴 OFFLINE";
             statusEl.className = "network-badge status-offline";
@@ -389,47 +389,36 @@
     onValue(connectionsRef, (snap) => {
         const countDisplay = document.getElementById('onlineCounter');
         if (snap.exists()) {
-            const count = snap.size;
-            countDisplay.innerText = `👁️ Онлайн: ${count}`;
+            countDisplay.innerText = `👁️ Онлайн: ${snap.size}`;
         } else {
             countDisplay.innerText = `👁️ Онлайн: 0`;
         }
     });
 
-    // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v25'); // Обновил ключ
+        const localData = localStorage.getItem('poker_data_v26'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
-        if (!data) {
-            initDefaultPlayers();
-            return;
-        }
-        localStorage.setItem('poker_data_v25', JSON.stringify(data));
+        if (!data) { initDefaultPlayers(); return; }
+        localStorage.setItem('poker_data_v26', JSON.stringify(data));
         renderTable(data);
     });
 
     function renderTable(data) {
         if (document.activeElement.tagName === 'INPUT') return; 
-
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
-        
-        for (let id in data) {
-            renderPlayerRow(id, data[id]);
-        }
+        for (let id in data) { renderPlayerRow(id, data[id]); }
         recalculateGrandTotal();
     }
 
     function recalculateGrandTotal() {
         const scoreCells = document.querySelectorAll('.score-cell');
         let totalSum = 0;
-        scoreCells.forEach(cell => {
-            totalSum += parseFloat(cell.innerText || 0);
-        });
+        scoreCells.forEach(cell => { totalSum += parseFloat(cell.innerText || 0); });
         document.getElementById('grandTotal').innerText = totalSum;
     }
 
@@ -502,12 +491,10 @@
         return btn;
     }
 
-    // --- ТРАНЗАКЦИЯ: ДОБАВЛЕНИЕ ---
     window.handleScore = function(id, inputElem, multiplier) {
         let val = parseFloat(inputElem.value);
         if (isNaN(val)) return;
         let change = val * multiplier;
-
         runTransaction(ref(db, 'players/' + id), (player) => {
             if (player) {
                 if (!player.history) player.history = {};
@@ -517,26 +504,20 @@
             }
             return player;
         });
-
-        // Optimistic UI
         const row = inputElem.closest('tr');
         const totalCell = row.querySelector('.score-cell');
         const historyCell = row.querySelector('.history-log');
-        
         let currentTotal = parseFloat(totalCell.innerText || 0);
         totalCell.innerText = currentTotal + change;
-        
         let text = historyCell.innerText;
         let newEntry = (change >= 0 ? `+${change}` : change);
         if (text === 'Пусто') historyCell.innerText = newEntry;
         else historyCell.innerText = text + ' ' + newEntry;
-
         inputElem.value = '';
         inputElem.focus();
         recalculateGrandTotal();
     }
 
-    // --- ТРАНЗАКЦИЯ: ОТМЕНА ---
     window.undoLast = function(id) {
         runTransaction(ref(db, 'players/' + id), (player) => {
             if (player && player.history) {
@@ -545,7 +526,6 @@
                     const lastKey = keys[keys.length - 1];
                     const val = player.history[lastKey];
                     delete player.history[lastKey];
-                    
                     if (!player.redoStack) player.redoStack = {};
                     const redoKey = 'redo_' + Date.now();
                     player.redoStack[redoKey] = val;
@@ -555,7 +535,6 @@
         });
     }
 
-    // --- ТРАНЗАКЦИЯ: ВОЗВРАТ ---
     window.redoLast = function(id) {
         runTransaction(ref(db, 'players/' + id), (player) => {
             if (player && player.redoStack) {
@@ -564,7 +543,6 @@
                     const lastKey = keys[keys.length - 1];
                     const val = player.redoStack[lastKey];
                     delete player.redoStack[lastKey];
-                    
                     if (!player.history) player.history = {};
                     const newKey = 'move_' + Date.now();
                     player.history[newKey] = val;
@@ -595,24 +573,19 @@
     window.startNewDay = async function() {
         const pass = prompt("Код подтверждения (НОВЫЙ ДЕНЬ):");
         if (pass !== "108020") { alert("Ошибка: Неверный код!"); return; }
-        
         const snapshot = await get(playersRef);
         const data = snapshot.val();
         if (!data) return;
-        
         const updates = {};
         for (let id in data) {
             let player = data[id];
             const stats = calculatePlayerStats(player);
             const currentTotal = stats.total;
-            
             const newHistory = {};
             const key1 = push(ref(db)).key;
             const key2 = push(ref(db)).key;
-            
             newHistory[key1] = currentTotal;
             newHistory[key2] = 500;
-            
             updates['players/' + id + '/history'] = newHistory;
             updates['players/' + id + '/redoStack'] = null;
         }
@@ -649,10 +622,8 @@
             let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); 
             csvContent += `"${name}";${total};${opsString}\n`;
         });
-        
         let grandTotal = document.getElementById('grandTotal').innerText;
         csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`;
-
         const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
