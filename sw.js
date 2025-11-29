@@ -1,5 +1,5 @@
-// Версия v19 - Remove Mobile Label
-const CACHE_NAME = 'orelpoker-v19-clean-ui';
+// Версия v20 - Remove Mobile Borders for Total
+const CACHE_NAME = 'orelpoker-v20-cleaner-mobile';
 const ASSETS = [
     './',
     './index.html',
