@@ -1,5 +1,5 @@
-// Версия v51 - Robust Offline Login
-const CACHE_NAME = 'orelpoker-v51-robust-auth';
+// Версия v52 - Mobile Grand Total Facelift
+const CACHE_NAME = 'orelpoker-v52-total-ui';
 const ASSETS = [
     './',
     './index.html',
