@@ -167,6 +167,8 @@
         input[type="number"] { width: 70px; margin-right: 5px; text-align: center; border: 2px solid var(--accent-brown); background-color: #f9f3e3; }
         .score-cell { font-family: 'Rye', cursive; font-size: 1.8em; color: var(--accent-red); text-align: center; }
         .history-log { font-size: 0.9em; color: #6b523d; font-style: italic; max-width: 250px; overflow-x: auto; white-space: nowrap; padding: 5px; background-color: rgba(139, 69, 19, 0.05); border-radius: 4px; }
+        
+        /* ПК ИТОГ (Стандартный) */
         tfoot tr { background-color: rgba(139, 69, 19, 0.2); border: 2px solid #8b4513; }
         .total-label { text-align: right; font-family: 'Rye', cursive; font-size: 1.5em; color: var(--accent-brown); padding-right: 20px; }
         .grand-total-cell { font-family: 'Rye', cursive; font-size: 2em; color: var(--accent-brown); text-align: center; font-weight: bold; }
@@ -182,6 +184,7 @@
         .btn-journal-delete { background: var(--accent-red); color: #fff; border: 1px solid #500; border-radius: 4px; padding: 3px 8px; font-size: 0.8em; margin-left: 10px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
         .btn-journal-delete:hover { background: #a00000; }
 
+        /* --- МОБИЛЬНЫЙ ДИЗАЙН --- */
         @media screen and (max-width: 768px) {
             .sidebar { transform: translateX(-100%); width: 260px; }
             .sidebar.open { transform: translateX(0); }
@@ -202,11 +205,47 @@
             td:nth-of-type(4) { font-size: 0.8em; color: #666; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 4px; max-width: 100%; }
             td:nth-of-type(5) { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; padding: 0; }
             .btn-reset-player, .btn-delete { width: 28px; height: 28px; font-size: 0.9em; }
-            tfoot { margin-top: 10px; }
-            tfoot tr { display: flex; justify-content: space-between; padding: 15px; border-radius: 8px; align-items: center; }
+            
+            /* --- МОБИЛЬНЫЙ ДИЗАЙН "ОБЩИЙ БАНК" (НОВЫЙ) --- */
+            tfoot { display: block; margin-top: 20px; }
+            tfoot tr { 
+                display: flex; 
+                flex-direction: column; /* В колонку */
+                align-items: center;
+                justify-content: center;
+                background: #3e2b1f; /* Темный фон */
+                border: 2px solid #cba135; /* Золотая рамка */
+                border-radius: 12px;
+                padding: 15px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            }
+            
+            tfoot td { display: block; padding: 0; border: none; width: 100%; }
+            
+            /* Скрываем пустые ячейки */
             tfoot td:nth-child(4), tfoot td:nth-child(5) { display: none; }
-            .total-label { font-size: 1.1em; }
-            .grand-total-cell { font-size: 1.6em; }
+            
+            /* Надпись "Общий банк" */
+            .total-label { 
+                text-align: center; 
+                font-size: 1.2em; 
+                color: #cba135; /* Золотой текст */
+                margin-bottom: 5px;
+                padding: 0;
+                width: 100%;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+            }
+            
+            /* Сама цифра */
+            .grand-total-cell { 
+                text-align: center; 
+                font-size: 2.8em; 
+                color: #fff; /* Белая цифра */
+                font-weight: bold;
+                text-shadow: 0 0 10px rgba(203, 161, 53, 0.6);
+                margin-top: 5px;
+            }
         }
     </style>
 </head>
@@ -315,7 +354,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v51.0 (Robust Offline Auth)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v52.0 (Bank Facelift)</div>
 </div>
 
 <script>
@@ -333,7 +372,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=51').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=52').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -369,7 +408,7 @@
     const journalRef = ref(db, 'journal');
     const usersRef = ref(db, 'users');
 
-    // --- АВТОРИЗАЦИЯ (ИСПРАВЛЕННАЯ) ---
+    // --- АВТОРИЗАЦИЯ ---
 
     window.switchAuthView = function(view) {
         document.getElementById('loginError').innerText = "";
@@ -422,10 +461,7 @@
         });
     }
     
-    // --- ГЛАВНОЕ ИЗМЕНЕНИЕ: УМНЫЙ ВХОД (ОФЛАЙН/ОНЛАЙН) ---
     async function checkLogin(nick, pass, isAuto, remember = false) {
-        
-        // 1. Вспомогательная функция проверки локально
         const tryLocalLogin = () => {
             const knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
             if (knownUsers[nick] && knownUsers[nick] === pass) {
@@ -435,7 +471,6 @@
             return false;
         };
 
-        // 2. Если браузер говорит "нет сети" - сразу пробуем локально
         if (!navigator.onLine) {
             if (!tryLocalLogin()) {
                 if(!isAuto) document.getElementById('loginError').innerText = "Нет сети и данные не сохранены";
@@ -443,8 +478,6 @@
             return;
         }
 
-        // 3. Если сеть есть, пробуем Firebase с тайм-аутом 3 сек
-        // (на случай "висячего" интернета)
         try {
             const snapshot = await Promise.race([
                 get(child(ref(db), `users/${nick}`)),
@@ -454,11 +487,9 @@
             if (snapshot.exists()) {
                 const userData = snapshot.val();
                 if(userData.pass === pass) {
-                    // Успех онлайн -> Сохраняем в "известные"
                     let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
                     knownUsers[nick] = pass;
                     localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
-                    
                     performLogin(nick, pass, remember || isAuto);
                 } else {
                     if(!isAuto) document.getElementById('loginError').innerText = "Неверный пароль";
@@ -468,9 +499,8 @@
                 if(!isAuto) document.getElementById('loginError').innerText = "Пользователь не найден";
             }
         } catch (error) {
-            // Ошибка сети или тайм-аут -> пробуем локально
             if (!tryLocalLogin()) {
-                if(!isAuto) document.getElementById('loginError').innerText = "Ошибка сети. Войдите онлайн хотя бы раз.";
+                if(!isAuto) document.getElementById('loginError').innerText = "Ошибка сети";
             }
         }
     }
@@ -478,7 +508,6 @@
     function performLogin(nick, pass, remember) {
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('menuUserName').innerText = nick;
-        
         if(remember) {
             localStorage.setItem('op_user', JSON.stringify({nick, pass}));
         }
@@ -515,14 +544,14 @@
     });
 
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v51'); 
+        const localData = localStorage.getItem('poker_data_v52'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v51', JSON.stringify(data));
+        localStorage.setItem('poker_data_v52', JSON.stringify(data));
         renderTable(data);
     });
 
