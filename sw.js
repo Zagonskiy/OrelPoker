@@ -1,5 +1,5 @@
-// Версия v40 - Fix Reset Button Position (Again)
-const CACHE_NAME = 'orelpoker-v40-layout-fix';
+// Версия v41 - Journal Delete Button
+const CACHE_NAME = 'orelpoker-v41-journal-del';
 const ASSETS = [
     './',
     './index.html',
