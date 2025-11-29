@@ -1,5 +1,5 @@
-// Версия v39 - Remove Header Logo
-const CACHE_NAME = 'orelpoker-v39-no-header-logo';
+// Версия v40 - Fix Reset Button Position (Again)
+const CACHE_NAME = 'orelpoker-v40-layout-fix';
 const ASSETS = [
     './',
     './index.html',
