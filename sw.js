@@ -1,5 +1,5 @@
-// Версия v60 - Player Status Indicators
-const CACHE_NAME = 'orelpoker-v60-status-dots';
+// Версия v61 - Display Name & Edit Pencil
+const CACHE_NAME = 'orelpoker-v61-displayname';
 const ASSETS = [
     './',
     './index.html',
