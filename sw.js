@@ -1,11 +1,10 @@
-// Версия v30 - Rescue Mode (Fix Infinite Loading)
-const CACHE_NAME = 'orelpoker-v30-rescue';
+// Версия v31 - Journal & Sidebar Navigation
+const CACHE_NAME = 'orelpoker-v31-journal';
 const ASSETS = [
     './',
     './index.html',
     './manifest.json',
-    // Я убрал логотип отсюда, чтобы из-за него не ломался весь сайт
-    // Он всё равно загрузится и закэшируется, когда вы откроете страницу
+    './logo.png',
     'https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap'
 ];
 
