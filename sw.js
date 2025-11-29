@@ -1,5 +1,5 @@
-// Версия v65 - Fix Mobile Footer Width
-const CACHE_NAME = 'orelpoker-v65-footer-fix';
+// Версия v66 - Fix Mobile Footer Style (Light)
+const CACHE_NAME = 'orelpoker-v66-footer-light';
 const ASSETS = [
     './',
     './index.html',
