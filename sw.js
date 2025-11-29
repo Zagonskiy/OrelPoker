@@ -1,5 +1,5 @@
-// Версия v56 - Real Users Sync (+1000 bonus)
-const CACHE_NAME = 'orelpoker-v56-users-sync';
+// Версия v57 - Read-Only Names
+const CACHE_NAME = 'orelpoker-v57-static-names';
 const ASSETS = [
     './',
     './index.html',
