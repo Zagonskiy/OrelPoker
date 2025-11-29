@@ -202,83 +202,47 @@
             td:nth-of-type(4) { font-size: 0.8em; color: #666; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 4px; max-width: 100%; }
             td:nth-of-type(5) { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; padding: 0; }
             .btn-reset-player, .btn-delete { width: 28px; height: 28px; font-size: 0.9em; }
-            
-            /* --- МОБИЛЬНЫЙ ДИЗАЙН "ОБЩИЙ БАНК" --- */
-            tfoot { display: block; margin-top: 20px; }
-            tfoot tr { 
-                display: flex; 
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                background: #3e2b1f;
-                border: 2px solid #cba135;
-                border-radius: 12px;
-                padding: 15px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            }
-            
+            tfoot { margin-top: 10px; }
+            tfoot tr { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #3e2b1f; border: 2px solid #cba135; border-radius: 12px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
             tfoot td { display: block; padding: 0; border: none; width: 100%; }
             tfoot td:nth-child(4), tfoot td:nth-child(5) { display: none; }
-            
-            .total-label { 
-                display: none; /* СКРЫВАЕМ ТЕКСТОВУЮ НАДПИСЬ */
-            }
-            
-            .grand-total-cell { 
-                text-align: center; 
-                font-size: 2.8em; 
-                color: #fff;
-                font-weight: bold;
-                text-shadow: 0 0 10px rgba(203, 161, 53, 0.6);
-                margin-top: 0; /* Убираем лишний отступ, так как текста сверху нет */
-            }
+            .total-label { display: none; }
+            .grand-total-cell { text-align: center; font-size: 2.8em; color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(203, 161, 53, 0.6); margin-top: 0; }
         }
     </style>
 </head>
 <body>
 
 <div id="login-overlay">
-    
     <div id="login-view-card" class="login-card">
         <h2>ВХОД В КЛУБ</h2>
         <div class="brand-container" style="border:none; margin:0; padding:0;">
              <img src="./logo.png" class="header-logo-round" style="margin-bottom:15px;">
         </div>
-        
         <input type="text" id="loginNick" class="login-input" placeholder="Никнейм">
         <input type="password" id="loginPass" class="login-input" placeholder="Пароль">
-        
         <div class="login-checkbox">
             <input type="checkbox" id="rememberMe" style="width:auto;">
             <label for="rememberMe">Запомнить меня</label>
         </div>
-        
         <button class="btn-login-action" onclick="handleLogin()">ВОЙТИ</button>
         <button class="btn-register-link" onclick="switchAuthView('register')">Нет аккаунта? Регистрация</button>
-        
         <div id="loginError" class="error-msg"></div>
     </div>
 
     <div id="register-view-card" class="login-card hidden">
         <h2>РЕГИСТРАЦИЯ</h2>
-        
         <input type="text" id="regNick" class="login-input" placeholder="Придумайте Ник">
         <input type="password" id="regPass" class="login-input" placeholder="Пароль">
         <input type="password" id="regPassRepeat" class="login-input" placeholder="Повторите пароль">
-        
         <button class="btn-login-action btn-register" onclick="handleRegister()">СОЗДАТЬ АККАУНТ</button>
         <button class="btn-login-action btn-back" onclick="switchAuthView('login')">НАЗАД</button>
-        
         <div id="regError" class="error-msg"></div>
     </div>
-
 </div>
 
 <div id="networkStatus" class="network-badge status-offline" style="display:none;">⏳</div>
-
-<button class="menu-toggle" onclick="toggleSidebar()">
-    ☰ <span id="mobileStatusDot" class="status-dot"></span>
-</button>
+<button class="menu-toggle" onclick="toggleSidebar()">☰ <span id="mobileStatusDot" class="status-dot"></span></button>
 
 <div class="sidebar" id="sidebar">
     <div class="sidebar-logo">
@@ -288,12 +252,9 @@
             <span id="desktopStatusDot" class="status-dot"></span>
         </div>
     </div>
-    
     <button class="nav-btn active" onclick="showView('game')">🎲 Игровой стол</button>
     <button class="nav-btn" onclick="showView('journal')">📜 Журнал архива</button>
-    
     <button class="nav-btn" onclick="logout()" style="margin-top: 20px;">🚪 ВЫЙТИ</button>
-    
     <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 </div>
 
@@ -340,7 +301,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v53.0 (No Label Mobile)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v54.0 (Users Count)</div>
 </div>
 
 <script>
@@ -358,7 +319,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=53').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=54').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -393,6 +354,63 @@
     const playersRef = ref(db, 'players');
     const journalRef = ref(db, 'journal');
     const usersRef = ref(db, 'users');
+    
+    // --- СТАТУС И ПОДСЧЕТ ИГРОКОВ ---
+    const connectedRef = ref(db, ".info/connected");
+    const onlineUsersRef = ref(db, "online_users"); // Новая ветка для пользователей
+
+    let currentConnectionRef = null;
+
+    function setOnlineStatus(nickname) {
+        // Ссылка на онлайн статус этого пользователя
+        const myUserRef = ref(db, `online_users/${nickname}`);
+        
+        // Создаем уникальное подключение для этого ника
+        currentConnectionRef = push(myUserRef);
+        
+        // Когда отключаемся - удаляем это конкретное подключение
+        onDisconnect(currentConnectionRef).remove();
+        
+        // Записываем, что мы онлайн
+        set(currentConnectionRef, true);
+    }
+
+    onValue(connectedRef, (snap) => {
+        const dotMobile = document.getElementById('mobileStatusDot');
+        const dotDesktop = document.getElementById('desktopStatusDot');
+        const statusEl = document.getElementById('networkStatus');
+        if(statusEl) statusEl.style.display = 'none';
+
+        if (snap.val() === true) {
+            dotMobile.classList.add('online');
+            dotDesktop.classList.add('online');
+            
+            // Восстанавливаем статус при реконнекте, если мы залогинены
+            const savedUser = localStorage.getItem('op_user');
+            if (savedUser) {
+                const user = JSON.parse(savedUser);
+                // Не вызываем setOnlineStatus напрямую, так как он создает дубли
+                // performLogin уже вызывается при старте и настроит всё
+            }
+            
+        } else {
+            dotMobile.classList.remove('online');
+            dotDesktop.classList.remove('online');
+        }
+    });
+
+    // Подсчет уникальных ников в online_users
+    onValue(onlineUsersRef, (snap) => {
+        const countDisplay = document.getElementById('onlineCounter');
+        if (snap.exists()) {
+            // snap.val() вернет объект: { "Nick1": {...}, "Nick2": {...} }
+            // Количество ключей = количество уникальных игроков
+            const count = Object.keys(snap.val()).length;
+            countDisplay.innerText = `👁️ Онлайн: ${count}`;
+        } else {
+            countDisplay.innerText = `👁️ Онлайн: 0`;
+        }
+    });
 
     // --- АВТОРИЗАЦИЯ ---
     window.switchAuthView = function(view) {
@@ -490,45 +508,29 @@
         if(remember) {
             localStorage.setItem('op_user', JSON.stringify({nick, pass}));
         }
+        // Активируем статус онлайн
+        setOnlineStatus(nick);
     }
 
     window.logout = function() {
         if(confirm("Выйти из аккаунта?")) {
+            // Удаляем статус онлайн при выходе
+            if (currentConnectionRef) remove(currentConnectionRef);
             localStorage.removeItem('op_user');
             location.reload();
         }
     }
 
-    // --- ИГРА ---
-    const connectedRef = ref(db, ".info/connected");
-    const connectionsRef = ref(db, "connections");
-
-    onValue(connectedRef, (snap) => {
-        const dotMobile = document.getElementById('mobileStatusDot');
-        const dotDesktop = document.getElementById('desktopStatusDot');
-        const statusEl = document.getElementById('networkStatus');
-        if(statusEl) statusEl.style.display = 'none';
-        if (snap.val() === true) {
-            dotMobile.classList.add('online'); dotDesktop.classList.add('online');
-            const con = push(connectionsRef); onDisconnect(con).remove(); set(con, true);
-        } else {
-            dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
-        }
-    });
-
-    onValue(connectionsRef, (snap) => {
-        document.getElementById('onlineCounter').innerText = `👁️ Онлайн: ${snap.exists() ? snap.size : 0}`;
-    });
-
+    // --- ДАЛЕЕ СТАРЫЙ КОД (БЕЗ ИЗМЕНЕНИЙ) ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v53'); 
+        const localData = localStorage.getItem('poker_data_v54'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v53', JSON.stringify(data));
+        localStorage.setItem('poker_data_v54', JSON.stringify(data));
         renderTable(data);
     });
 
