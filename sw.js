@@ -1,5 +1,5 @@
-// Версия v35 - Fix Sidebar Layout
-const CACHE_NAME = 'orelpoker-v35-layout-fix';
+// Версия v36 - Force Cache Reset
+const CACHE_NAME = 'orelpoker-v36-reset';
 const ASSETS = [
     './',
     './index.html',
@@ -9,7 +9,7 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-    self.skipWaiting();
+    self.skipWaiting(); // Принудительно заменяем старый SW
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(ASSETS);
@@ -27,13 +27,22 @@ self.addEventListener('activate', (e) => {
             }));
         })
     );
-    return self.clients.claim();
+    return self.clients.claim(); // Захватываем управление страницей
 });
 
 self.addEventListener('fetch', (e) => {
+    // Стратегия: Network First (Сначала пробуем интернет, если нет — берем из кэша)
     e.respondWith(
-        caches.match(e.request).then((response) => {
-            return response || fetch(e.request);
-        })
+        fetch(e.request)
+            .then((response) => {
+                const resClone = response.clone();
+                caches.open(CACHE_NAME).then((cache) => {
+                    cache.put(e.request, resClone);
+                });
+                return response;
+            })
+            .catch(() => {
+                return caches.match(e.request);
+            })
     );
 });
