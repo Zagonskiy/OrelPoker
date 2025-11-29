@@ -53,23 +53,22 @@
             opacity: 0.8;
         }
 
-        /* --- ИСПРАВЛЕННАЯ КНОПКА СБРОСА --- */
         .btn-extreme-reset {
-            /* Убрали fixed, top, left */
-            margin-top: auto; /* Прижимаем к низу флекс-контейнера */
+            position: fixed;
+            top: 15px;
+            left: 15px;
             background-color: #500000;
             color: #ffcccc;
             border: 2px solid #ff0000;
-            padding: 12px;
+            padding: 8px 12px;
             font-family: 'Special Elite', monospace;
             font-weight: bold;
-            font-size: 0.9em;
+            font-size: 0.8em;
             cursor: pointer;
-            width: 100%; /* На всю ширину меню */
-            box-sizing: border-box;
+            z-index: 1000;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.7);
             border-radius: 4px;
             transition: all 0.2s;
-            text-align: center;
         }
         .btn-extreme-reset:hover { background-color: #ff0000; color: white; box-shadow: 0 0 15px rgba(255, 0, 0, 0.5); }
 
@@ -114,7 +113,8 @@
             margin-bottom: 20px;
             border-bottom: 3px double var(--accent-brown);
             padding-bottom: 15px;
-            flex-wrap: wrap;
+            /* Убрал flex-wrap, так как элемента теперь 1 */
+            text-align: center;
         }
 
         .header-title {
@@ -122,22 +122,12 @@
             text-align: center;
             color: var(--accent-brown);
             font-size: 2.2em;
-            margin: 0;
+            margin: 0; /* Убрал margin-right */
             text-shadow: 2px 2px 0px var(--paper-bg), 4px 4px 0px rgba(0,0,0,0.2);
             text-transform: uppercase;
             letter-spacing: 2px;
             line-height: 1.2;
-            margin-right: 15px;
-        }
-
-        .header-logo-round {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            border: 3px solid var(--accent-brown);
-            object-fit: cover;
-            filter: sepia(0.3) contrast(0.9);
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            width: 100%;
         }
         
         .online-counter {
@@ -347,6 +337,7 @@
             .menu-toggle { display: block; }
 
             .brand-container { flex-direction: column; gap: 10px; }
+            /* ВЕРНУЛ ОТСТУП СВЕРХУ ДЛЯ ЗАГОЛОВКА ЧТОБЫ БУКВА Й НЕ НАЛЕЗАЛА */
             .header-title { margin-right: 0; font-size: 1.8em; padding-top: 15px; line-height: 1.4; }
             
             thead { display: none; }
@@ -398,8 +389,7 @@
     <div id="view-game">
         <div class="brand-container">
             <h1 class="header-title">Игорный клуб "Созвездие орла"</h1>
-            <img src="./logo.png" alt="Логотип" class="header-logo-round">
-        </div>
+            </div>
         
         <div class="center-wrap">
             <div id="onlineCounter" class="online-counter">👁️ Онлайн: ...</div>
@@ -441,38 +431,48 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v38.0 (Tap to Update)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v39.0 (Tap to Update)</div>
 </div>
 
 <script>
     // 1. ФУНКЦИЯ ПРИНУДИТЕЛЬНОГО СБРОСА
     window.forceUpdate = async function() {
         if (!confirm("Обновить приложение принудительно?")) return;
+        
         if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
-            for (let registration of registrations) { await registration.unregister(); }
+            for (let registration of registrations) {
+                await registration.unregister();
+            }
         }
+        // Очищаем кэш и перезагружаем
         caches.keys().then(async function(names) {
             await Promise.all(names.map(name => caches.delete(name)));
             window.location.reload(true);
         });
     }
 
-    // 2. АВТОМАТИЧЕСКОЕ ОБНОВЛЕНИЕ
+    // 2. АВТОМАТИЧЕСКОЕ ОБНОВЛЕНИЕ ПРИ ЗАГРУЗКЕ
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=38').then(reg => {
-                reg.update();
+            navigator.serviceWorker.register('./sw.js?v=39').then(reg => {
+                reg.update(); // Проверяем на старте
+                
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
                     newWorker.onstatechange = () => {
+                        // Если новый воркер установился - перезагружаем
                         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                             window.location.reload();
                         }
                     };
                 };
             });
-            navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
+
+            // Как только sw.js обновился и перехватил управление -> перезагрузка
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
+            });
         });
     }
 </script>
@@ -496,7 +496,7 @@
     const playersRef = ref(db, 'players');
     const journalRef = ref(db, 'journal');
     
-    // --- СТАТУС ---
+    // --- СТАТУС СЕТИ + СЧЕТЧИК ОНЛАЙНА ---
     const connectedRef = ref(db, ".info/connected");
     const connectionsRef = ref(db, "connections");
 
@@ -505,12 +505,13 @@
         const dotDesktop = document.getElementById('desktopStatusDot');
         const statusEl = document.getElementById('networkStatus');
         
-        // ВАЖНО: Удаляем элемент сетевого статуса, так как просили убрать
+        // СКРЫВАЕМ ТЕКСТ "CONNECT" ЕСЛИ ОН ЕСТЬ
         if(statusEl) statusEl.style.display = 'none';
 
         if (snap.val() === true) {
             dotMobile.classList.add('online');
             dotDesktop.classList.add('online');
+            
             const con = push(connectionsRef);
             onDisconnect(con).remove();
             set(con, true);
@@ -531,14 +532,14 @@
 
     // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v38'); 
+        const localData = localStorage.getItem('poker_data_v39'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v38', JSON.stringify(data));
+        localStorage.setItem('poker_data_v39', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -602,13 +603,8 @@
         cellHistory.innerText = historyArray.length > 0 ? historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ') : 'Пусто';
 
         const cellDelete = newRow.insertCell(4);
-        // Обертка для кнопок
         const wrapper = document.createElement('div');
-        // Используем встроенные стили, чтобы избежать конфликтов классов
-        wrapper.style.display = 'flex'; 
-        wrapper.style.justifyContent = 'center'; 
-        wrapper.style.gap = '5px';
-        
+        wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
         wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
         wrapper.appendChild(createBtn('✕', 'btn-delete', () => { if(confirm("Удалить?")) remove(ref(db, 'players/' + id)); }));
         cellDelete.appendChild(wrapper);
