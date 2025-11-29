@@ -1,5 +1,5 @@
-// Версия v36 - Force Cache Reset
-const CACHE_NAME = 'orelpoker-v36-reset';
+// Версия v37 - Remove Top-Right Badge
+const CACHE_NAME = 'orelpoker-v37-clean-ui';
 const ASSETS = [
     './',
     './index.html',
@@ -9,7 +9,7 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-    self.skipWaiting(); // Принудительно заменяем старый SW
+    self.skipWaiting();
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(ASSETS);
@@ -27,11 +27,10 @@ self.addEventListener('activate', (e) => {
             }));
         })
     );
-    return self.clients.claim(); // Захватываем управление страницей
+    return self.clients.claim();
 });
 
 self.addEventListener('fetch', (e) => {
-    // Стратегия: Network First (Сначала пробуем интернет, если нет — берем из кэша)
     e.respondWith(
         fetch(e.request)
             .then((response) => {
