@@ -15,6 +15,7 @@
             --accent-red: #8b0000;
             --accent-green: #556b2f;
             --accent-undo: #d4af37;
+            --accent-purple: #6a0dad; /* Цвет для кнопки Нового дня */
         }
 
         body {
@@ -119,6 +120,14 @@
 
         .btn-add { background-color: var(--accent-green); color: #f4e4bc; border-color: #3a4a20; }
         .btn-download { background-color: var(--accent-brown); color: var(--accent-gold); border-color: #5c300e; }
+        
+        /* Кнопка нового дня */
+        .btn-newday { 
+            background-color: var(--accent-purple); 
+            color: #fff; 
+            border-color: #4b0082; 
+        }
+        .btn-newday:hover { background-color: #5a0a94; }
 
         .btn-calc, .btn-undo { 
             width: 40px; height: 40px; padding: 0; 
@@ -208,7 +217,6 @@
             border-radius: 4px;
         }
         
-        /* Мобильная адаптация */
         @media screen and (max-width: 768px) {
             .container { padding: 10px; border-width: 5px; }
             h2 { font-size: 1.8em; }
@@ -246,6 +254,7 @@
     
     <div class="controls">
         <button class="btn-add" onclick="createNewPlayer()">Добавить игрока</button>
+        <button class="btn-newday" onclick="startNewDay()">🌅 Новый день (+500)</button>
         <button class="btn-download" onclick="downloadCSV()">Скачать выписку</button>
     </div>
 
@@ -266,9 +275,10 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, onValue, push, set, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    // ДОБАВИЛ 'get' в импорт
+    import { getDatabase, ref, onValue, push, set, remove, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // --- ВНИМАНИЕ: ВСТАВЬ СЮДА СВОИ ДАННЫЕ ИЗ FIREBASE CONSOLE ---
+    // --- ВСТАВЬ СЮДА СВОЙ FIREBASE CONFIG СНОВА ---
     const firebaseConfig = {
         apiKey: "AIzaSyD9E8XsdjGx275Es6HwdCo5jy2l0kJoNXg",
         authDomain: "orelpoker-cd9d4.firebaseapp.com",
@@ -278,22 +288,18 @@
         messagingSenderId: "913271365234",
         appId: "1:913271365234:web:b48f717e011eea4847eceb"
     };
-    // -------------------------------------------------------------
+    // ---------------------------------------------
 
-    // Инициализация базы
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const playersRef = ref(db, 'players');
 
-    // 1. СЛУШАЕМ ИЗМЕНЕНИЯ (Главная функция синхронизации)
-    // Как только в базе что-то меняется, эта функция перерисовывает таблицу у ВСЕХ
+    // Синхронизация данных (как и раньше)
     onValue(playersRef, (snapshot) => {
         const tableBody = document.getElementById('tableBody');
-        tableBody.innerHTML = ''; // Очищаем таблицу перед перерисовкой
-        
+        tableBody.innerHTML = '';
         const data = snapshot.val();
         
-        // Если база пустая, добавим стандартных игроков
         if (!data) {
             initDefaultPlayers();
             return;
@@ -301,29 +307,24 @@
 
         document.getElementById('connectionStatus').innerText = "• Синхронизировано •";
 
-        // Проходимся по каждому игроку из базы
         for (let id in data) {
             const player = data[id];
             renderPlayerRow(id, player);
         }
     });
 
-    // Функция отрисовки одной строки
     function renderPlayerRow(id, player) {
         const tableBody = document.getElementById('tableBody');
         const newRow = tableBody.insertRow();
 
-        // Имя
         const cellName = newRow.insertCell(0);
         const inputName = document.createElement('input');
         inputName.type = 'text';
         inputName.className = 'player-name';
         inputName.value = player.name || "";
-        // Сохраняем изменение имени при потере фокуса
         inputName.onchange = () => update(ref(db, 'players/' + id), { name: inputName.value });
         cellName.appendChild(inputName);
 
-        // Действия
         const cellAction = newRow.insertCell(1);
         const inputNum = document.createElement('input');
         inputNum.type = 'number';
@@ -336,15 +337,12 @@
 
         cellAction.append(inputNum, btnPlus, btnMinus, btnUndo);
 
-        // Итог
         const cellTotal = newRow.insertCell(2);
         cellTotal.className = 'score-cell';
         cellTotal.innerText = player.total || 0;
 
-        // История
         const cellHistory = newRow.insertCell(3);
         cellHistory.className = 'history-log';
-        // Храним историю скрыто для экспорта CSV
         cellHistory.setAttribute('data-ops', JSON.stringify(player.history || []));
         
         if (player.history && player.history.length > 0) {
@@ -353,7 +351,6 @@
             cellHistory.innerText = 'Пусто';
         }
 
-        // Удалить
         const cellDelete = newRow.insertCell(4);
         const btnDelete = createBtn('✕', 'btn-delete', () => {
             if(confirm("Удалить запись навсегда?")) remove(ref(db, 'players/' + id));
@@ -361,7 +358,6 @@
         cellDelete.appendChild(btnDelete);
     }
 
-    // Вспомогательная для кнопок
     function createBtn(text, cls, onClick) {
         const btn = document.createElement('button');
         btn.innerText = text;
@@ -370,11 +366,9 @@
         return btn;
     }
 
-    // Логика изменения счета
     window.handleScore = function(id, player, valStr, multiplier, inputElem) {
         let val = parseFloat(valStr);
         if (isNaN(val)) return;
-        
         let change = val;
         if (multiplier === -1) change = -val;
 
@@ -382,50 +376,63 @@
         const newHistory = [...currentHistory, change];
         const newTotal = (player.total || 0) + change;
 
-        // Отправляем в базу
-        update(ref(db, 'players/' + id), {
-            total: newTotal,
-            history: newHistory
-        });
-        
-        inputElem.value = '';
-        inputElem.focus();
+        update(ref(db, 'players/' + id), { total: newTotal, history: newHistory });
+        inputElem.value = ''; inputElem.focus();
     }
 
-    // Логика отмены
     window.undoLast = function(id, player) {
         const history = player.history || [];
         if (history.length === 0) return;
-
         const newHistory = [...history];
         const removed = newHistory.pop();
         const newTotal = (player.total || 0) - removed;
-
-        update(ref(db, 'players/' + id), {
-            total: newTotal,
-            history: newHistory
-        });
+        update(ref(db, 'players/' + id), { total: newTotal, history: newHistory });
     }
 
-    // Создание нового игрока
+    // --- ЛОГИКА НОВОГО ДНЯ (С ПАРОЛЕМ) ---
+    window.startNewDay = async function() {
+        // 1. Спрашиваем пароль
+        const pass = prompt("Введите код доступа для сброса дня:");
+        if (pass !== "108020") {
+            alert("Ошибка: Неверный код!");
+            return;
+        }
+
+        // 2. Получаем текущие данные всех игроков
+        const snapshot = await get(playersRef);
+        const data = snapshot.val();
+        if (!data) return;
+
+        const updates = {};
+        
+        // 3. Проходим по каждому игроку
+        for (let id in data) {
+            let player = data[id];
+            let currentTotal = player.total || 0;
+            
+            // Новая история: [Старый счет, +500]
+            // Таким образом итог будет: Старый счет + 500
+            let newHistory = [currentTotal, 500];
+            let newTotal = currentTotal + 500;
+
+            updates['players/' + id + '/history'] = newHistory;
+            updates['players/' + id + '/total'] = newTotal;
+        }
+
+        // 4. Обновляем всё разом
+        await update(ref(db), updates);
+        alert("Новый день начат! Счета перенесены, всем начислено +500.");
+    }
+
     window.createNewPlayer = function() {
-        push(playersRef, {
-            name: "Новый игрок",
-            total: 0,
-            history: []
-        });
+        push(playersRef, { name: "Новый игрок", total: 0, history: [] });
     }
 
-    // Инициализация стандартных игроков (только если база пуста)
     function initDefaultPlayers() {
         const defaultPlayers = ["EAGLE_THUNDER", "Zagonskiy", "ceme4ko", "Леонид Стручков", "Машмар", "Егор", "Федя"];
-        defaultPlayers.forEach(name => {
-            push(playersRef, { name: name, total: 0, history: [] });
-        });
+        defaultPlayers.forEach(name => { push(playersRef, { name: name, total: 0, history: [] }); });
     }
     
-    // --- Локальные функции (Дата и Скачивание) ---
-    // Они не требуют базы, работают в браузере
     window.onload = function() {
         const dateInput = document.getElementById('gameDate');
         const today = new Date().toISOString().split('T')[0];
@@ -435,26 +442,21 @@
     window.downloadCSV = function() {
         const rows = document.querySelectorAll('#scoreTable tbody tr');
         if (rows.length === 0) { alert("Пусто!"); return; }
-
         const selectedDate = document.getElementById('gameDate').value;
         let formattedDate = selectedDate;
         if(selectedDate) {
              const parts = selectedDate.split('-');
              formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
         }
-
         let csvContent = `Дата выписки:;${formattedDate}\n\n`;
         csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n";
-
         rows.forEach(row => {
             let name = row.querySelector('.player-name').value.trim();
             if (!name) name = "Без имени";
             let total = row.querySelector('.score-cell').innerText;
-            let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); // Заменяем пробелы на ; для Excel
-
+            let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); 
             csvContent += `"${name}";${total};${opsString}\n`;
         });
-
         const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
