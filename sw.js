@@ -1,5 +1,5 @@
-// Версия v20 - Remove Mobile Borders for Total
-const CACHE_NAME = 'orelpoker-v20-cleaner-mobile';
+// Версия v21 - Auto Update (No Confirm)
+const CACHE_NAME = 'orelpoker-v21-auto';
 const ASSETS = [
     './',
     './index.html',
@@ -8,7 +8,8 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-    self.skipWaiting();
+    // Эта команда заставляет новый SW немедленно заменить старый
+    self.skipWaiting(); 
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(ASSETS);
@@ -26,6 +27,7 @@ self.addEventListener('activate', (e) => {
             }));
         })
     );
+    // Эта команда говорит всем открытым вкладкам: "Я теперь главный, используйте меня"
     return self.clients.claim();
 });
 
