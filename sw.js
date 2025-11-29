@@ -1,5 +1,5 @@
-// Версия v47 - Separate Registration Menu
-const CACHE_NAME = 'orelpoker-v47-reg-menu';
+// Версия v48 - Fix Logout Button Style
+const CACHE_NAME = 'orelpoker-v48-logout-style';
 const ASSETS = [
     './',
     './index.html',
