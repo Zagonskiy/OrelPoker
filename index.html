@@ -30,7 +30,7 @@
             padding: 20px 10px;
             color: var(--ink-color);
             margin: 0;
-            overscroll-behavior: none; /* Убирает пружинистость на iOS */
+            overscroll-behavior: none;
         }
 
         .btn-extreme-reset {
@@ -50,11 +50,7 @@
             border-radius: 4px;
             transition: all 0.2s;
         }
-        .btn-extreme-reset:hover {
-            background-color: #ff0000;
-            color: white;
-            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
-        }
+        .btn-extreme-reset:hover { background-color: #ff0000; color: white; box-shadow: 0 0 15px rgba(255, 0, 0, 0.5); }
 
         .network-badge {
             position: fixed;
@@ -73,11 +69,7 @@
         .status-online { background-color: var(--accent-green); color: #fff; border-color: #1b5e20; }
         .status-offline { background-color: #d32f2f; color: #fff; border-color: #b71c1c; animation: pulse 2s infinite; }
 
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
         .container {
             max-width: 1050px;
@@ -228,7 +220,7 @@
 
 <div class="container">
     <h2>— OrelPoker Журнал —</h2>
-    <div class="sync-info">Offline-First v3.0</div>
+    <div class="sync-info">Offline-Ready v4.0</div>
 
     <div class="date-section">
         <label for="gameDate">Дата игры:</label>
@@ -259,9 +251,7 @@
 <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then(reg => console.log('SW зарегистрирован:', reg.scope))
-                .catch(err => console.log('Ошибка SW:', err));
+            navigator.serviceWorker.register('./sw.js');
         });
     }
 </script>
@@ -270,6 +260,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, onValue, push, set, remove, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+    // --- ВСТАВЬ СЮДА СВОИ ДАННЫЕ FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyD9E8XsdjGx275Es6HwdCo5jy2l0kJoNXg",
         authDomain: "orelpoker-cd9d4.firebaseapp.com",
@@ -279,6 +270,7 @@
         messagingSenderId: "913271365234",
         appId: "1:913271365234:web:b48f717e011eea4847eceb"
     };
+    // ----------------------------------------
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
@@ -297,39 +289,40 @@
         }
     });
 
-    // --- ГИБРИДНАЯ ЗАГРУЗКА ДАННЫХ ---
-    
-    // 1. При загрузке страницы СРАЗУ показываем то, что сохранено в браузере (чтобы не ждать сеть)
+    // --- ЛОГИКА СИНХРОНИЗАЦИИ ---
+
+    // 1. При старте грузим из локальной памяти (чтобы сразу видеть цифры)
     window.addEventListener('DOMContentLoaded', () => {
         const localData = localStorage.getItem('poker_data');
         if (localData) {
-            const parsed = JSON.parse(localData);
-            renderTable(parsed);
-            console.log("Загружено из кэша");
+            renderTable(JSON.parse(localData));
         }
     });
 
-    // 2. Слушаем Firebase. Когда приходят новые данные (или восстановилась сеть)
+    // 2. Слушаем базу (если есть интернет). Если база обновляется, обновляем экран.
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
-        
         if (!data) {
             initDefaultPlayers();
             return;
         }
-
-        // Сохраняем свежие данные в память браузера
         localStorage.setItem('poker_data', JSON.stringify(data));
         
-        // Рисуем таблицу
+        // ВАЖНО: Мы перерисовываем таблицу, только если мы не печатаем прямо сейчас.
+        // Но для простоты в этом приложении перерисовываем всегда, чтобы синхронизироваться.
         renderTable(data);
     });
 
-    // Общая функция отрисовки (используется и для офлайна, и для онлайна)
     function renderTable(data) {
+        // Мы не будем стирать таблицу, если пользователь сейчас что-то вводит.
+        // Это упрощенная версия: полная перерисовка.
         const tableBody = document.getElementById('tableBody');
-        tableBody.innerHTML = '';
         
+        // Чтобы не сбрасывать фокус ввода, можно было бы обновлять точечно,
+        // но для надежности перерисуем, кроме полей ввода.
+        if (document.activeElement.tagName === 'INPUT') return; 
+
+        tableBody.innerHTML = '';
         for (let id in data) {
             renderPlayerRow(id, data[id]);
         }
@@ -353,9 +346,10 @@
         inputNum.className = 'input-val';
         inputNum.placeholder = '0';
         
-        const btnPlus = createBtn('+', 'btn-calc', () => handleScore(id, player, inputNum.value, 1, inputNum));
-        const btnMinus = createBtn('-', 'btn-calc', () => handleScore(id, player, inputNum.value, -1, inputNum));
-        const btnUndo = createBtn('↩', 'btn-undo', () => undoLast(id, player));
+        // ВАЖНО: Передаем ссылку на input, чтобы найти строку
+        const btnPlus = createBtn('+', 'btn-calc', () => handleScore(id, inputNum, 1));
+        const btnMinus = createBtn('-', 'btn-calc', () => handleScore(id, inputNum, -1));
+        const btnUndo = createBtn('↩', 'btn-undo', () => undoLast(id, inputNum));
 
         cellAction.append(inputNum, btnPlus, btnMinus, btnUndo);
 
@@ -365,6 +359,7 @@
 
         const cellHistory = newRow.insertCell(3);
         cellHistory.className = 'history-log';
+        // Сохраняем историю в атрибут для удобства чтения
         cellHistory.setAttribute('data-ops', JSON.stringify(player.history || []));
         
         if (player.history && player.history.length > 0) {
@@ -388,33 +383,67 @@
         return btn;
     }
 
-    // --- ОБНОВЛЕННАЯ ФУНКЦИЯ ДЕЙСТВИЙ (ОФЛАЙН ПОДДЕРЖКА) ---
-    // Firebase Web SDK сам умеет накапливать действия офлайн и отправлять их при подключении
-    window.handleScore = function(id, player, valStr, multiplier, inputElem) {
-        let val = parseFloat(valStr);
+    // --- ОПТИМИСТИЧНОЕ ОБНОВЛЕНИЕ (Главное исправление) ---
+    window.handleScore = function(id, inputElem, multiplier) {
+        // 1. Ищем строку и элементы
+        const row = inputElem.closest('tr');
+        const totalCell = row.querySelector('.score-cell');
+        const historyCell = row.querySelector('.history-log');
+
+        // 2. Считаем на основе того, что СЕЙЧАС на экране (а не в базе)
+        // Это позволяет "наслаивать" изменения в офлайне
+        let currentTotal = parseFloat(totalCell.innerText);
+        let val = parseFloat(inputElem.value);
         if (isNaN(val)) return;
-        let change = val;
-        if (multiplier === -1) change = -val;
 
-        const currentHistory = player.history || [];
-        const newHistory = [...currentHistory, change];
-        const newTotal = (player.total || 0) + change;
+        let change = val * multiplier;
+        let newTotal = currentTotal + change;
 
-        // Firebase примет это действие и поставит в очередь, если нет сети
-        update(ref(db, 'players/' + id), { total: newTotal, history: newHistory });
-        
-        // ВАЖНО: Мы также обновляем локальный вид вручную для мгновенной реакции
-        // (хотя Firebase SDK обычно делает это сам, но для надежности)
-        inputElem.value = ''; inputElem.focus();
+        // 3. Обновляем историю
+        let currentOps = JSON.parse(historyCell.getAttribute('data-ops') || "[]");
+        let newOps = [...currentOps, change];
+
+        // 4. МГНОВЕННО обновляем экран (визуально)
+        totalCell.innerText = newTotal;
+        historyCell.setAttribute('data-ops', JSON.stringify(newOps));
+        historyCell.innerText = newOps.map(n => n >= 0 ? `+${n}` : n).join(' ');
+        inputElem.value = '';
+        inputElem.focus();
+
+        // 5. Отправляем в Firebase (оно уйдет, когда будет сеть)
+        // Но мы отправляем уже ФИНАЛЬНЫЙ результат, посчитанный локально
+        update(ref(db, 'players/' + id), {
+            total: newTotal,
+            history: newOps
+        });
     }
 
-    window.undoLast = function(id, player) {
-        const history = player.history || [];
-        if (history.length === 0) return;
-        const newHistory = [...history];
-        const removed = newHistory.pop();
-        const newTotal = (player.total || 0) - removed;
-        update(ref(db, 'players/' + id), { total: newTotal, history: newHistory });
+    window.undoLast = function(id, inputElem) {
+        const row = inputElem.closest('tr');
+        const totalCell = row.querySelector('.score-cell');
+        const historyCell = row.querySelector('.history-log');
+
+        let currentOps = JSON.parse(historyCell.getAttribute('data-ops') || "[]");
+        if (currentOps.length === 0) return;
+
+        let removed = currentOps.pop();
+        let currentTotal = parseFloat(totalCell.innerText);
+        let newTotal = currentTotal - removed;
+
+        // Визуально
+        totalCell.innerText = newTotal;
+        historyCell.setAttribute('data-ops', JSON.stringify(currentOps));
+        if (currentOps.length > 0) {
+            historyCell.innerText = currentOps.map(n => n >= 0 ? `+${n}` : n).join(' ');
+        } else {
+            historyCell.innerText = "Пусто";
+        }
+
+        // В базу
+        update(ref(db, 'players/' + id), {
+            total: newTotal,
+            history: currentOps
+        });
     }
 
     window.createNewPlayer = function() {
