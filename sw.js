@@ -1,5 +1,5 @@
-// Версия v27 - Player Reset Button
-const CACHE_NAME = 'orelpoker-v27-reset-player';
+// Версия v28 - Fix Table Border Alignment
+const CACHE_NAME = 'orelpoker-v28-border-fix';
 const ASSETS = [
     './',
     './index.html',
@@ -9,7 +9,7 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-    self.skipWaiting(); 
+    self.skipWaiting();
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(ASSETS);
