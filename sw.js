@@ -1,5 +1,5 @@
-// Версия v44 - Favicon & App Icon Added
-const CACHE_NAME = 'orelpoker-v44-icons';
+// Версия v45 - Account System Added
+const CACHE_NAME = 'orelpoker-v45-accounts';
 const ASSETS = [
     './',
     './index.html',
