@@ -1,5 +1,5 @@
-// Версия v9 - Added Grand Total
-const CACHE_NAME = 'orelpoker-v9-total';
+// Версия v11 - Fix Grand Total Math
+const CACHE_NAME = 'orelpoker-v11-total-fix';
 const ASSETS = [
     './',
     './index.html',
