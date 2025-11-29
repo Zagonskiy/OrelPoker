@@ -38,7 +38,7 @@
             padding-bottom: 60px;
         }
 
-        /* --- LOGIN & REGISTER OVERLAY --- */
+        /* --- LOGIN OVERLAY --- */
         #login-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #2a1b0f; z-index: 9999;
@@ -80,17 +80,13 @@
             cursor: pointer; font-size: 1.1em;
             border-radius: 4px;
         }
-        
+        .btn-register { background: var(--accent-brown); border-color: #5d4037; }
         .btn-register-link {
             background: transparent; border: none; color: var(--accent-gold);
             font-family: 'Rye', cursive; font-size: 1em; cursor: pointer;
             text-decoration: underline; margin-top: 10px;
         }
-
-        .btn-back {
-            background: var(--accent-red); border-color: #b71c1c;
-        }
-
+        .btn-back { background: var(--accent-red); border-color: #b71c1c; }
         .error-msg { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
         /* -------------------- */
 
@@ -107,12 +103,6 @@
             cursor: pointer; width: 100%; box-sizing: border-box; border-radius: 4px; transition: all 0.2s; text-align: center;
         }
         .btn-extreme-reset:hover { background-color: #ff0000; color: white; box-shadow: 0 0 15px rgba(255, 0, 0, 0.5); }
-
-        .btn-logout {
-            margin-top: 10px; background-color: var(--accent-brown); color: var(--accent-gold);
-            border: 1px solid var(--accent-gold); padding: 10px; font-family: 'Rye', cursive;
-            cursor: pointer; width: 100%; border-radius: 4px; text-align: center;
-        }
 
         .network-badge {
             position: fixed; top: 15px; right: 15px; padding: 8px 15px; font-family: 'Rye', cursive; font-size: 0.9em;
@@ -155,10 +145,13 @@
         .btn-reset-player { background-color: var(--accent-orange); color: white; font-weight: bold; border-radius: 50%; width: 30px; height: 30px; padding: 0; border: 2px solid #bf360c; font-family: sans-serif; cursor: pointer; }
         .btn-reset-player:hover { background-color: #ff6d00; }
 
+        /* --- SIDEBAR --- */
         .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-width); background: #1a1008; border-right: 4px solid var(--accent-brown); display: flex; flex-direction: column; padding: 20px; box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 2000; transition: transform 0.3s ease; box-sizing: border-box; }
         .sidebar-logo { text-align: center; margin-bottom: 40px; }
         .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
         .sidebar-title { font-family: 'Rye', cursive; color: var(--accent-gold); font-size: 1.2em; margin-top: 10px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; }
+        
+        /* СТИЛЬ КНОПОК МЕНЮ */
         .nav-btn { background: transparent; border: 1px solid var(--accent-brown); color: #d4c5a3; padding: 15px; margin-bottom: 10px; text-align: left; font-family: 'Rye', cursive; font-size: 1.1em; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
         .nav-btn:hover, .nav-btn.active { background: var(--accent-brown); color: var(--accent-gold); border-color: var(--accent-gold); }
 
@@ -276,7 +269,7 @@
     <button class="nav-btn active" onclick="showView('game')">🎲 Игровой стол</button>
     <button class="nav-btn" onclick="showView('journal')">📜 Журнал архива</button>
     
-    <button class="btn-logout" onclick="logout()">🚪 ВЫЙТИ</button>
+    <button class="nav-btn" onclick="logout()" style="margin-top: 20px;">🚪 ВЫЙТИ</button>
     
     <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 </div>
@@ -324,7 +317,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v47.0 (Auth Update)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v48.0 (Logout Style)</div>
 </div>
 
 <script>
@@ -342,7 +335,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=47').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=48').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -482,14 +475,14 @@
     });
 
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v47'); 
+        const localData = localStorage.getItem('poker_data_v48'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v47', JSON.stringify(data));
+        localStorage.setItem('poker_data_v48', JSON.stringify(data));
         renderTable(data);
     });
 
