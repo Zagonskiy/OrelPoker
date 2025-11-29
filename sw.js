@@ -1,5 +1,5 @@
-// Версия v49 - Username in Menu
-const CACHE_NAME = 'orelpoker-v49-username';
+// Версия v50 - Offline Login System
+const CACHE_NAME = 'orelpoker-v50-offline-auth';
 const ASSETS = [
     './',
     './index.html',
