@@ -1,5 +1,5 @@
-// Версия v57 - Read-Only Names
-const CACHE_NAME = 'orelpoker-v57-static-names';
+// Версия v58 - Session Storage Fix
+const CACHE_NAME = 'orelpoker-v58-session-fix';
 const ASSETS = [
     './',
     './index.html',
