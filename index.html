@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Винтажный журнал</title>
+    <title>Винтажный журнал (Онлайн)</title>
     <link href="https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -56,6 +56,14 @@
             line-height: 1.2;
         }
         
+        .status-bar {
+            text-align: center;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            color: var(--accent-green);
+            font-weight: bold;
+        }
+
         .date-section {
             display: flex;
             align-items: center;
@@ -80,7 +88,6 @@
             color: var(--ink-color);
             outline: none;
             font-size: 1.1em;
-            width: auto;
         }
 
         .controls {
@@ -113,7 +120,6 @@
         .btn-add { background-color: var(--accent-green); color: #f4e4bc; border-color: #3a4a20; }
         .btn-download { background-color: var(--accent-brown); color: var(--accent-gold); border-color: #5c300e; }
 
-        /* Элементы управления счетом */
         .btn-calc, .btn-undo { 
             width: 40px; height: 40px; padding: 0; 
             font-family: 'Special Elite', monospace;
@@ -140,7 +146,6 @@
             cursor: pointer;
         }
 
-        /* --- СТИЛИ ТАБЛИЦЫ --- */
         table {
             width: 100%;
             border-collapse: separate;
@@ -203,86 +208,28 @@
             border-radius: 4px;
         }
         
-        /* --- МОБИЛЬНАЯ АДАПТАЦИЯ (MEDIA QUERIES) --- */
+        /* Мобильная адаптация */
         @media screen and (max-width: 768px) {
             .container { padding: 10px; border-width: 5px; }
             h2 { font-size: 1.8em; }
-            
-            /* Превращаем таблицу в список карточек */
             table, thead, tbody, th, td, tr { display: block; }
-            
-            /* Скрываем заголовки таблицы */
             thead tr { position: absolute; top: -9999px; left: -9999px; }
-            
             tbody tr {
                 margin-bottom: 20px;
                 position: relative;
                 padding-bottom: 10px;
                 border: 2px solid var(--accent-brown);
             }
-            
-            td {
-                border: none;
-                position: relative;
-                padding: 5px 10px;
-                text-align: center;
-            }
-            
-            /* 1. Имя игрока (сверху) */
-            td:nth-of-type(1) {
-                text-align: left;
-                padding-right: 40px; /* Место под кнопку удаления */
-                margin-top: 5px;
-            }
-            td:nth-of-type(1) input {
-                font-weight: bold;
-                font-size: 1.2em;
-            }
-
-            /* 2. Действия (по центру) */
-            td:nth-of-type(2) {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                flex-wrap: wrap;
-                gap: 5px;
-                margin: 5px 0;
-            }
-            td:nth-of-type(2) input {
-                width: 60px; /* Чуть меньше на телефоне */
-            }
-            
-            /* 3. Итог (большой цифрой) */
-            td:nth-of-type(3) {
-                border-top: 1px dashed var(--accent-brown);
-                border-bottom: 1px dashed var(--accent-brown);
-                background: rgba(203, 161, 53, 0.1);
-                margin: 5px 0;
-            }
-            td:nth-of-type(3)::before {
-                content: "Итог: ";
-                font-size: 0.6em;
-                color: #555;
-                vertical-align: middle;
-            }
-            
-            /* 4. История */
-            td:nth-of-type(4) {
-                width: auto;
-                max-width: 100%;
-            }
-            .history-log {
-                max-width: 100%;
-            }
-
-            /* 5. Кнопка удаления (абсолютно в углу карточки) */
-            td:nth-of-type(5) {
-                position: absolute;
-                top: 5px;
-                right: 5px;
-                width: auto;
-                padding: 0;
-            }
+            td { border: none; position: relative; padding: 5px 10px; text-align: center; }
+            td:nth-of-type(1) { text-align: left; padding-right: 40px; margin-top: 5px; }
+            td:nth-of-type(1) input { font-weight: bold; font-size: 1.2em; }
+            td:nth-of-type(2) { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 5px; margin: 5px 0; }
+            td:nth-of-type(2) input { width: 60px; }
+            td:nth-of-type(3) { border-top: 1px dashed var(--accent-brown); border-bottom: 1px dashed var(--accent-brown); background: rgba(203, 161, 53, 0.1); margin: 5px 0; }
+            td:nth-of-type(3)::before { content: "Итог: "; font-size: 0.6em; color: #555; vertical-align: middle; }
+            td:nth-of-type(4) { width: auto; max-width: 100%; }
+            .history-log { max-width: 100%; }
+            td:nth-of-type(5) { position: absolute; top: 5px; right: 5px; width: auto; padding: 0; }
         }
     </style>
 </head>
@@ -290,6 +237,7 @@
 
 <div class="container">
     <h2>— Игровой Журнал —</h2>
+    <div id="connectionStatus" class="status-bar">Подключение к архиву...</div>
 
     <div class="date-section">
         <label for="gameDate">Дата игры:</label>
@@ -297,7 +245,7 @@
     </div>
     
     <div class="controls">
-        <button class="btn-add" onclick="addPlayer()">Добавить игрока</button>
+        <button class="btn-add" onclick="createNewPlayer()">Добавить игрока</button>
         <button class="btn-download" onclick="downloadCSV()">Скачать выписку</button>
     </div>
 
@@ -311,142 +259,182 @@
                 <th style="width: 5%;"></th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="tableBody">
             </tbody>
     </table>
 </div>
 
-<script>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue, push, set, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // --- ВНИМАНИЕ: ВСТАВЬ СЮДА СВОИ ДАННЫЕ ИЗ FIREBASE CONSOLE ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyD9E8XsdjGx275Es6HwdCo5jy2l0kJoNXg",
+        authDomain: "orelpoker-cd9d4.firebaseapp.com",
+        databaseURL: "https://orelpoker-cd9d4-default-rtdb.firebaseio.com",
+        projectId: "orelpoker-cd9d4",
+        storageBucket: "orelpoker-cd9d4.firebasestorage.app",
+        messagingSenderId: "913271365234",
+        appId: "1:913271365234:web:b48f717e011eea4847eceb"
+    };
+    // -------------------------------------------------------------
+
+    // Инициализация базы
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const playersRef = ref(db, 'players');
+
+    // 1. СЛУШАЕМ ИЗМЕНЕНИЯ (Главная функция синхронизации)
+    // Как только в базе что-то меняется, эта функция перерисовывает таблицу у ВСЕХ
+    onValue(playersRef, (snapshot) => {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = ''; // Очищаем таблицу перед перерисовкой
+        
+        const data = snapshot.val();
+        
+        // Если база пустая, добавим стандартных игроков
+        if (!data) {
+            initDefaultPlayers();
+            return;
+        }
+
+        document.getElementById('connectionStatus').innerText = "• Синхронизировано •";
+
+        // Проходимся по каждому игроку из базы
+        for (let id in data) {
+            const player = data[id];
+            renderPlayerRow(id, player);
+        }
+    });
+
+    // Функция отрисовки одной строки
+    function renderPlayerRow(id, player) {
+        const tableBody = document.getElementById('tableBody');
+        const newRow = tableBody.insertRow();
+
+        // Имя
+        const cellName = newRow.insertCell(0);
+        const inputName = document.createElement('input');
+        inputName.type = 'text';
+        inputName.className = 'player-name';
+        inputName.value = player.name || "";
+        // Сохраняем изменение имени при потере фокуса
+        inputName.onchange = () => update(ref(db, 'players/' + id), { name: inputName.value });
+        cellName.appendChild(inputName);
+
+        // Действия
+        const cellAction = newRow.insertCell(1);
+        const inputNum = document.createElement('input');
+        inputNum.type = 'number';
+        inputNum.className = 'input-val';
+        inputNum.placeholder = '0';
+        
+        const btnPlus = createBtn('+', 'btn-calc', () => handleScore(id, player, inputNum.value, 1, inputNum));
+        const btnMinus = createBtn('-', 'btn-calc', () => handleScore(id, player, inputNum.value, -1, inputNum));
+        const btnUndo = createBtn('↩', 'btn-undo', () => undoLast(id, player));
+
+        cellAction.append(inputNum, btnPlus, btnMinus, btnUndo);
+
+        // Итог
+        const cellTotal = newRow.insertCell(2);
+        cellTotal.className = 'score-cell';
+        cellTotal.innerText = player.total || 0;
+
+        // История
+        const cellHistory = newRow.insertCell(3);
+        cellHistory.className = 'history-log';
+        // Храним историю скрыто для экспорта CSV
+        cellHistory.setAttribute('data-ops', JSON.stringify(player.history || []));
+        
+        if (player.history && player.history.length > 0) {
+            cellHistory.innerText = player.history.map(n => n >= 0 ? `+${n}` : n).join(' ');
+        } else {
+            cellHistory.innerText = 'Пусто';
+        }
+
+        // Удалить
+        const cellDelete = newRow.insertCell(4);
+        const btnDelete = createBtn('✕', 'btn-delete', () => {
+            if(confirm("Удалить запись навсегда?")) remove(ref(db, 'players/' + id));
+        });
+        cellDelete.appendChild(btnDelete);
+    }
+
+    // Вспомогательная для кнопок
+    function createBtn(text, cls, onClick) {
+        const btn = document.createElement('button');
+        btn.innerText = text;
+        btn.className = cls;
+        btn.onclick = onClick;
+        return btn;
+    }
+
+    // Логика изменения счета
+    window.handleScore = function(id, player, valStr, multiplier, inputElem) {
+        let val = parseFloat(valStr);
+        if (isNaN(val)) return;
+        
+        let change = val;
+        if (multiplier === -1) change = -val;
+
+        const currentHistory = player.history || [];
+        const newHistory = [...currentHistory, change];
+        const newTotal = (player.total || 0) + change;
+
+        // Отправляем в базу
+        update(ref(db, 'players/' + id), {
+            total: newTotal,
+            history: newHistory
+        });
+        
+        inputElem.value = '';
+        inputElem.focus();
+    }
+
+    // Логика отмены
+    window.undoLast = function(id, player) {
+        const history = player.history || [];
+        if (history.length === 0) return;
+
+        const newHistory = [...history];
+        const removed = newHistory.pop();
+        const newTotal = (player.total || 0) - removed;
+
+        update(ref(db, 'players/' + id), {
+            total: newTotal,
+            history: newHistory
+        });
+    }
+
+    // Создание нового игрока
+    window.createNewPlayer = function() {
+        push(playersRef, {
+            name: "Новый игрок",
+            total: 0,
+            history: []
+        });
+    }
+
+    // Инициализация стандартных игроков (только если база пуста)
+    function initDefaultPlayers() {
+        const defaultPlayers = ["EAGLE_THUNDER", "Zagonskiy", "ceme4ko", "Леонид Стручков", "Машмар", "Егор", "Федя"];
+        defaultPlayers.forEach(name => {
+            push(playersRef, { name: name, total: 0, history: [] });
+        });
+    }
+    
+    // --- Локальные функции (Дата и Скачивание) ---
+    // Они не требуют базы, работают в браузере
     window.onload = function() {
         const dateInput = document.getElementById('gameDate');
         const today = new Date().toISOString().split('T')[0];
         dateInput.value = today;
-
-        const defaultPlayers = [
-            "EAGLE_THUNDER", "Zagonskiy", "ceme4ko", 
-            "Леонид Стручков", "Машмар", "Егор", "Федя"
-        ];
-        defaultPlayers.forEach(name => { addPlayer(name); });
-    };
-
-    function addPlayer(name = "") {
-        const table = document.getElementById('scoreTable').getElementsByTagName('tbody')[0];
-        const newRow = table.insertRow();
-
-        // 1. Имя
-        const cellName = newRow.insertCell(0);
-        const inputName = document.createElement('input');
-        inputName.type = 'text';
-        inputName.placeholder = 'Имя';
-        inputName.className = 'player-name';
-        inputName.value = name;
-        cellName.appendChild(inputName);
-
-        // 2. Действия
-        const cellAction = newRow.insertCell(1);
-        
-        const inputNum = document.createElement('input');
-        inputNum.type = 'number';
-        inputNum.placeholder = '0';
-        inputNum.className = 'input-val';
-        inputNum.addEventListener("keypress", function(event) {
-            if (event.key === "Enter") updateScore(newRow, 1);
-        });
-
-        const btnPlus = document.createElement('button');
-        btnPlus.innerText = '+';
-        btnPlus.className = 'btn-calc';
-        btnPlus.onclick = function() { updateScore(newRow, 1); };
-
-        const btnMinus = document.createElement('button');
-        btnMinus.innerText = '-';
-        btnMinus.className = 'btn-calc';
-        btnMinus.onclick = function() { updateScore(newRow, -1); };
-
-        const btnUndo = document.createElement('button');
-        btnUndo.innerText = '↩';
-        btnUndo.className = 'btn-undo';
-        btnUndo.title = "Отмена";
-        btnUndo.onclick = function() { undoLastAction(newRow); };
-
-        cellAction.appendChild(inputNum);
-        cellAction.appendChild(btnPlus);
-        cellAction.appendChild(btnMinus);
-        cellAction.appendChild(btnUndo);
-
-        // 3. Итог
-        const cellTotal = newRow.insertCell(2);
-        cellTotal.className = 'score-cell';
-        cellTotal.innerText = '0';
-
-        // 4. История
-        const cellHistory = newRow.insertCell(3);
-        cellHistory.className = 'history-log';
-        cellHistory.setAttribute('data-ops', JSON.stringify([])); 
-        cellHistory.innerText = 'Пусто';
-
-        // 5. Удалить
-        const cellDelete = newRow.insertCell(4);
-        const btnDelete = document.createElement('button');
-        btnDelete.innerText = '✕';
-        btnDelete.className = 'btn-delete';
-        btnDelete.onclick = function() { newRow.remove(); };
-        cellDelete.appendChild(btnDelete);
     }
 
-    function updateScore(row, multiplier) {
-        const inputVal = row.querySelector('.input-val');
-        const historyCell = row.querySelector('.history-log');
-        const totalCell = row.querySelector('.score-cell');
-
-        let val = parseFloat(inputVal.value);
-        if (isNaN(val)) return; 
-
-        let change = val;
-        if (multiplier === -1) change = -val;
-
-        let currentTotal = parseFloat(totalCell.innerText);
-        let newTotal = currentTotal + change;
-        totalCell.innerText = newTotal;
-
-        let ops = JSON.parse(historyCell.getAttribute('data-ops'));
-        ops.push(change);
-        historyCell.setAttribute('data-ops', JSON.stringify(ops));
-
-        updateHistoryText(historyCell, ops);
-        inputVal.value = '';
-    }
-
-    function undoLastAction(row) {
-        const historyCell = row.querySelector('.history-log');
-        const totalCell = row.querySelector('.score-cell');
-        let ops = JSON.parse(historyCell.getAttribute('data-ops'));
-
-        if (ops.length === 0) return;
-
-        let removedValue = ops.pop();
-        let currentTotal = parseFloat(totalCell.innerText);
-        let newTotal = currentTotal - removedValue;
-        totalCell.innerText = newTotal;
-
-        historyCell.setAttribute('data-ops', JSON.stringify(ops));
-        updateHistoryText(historyCell, ops);
-    }
-
-    function updateHistoryText(cell, ops) {
-        if (ops.length === 0) {
-            cell.innerText = 'Пусто';
-        } else {
-            cell.innerText = ops.map(num => (num >= 0 ? `+${num}` : num)).join(' ');
-        }
-    }
-
-    function downloadCSV() {
+    window.downloadCSV = function() {
         const rows = document.querySelectorAll('#scoreTable tbody tr');
-        if (rows.length === 0) {
-            alert("Таблица пуста!");
-            return;
-        }
+        if (rows.length === 0) { alert("Пусто!"); return; }
 
         const selectedDate = document.getElementById('gameDate').value;
         let formattedDate = selectedDate;
@@ -460,20 +448,18 @@
 
         rows.forEach(row => {
             let name = row.querySelector('.player-name').value.trim();
-            if (!name) name = "Игрок без имени";
+            if (!name) name = "Без имени";
             let total = row.querySelector('.score-cell').innerText;
-            let ops = JSON.parse(row.querySelector('.history-log').getAttribute('data-ops'));
-            let opsString = ops.join(";");
+            let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); // Заменяем пробелы на ; для Excel
+
             csvContent += `"${name}";${total};${opsString}\n`;
         });
 
         const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
-        const filename = `Выписка за ${formattedDate}.csv`;
-        
         link.setAttribute("href", url);
-        link.setAttribute("download", filename);
+        link.setAttribute("download", `Выписка за ${formattedDate}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
