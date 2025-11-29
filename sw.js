@@ -1,5 +1,5 @@
-// Версия v42 - Sidebar Layout Fix (Final)
-const CACHE_NAME = 'orelpoker-v42-layout';
+// Версия v43 - Offline Mode Fixed (No Transactions)
+const CACHE_NAME = 'orelpoker-v43-offline-fix';
 const ASSETS = [
     './',
     './index.html',
