@@ -244,14 +244,10 @@
             td:nth-of-type(2) { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 5px; margin: 5px 0; }
             td:nth-of-type(2) input { width: 60px; }
             
-            /* --- ИЗМЕНЕНИЕ ЗДЕСЬ: УБРАЛ НАДПИСЬ "ИТОГ:" --- */
+            /* --- ИЗМЕНЕНИЕ ЗДЕСЬ: УБРАНЫ РАМКИ И ФОН У ИТОГА --- */
             td:nth-of-type(3) { 
-                border-top: 1px dashed var(--accent-brown); 
-                border-bottom: 1px dashed var(--accent-brown); 
-                background: rgba(203, 161, 53, 0.1); 
-                margin: 5px 0; 
+                margin: 10px 0; /* Оставил только отступ */
             }
-            /* Ранее тут был before с контентом */
             
             td:nth-of-type(4) { width: auto; max-width: 100%; }
             .history-log { max-width: 100%; }
@@ -270,7 +266,7 @@
 <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 <div id="networkStatus" class="network-badge status-offline">⏳ Connect...</div>
 
-<div class="version-tag">OrelPoker v19.0</div>
+<div class="version-tag">OrelPoker v20.0</div>
 
 <div class="container">
     <h2>— OrelPoker Журнал —</h2>
@@ -380,7 +376,7 @@
 
     // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v19'); 
+        const localData = localStorage.getItem('poker_data_v20'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
@@ -390,7 +386,7 @@
             initDefaultPlayers();
             return;
         }
-        localStorage.setItem('poker_data_v19', JSON.stringify(data));
+        localStorage.setItem('poker_data_v20', JSON.stringify(data));
         renderTable(data);
     });
 
