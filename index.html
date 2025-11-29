@@ -53,9 +53,8 @@
             opacity: 0.8;
         }
 
-        /* --- ИСПРАВЛЕННАЯ КНОПКА СБРОСА (ВНИЗУ МЕНЮ) --- */
         .btn-extreme-reset {
-            margin-top: auto; /* Прижимает кнопку к низу флекс-контейнера */
+            margin-top: auto; 
             background-color: #500000;
             color: #ffcccc;
             border: 2px solid #ff0000;
@@ -89,76 +88,21 @@
         .status-online { background-color: var(--accent-green); color: #fff; border-color: #1b5e20; }
         .status-offline { background-color: #d32f2f; color: #fff; border-color: #b71c1c; animation: pulse 2s infinite; }
 
-        /* --- SIDEBAR --- */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            width: var(--sidebar-width);
-            background: #1a1008;
-            border-right: 4px solid var(--accent-brown);
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
-            z-index: 2000;
-            transition: transform 0.3s ease;
-            box-sizing: border-box;
-        }
-
-        .sidebar-logo { text-align: center; margin-bottom: 40px; }
-        .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
-        .sidebar-title { 
-            font-family: 'Rye', cursive; color: var(--accent-gold); font-size: 1.2em; 
-            margin-top: 10px; text-transform: uppercase; 
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        .nav-btn {
-            background: transparent; border: 1px solid var(--accent-brown); color: #d4c5a3;
-            padding: 15px; margin-bottom: 10px; text-align: left;
-            font-family: 'Rye', cursive; font-size: 1.1em; cursor: pointer;
-            transition: 0.2s; display: flex; align-items: center; gap: 10px;
-        }
-        .nav-btn:hover, .nav-btn.active { background: var(--accent-brown); color: var(--accent-gold); border-color: var(--accent-gold); }
-
-        /* --- MAIN CONTENT --- */
-        .main-content {
-            margin-left: var(--sidebar-width);
-            width: calc(100% - var(--sidebar-width));
-            min-height: 100vh;
-            padding: 20px;
-            background-image: var(--paper-texture);
-            background-color: var(--paper-bg);
-            box-sizing: border-box;
-            padding-bottom: 60px;
-        }
-
-        .menu-toggle {
-            display: none; 
-            position: fixed; top: 10px; left: 10px;
-            background: var(--accent-brown); color: var(--accent-gold);
-            border: 2px solid #5a3a22; padding: 5px 10px; font-size: 1.5em;
-            z-index: 3000; border-radius: 4px; cursor: pointer;
-            line-height: 1;
-        }
-
-        /* --- СТАТУСНАЯ ТОЧКА --- */
-        .status-dot {
-            display: inline-block; width: 12px; height: 12px; border-radius: 50%;
-            background-color: #d32f2f; border: 2px solid rgba(0,0,0,0.3);
-            box-shadow: 0 0 5px rgba(0,0,0,0.5); transition: all 0.3s ease;
-            vertical-align: middle; margin-left: 8px;
-        }
-        .status-dot.online {
-            background-color: #00e676; box-shadow: 0 0 8px #00e676; border-color: #1b5e20;
-        }
-
         .container {
             max-width: 1050px;
             margin: 0 auto;
-            /* Стили для фона и текстуры уже в main-content */
+            background-color: var(--paper-bg);
+            background-image: var(--paper-texture), linear-gradient(to right, rgba(139, 69, 19, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(139, 69, 19, 0.1) 1px, transparent 1px);
+            background-size: 100px 100px, 20px 20px, 20px 20px;
+            padding: 20px;
+            border-radius: 2px;
+            box-shadow: 
+                0 0 0 5px #5a3a22 inset,
+                0 15px 20px rgba(0,0,0,0.5),
+                0 0 50px rgba(0,0,0,0.3) inset;
+            border: 8px solid #462c1a;
+            border-image: repeating-linear-gradient(45deg, #462c1a, #462c1a 10px, #332013 10px, #332013 20px) 20;
+            margin-top: 60px;
         }
 
         .brand-container {
@@ -304,6 +248,72 @@
         }
         .btn-reset-player:hover { background-color: #ff6d00; }
 
+        /* --- SIDEBAR --- */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: #1a1008;
+            border-right: 4px solid var(--accent-brown);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            z-index: 2000;
+            transition: transform 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .sidebar-logo { text-align: center; margin-bottom: 40px; }
+        .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
+        .sidebar-title { 
+            font-family: 'Rye', cursive; color: var(--accent-gold); font-size: 1.2em; 
+            margin-top: 10px; text-transform: uppercase; 
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .nav-btn {
+            background: transparent; border: 1px solid var(--accent-brown); color: #d4c5a3;
+            padding: 15px; margin-bottom: 10px; text-align: left;
+            font-family: 'Rye', cursive; font-size: 1.1em; cursor: pointer;
+            transition: 0.2s; display: flex; align-items: center; gap: 10px;
+        }
+        .nav-btn:hover, .nav-btn.active { background: var(--accent-brown); color: var(--accent-gold); border-color: var(--accent-gold); }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            min-height: 100vh;
+            padding: 20px;
+            background-image: var(--paper-texture);
+            background-color: var(--paper-bg);
+            box-sizing: border-box;
+            padding-bottom: 60px;
+        }
+
+        .menu-toggle {
+            display: none; 
+            position: fixed; top: 10px; left: 10px;
+            background: var(--accent-brown); color: var(--accent-gold);
+            border: 2px solid #5a3a22; padding: 5px 10px; font-size: 1.5em;
+            z-index: 3000; border-radius: 4px; cursor: pointer;
+            line-height: 1;
+        }
+
+        /* --- СТАТУСНАЯ ТОЧКА --- */
+        .status-dot {
+            display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+            background-color: #d32f2f; border: 2px solid rgba(0,0,0,0.3);
+            box-shadow: 0 0 5px rgba(0,0,0,0.5); transition: all 0.3s ease;
+            vertical-align: middle; margin-left: 8px;
+        }
+        .status-dot.online {
+            background-color: #00e676; box-shadow: 0 0 8px #00e676; border-color: #1b5e20;
+        }
+
         table { width: 100%; border-collapse: separate; border-spacing: 0 10px; margin-top: 10px; }
         th { padding: 15px 10px; text-align: left; background-color: #6b523d; color: var(--accent-gold); font-family: 'Rye', cursive; letter-spacing: 1px; border-top: 3px solid #3e2b1f; border-bottom: 3px solid #3e2b1f; }
         tbody tr { background-color: rgba(255, 255, 255, 0.4); box-shadow: 2px 2px 4px rgba(0,0,0,0.1); border: 1px solid var(--accent-brown); }
@@ -330,16 +340,7 @@
 
         /* КНОПКА УДАЛЕНИЯ В ЖУРНАЛЕ */
         .btn-journal-delete {
-            background: var(--accent-red);
-            color: #fff;
-            border: 1px solid #500;
-            border-radius: 4px;
-            padding: 3px 8px;
-            font-size: 0.8em;
-            margin-left: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s;
+            background: var(--accent-red); color: #fff; border: 1px solid #500; border-radius: 4px; padding: 3px 8px; font-size: 0.8em; margin-left: 10px; cursor: pointer; font-weight: bold; transition: background 0.2s;
         }
         .btn-journal-delete:hover { background: #a00000; }
 
@@ -444,7 +445,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v42.0 (Tap to Update)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v43.0 (Tap to Update)</div>
 </div>
 
 <script>
@@ -467,7 +468,7 @@
     // 2. АВТОМАТИЧЕСКОЕ ОБНОВЛЕНИЕ
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=42').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=43').then(reg => {
                 reg.update(); 
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -502,7 +503,7 @@
     const playersRef = ref(db, 'players');
     const journalRef = ref(db, 'journal');
     
-    // --- СТАТУС СЕТИ ---
+    // --- СТАТУС ---
     const connectedRef = ref(db, ".info/connected");
     const connectionsRef = ref(db, "connections");
 
@@ -536,14 +537,14 @@
 
     // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v42'); 
+        const localData = localStorage.getItem('poker_data_v43'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v42', JSON.stringify(data));
+        localStorage.setItem('poker_data_v43', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -620,51 +621,58 @@
         return btn;
     }
 
+    // --- OFFLINE-SAFE ACTIONS ---
     window.handleScore = function(id, inputElem, multiplier) {
         let val = parseFloat(inputElem.value);
         if (isNaN(val)) return;
         let change = val * multiplier;
-        runTransaction(ref(db, 'players/' + id), (player) => {
-            if (player) {
-                if (!player.history) player.history = {};
-                const newKey = 'move_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-                player.history[newKey] = change;
-                player.redoStack = null;
-            }
-            return player;
-        });
-        inputElem.value = ''; inputElem.focus();
+
+        // Используем push вместо transaction для офлайна
+        push(ref(db, 'players/' + id + '/history'), change);
+
+        // Optimistic UI (for immediate feedback)
+        const row = inputElem.closest('tr');
+        const totalCell = row.querySelector('.score-cell');
+        const historyCell = row.querySelector('.history-log');
+        
+        let currentTotal = parseFloat(totalCell.innerText || 0);
+        totalCell.innerText = currentTotal + change;
+        
+        let text = historyCell.innerText;
+        let newEntry = (change >= 0 ? `+${change}` : change);
+        if (text === 'Пусто') historyCell.innerText = newEntry;
+        else historyCell.innerText = text + ' ' + newEntry;
+
+        inputElem.value = '';
+        inputElem.focus();
+        recalculateGrandTotal();
+        
+        // Reset Redo stack on new action (optional, but safer to clear)
+        set(ref(db, 'players/' + id + '/redoStack'), null);
     }
 
-    window.undoLast = (id) => runTransaction(ref(db, 'players/' + id), (player) => {
-        if (player && player.history) {
-            const keys = Object.keys(player.history).sort();
-            if (keys.length > 0) {
-                const lastKey = keys[keys.length - 1];
-                const val = player.history[lastKey];
-                delete player.history[lastKey];
-                if (!player.redoStack) player.redoStack = {};
-                const redoKey = 'redo_' + Date.now();
-                player.redoStack[redoKey] = val;
-            }
-        }
-        return player;
-    });
+    window.undoLast = async function(id) {
+        // Для Undo используем get+remove, так как transaction блокируется офлайн
+        const historyRef = ref(db, 'players/' + id + '/history');
+        const lastItemQuery = query(historyRef, orderByKey(), limitToLast(1));
+        const snapshot = await get(lastItemQuery);
+        snapshot.forEach((child) => {
+            const val = child.val();
+            remove(child.ref);
+            push(ref(db, 'players/' + id + '/redoStack'), val);
+        });
+    }
 
-    window.redoLast = (id) => runTransaction(ref(db, 'players/' + id), (player) => {
-        if (player && player.redoStack) {
-            const keys = Object.keys(player.redoStack).sort();
-            if (keys.length > 0) {
-                const lastKey = keys[keys.length - 1];
-                const val = player.redoStack[lastKey];
-                delete player.redoStack[lastKey];
-                if (!player.history) player.history = {};
-                const newKey = 'move_' + Date.now();
-                player.history[newKey] = val;
-            }
-        }
-        return player;
-    });
+    window.redoLast = async function(id) {
+        const redoRef = ref(db, 'players/' + id + '/redoStack');
+        const lastRedoQuery = query(redoRef, orderByKey(), limitToLast(1));
+        const snapshot = await get(lastRedoQuery);
+        snapshot.forEach((child) => {
+            const val = child.val();
+            remove(child.ref);
+            push(ref(db, 'players/' + id + '/history'), val);
+        });
+    }
 
     window.createNewPlayer = () => push(playersRef, { name: "Новый игрок", history: {} });
     window.resetPlayer = (id) => {
@@ -728,7 +736,6 @@
         alert("Сохранено!");
     }
     
-    // --- УДАЛЕНИЕ ЗАПИСИ ЖУРНАЛА ---
     window.deleteJournalEntry = function(id) {
         const pass = prompt("Удалить эту запись? Введите код:");
         if (pass === "108020") {
@@ -747,10 +754,8 @@
         entries.forEach(([id, entry]) => {
             const card = document.createElement('div');
             card.className = 'journal-card';
-            
             const header = document.createElement('div');
             header.className = 'journal-header';
-            // Вставляем кнопку удаления
             header.innerHTML = `
                 <div style="display:flex; align-items:center;">
                     <span>📅 ${entry.date}</span>
@@ -758,7 +763,6 @@
                 </div>
                 <span class="journal-total">Банк: ${entry.grandTotal}</span>
             `;
-            
             const details = document.createElement('div');
             details.className = 'journal-details';
             let detailsHtml = `<div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px; display:flex; justify-content:space-between;"><span>Игрок</span><span>Итог</span></div>`;
