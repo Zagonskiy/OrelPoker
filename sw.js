@@ -1,5 +1,5 @@
-// Версия v52 - Mobile Grand Total Facelift
-const CACHE_NAME = 'orelpoker-v52-total-ui';
+// Версия v53 - Hide Total Label on Mobile
+const CACHE_NAME = 'orelpoker-v53-clean-total';
 const ASSETS = [
     './',
     './index.html',
