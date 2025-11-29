@@ -53,24 +53,42 @@
             opacity: 0.8;
         }
 
+        /* --- ИСПРАВЛЕННАЯ КНОПКА СБРОСА --- */
         .btn-extreme-reset {
-            position: fixed;
-            top: 15px;
-            left: 15px;
+            /* Убрали fixed, top, left */
+            margin-top: auto; /* Прижимаем к низу флекс-контейнера */
             background-color: #500000;
             color: #ffcccc;
             border: 2px solid #ff0000;
-            padding: 8px 12px;
+            padding: 12px;
             font-family: 'Special Elite', monospace;
             font-weight: bold;
-            font-size: 0.8em;
+            font-size: 0.9em;
             cursor: pointer;
-            z-index: 1000;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.7);
+            width: 100%; /* На всю ширину меню */
+            box-sizing: border-box;
             border-radius: 4px;
             transition: all 0.2s;
+            text-align: center;
         }
         .btn-extreme-reset:hover { background-color: #ff0000; color: white; box-shadow: 0 0 15px rgba(255, 0, 0, 0.5); }
+
+        .network-badge {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            padding: 8px 15px;
+            font-family: 'Rye', cursive;
+            font-size: 0.9em;
+            border-radius: 4px;
+            z-index: 1000;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.7);
+            border: 2px solid #3e2b1f;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        .status-online { background-color: var(--accent-green); color: #fff; border-color: #1b5e20; }
+        .status-offline { background-color: #d32f2f; color: #fff; border-color: #b71c1c; animation: pulse 2s infinite; }
 
         .container {
             max-width: 1050px;
@@ -354,6 +372,8 @@
 </head>
 <body>
 
+<div id="networkStatus" class="network-badge status-offline">⏳ Connect...</div>
+
 <button class="menu-toggle" onclick="toggleSidebar()">
     ☰ <span id="mobileStatusDot" class="status-dot"></span>
 </button>
@@ -370,9 +390,7 @@
     <button class="nav-btn active" onclick="showView('game')">🎲 Игровой стол</button>
     <button class="nav-btn" onclick="showView('journal')">📜 Журнал архива</button>
     
-    <div style="margin-top: auto; text-align: center;">
-        <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
-    </div>
+    <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 </div>
 
 <div class="main-content">
@@ -423,48 +441,38 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v37.0 (Tap to Update)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v38.0 (Tap to Update)</div>
 </div>
 
 <script>
     // 1. ФУНКЦИЯ ПРИНУДИТЕЛЬНОГО СБРОСА
     window.forceUpdate = async function() {
         if (!confirm("Обновить приложение принудительно?")) return;
-        
         if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
-            for (let registration of registrations) {
-                await registration.unregister();
-            }
+            for (let registration of registrations) { await registration.unregister(); }
         }
-        // Очищаем кэш и перезагружаем
         caches.keys().then(async function(names) {
             await Promise.all(names.map(name => caches.delete(name)));
             window.location.reload(true);
         });
     }
 
-    // 2. АВТОМАТИЧЕСКОЕ ОБНОВЛЕНИЕ ПРИ ЗАГРУЗКЕ
+    // 2. АВТОМАТИЧЕСКОЕ ОБНОВЛЕНИЕ
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=37').then(reg => {
-                reg.update(); // Проверяем на старте
-                
+            navigator.serviceWorker.register('./sw.js?v=38').then(reg => {
+                reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
                     newWorker.onstatechange = () => {
-                        // Если новый воркер установился - перезагружаем
                         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                             window.location.reload();
                         }
                     };
                 };
             });
-
-            // Как только sw.js обновился и перехватил управление -> перезагрузка
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                window.location.reload();
-            });
+            navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
         });
     }
 </script>
@@ -488,18 +496,21 @@
     const playersRef = ref(db, 'players');
     const journalRef = ref(db, 'journal');
     
-    // --- СТАТУС СЕТИ (ТОЧКА) ---
+    // --- СТАТУС ---
     const connectedRef = ref(db, ".info/connected");
     const connectionsRef = ref(db, "connections");
 
     onValue(connectedRef, (snap) => {
         const dotMobile = document.getElementById('mobileStatusDot');
         const dotDesktop = document.getElementById('desktopStatusDot');
+        const statusEl = document.getElementById('networkStatus');
         
+        // ВАЖНО: Удаляем элемент сетевого статуса, так как просили убрать
+        if(statusEl) statusEl.style.display = 'none';
+
         if (snap.val() === true) {
             dotMobile.classList.add('online');
             dotDesktop.classList.add('online');
-            
             const con = push(connectionsRef);
             onDisconnect(con).remove();
             set(con, true);
@@ -520,14 +531,14 @@
 
     // --- ЗАГРУЗКА ---
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v37'); 
+        const localData = localStorage.getItem('poker_data_v38'); 
         if (localData) renderTable(JSON.parse(localData));
     });
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) { initDefaultPlayers(); return; }
-        localStorage.setItem('poker_data_v37', JSON.stringify(data));
+        localStorage.setItem('poker_data_v38', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -591,9 +602,12 @@
         cellHistory.innerText = historyArray.length > 0 ? historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ') : 'Пусто';
 
         const cellDelete = newRow.insertCell(4);
-        
+        // Обертка для кнопок
         const wrapper = document.createElement('div');
-        wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
+        // Используем встроенные стили, чтобы избежать конфликтов классов
+        wrapper.style.display = 'flex'; 
+        wrapper.style.justifyContent = 'center'; 
+        wrapper.style.gap = '5px';
         
         wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
         wrapper.appendChild(createBtn('✕', 'btn-delete', () => { if(confirm("Удалить?")) remove(ref(db, 'players/' + id)); }));
