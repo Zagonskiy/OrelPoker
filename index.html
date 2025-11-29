@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Винтажный журнал (Онлайн)</title>
+    <title>Винтажный журнал (OrelPoker)</title>
     <link href="https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -15,7 +15,7 @@
             --accent-red: #8b0000;
             --accent-green: #556b2f;
             --accent-undo: #d4af37;
-            --accent-purple: #6a0dad; /* Цвет для кнопки Нового дня */
+            --accent-purple: #6a0dad;
         }
 
         body {
@@ -25,6 +25,30 @@
             padding: 20px 10px;
             color: var(--ink-color);
             margin: 0;
+        }
+
+        /* КНОПКА ЭКСТРЕМАЛЬНОГО СБРОСА */
+        .btn-extreme-reset {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background-color: #500000; /* Темно-красный */
+            color: #ffcccc;
+            border: 2px solid #ff0000;
+            padding: 8px 12px;
+            font-family: 'Special Elite', monospace;
+            font-weight: bold;
+            font-size: 0.8em;
+            cursor: pointer;
+            z-index: 1000; /* Поверх всего */
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.7);
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .btn-extreme-reset:hover {
+            background-color: #ff0000;
+            color: white;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
         }
 
         .container {
@@ -41,6 +65,7 @@
                 0 0 50px rgba(0,0,0,0.3) inset;
             border: 8px solid #462c1a;
             border-image: repeating-linear-gradient(45deg, #462c1a, #462c1a 10px, #332013 10px, #332013 20px) 20;
+            margin-top: 50px; /* Отступ сверху для мобилок */
         }
 
         h2 {
@@ -120,13 +145,7 @@
 
         .btn-add { background-color: var(--accent-green); color: #f4e4bc; border-color: #3a4a20; }
         .btn-download { background-color: var(--accent-brown); color: var(--accent-gold); border-color: #5c300e; }
-        
-        /* Кнопка нового дня */
-        .btn-newday { 
-            background-color: var(--accent-purple); 
-            color: #fff; 
-            border-color: #4b0082; 
-        }
+        .btn-newday { background-color: var(--accent-purple); color: #fff; border-color: #4b0082; }
         .btn-newday:hover { background-color: #5a0a94; }
 
         .btn-calc, .btn-undo { 
@@ -243,8 +262,10 @@
 </head>
 <body>
 
+<button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
+
 <div class="container">
-    <h2>— Игровой Журнал —</h2>
+    <h2>— OrelPoker Журнал —</h2>
     <div id="connectionStatus" class="status-bar">Подключение к архиву...</div>
 
     <div class="date-section">
@@ -275,10 +296,9 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    // ДОБАВИЛ 'get' в импорт
     import { getDatabase, ref, onValue, push, set, remove, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // --- ВСТАВЬ СЮДА СВОЙ FIREBASE CONFIG СНОВА ---
+    // --- ТВОИ ДАННЫЕ ВСТАВЛЕНЫ НИЖЕ ---
     const firebaseConfig = {
         apiKey: "AIzaSyD9E8XsdjGx275Es6HwdCo5jy2l0kJoNXg",
         authDomain: "orelpoker-cd9d4.firebaseapp.com",
@@ -288,13 +308,13 @@
         messagingSenderId: "913271365234",
         appId: "1:913271365234:web:b48f717e011eea4847eceb"
     };
-    // ---------------------------------------------
+    // ----------------------------------------
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const playersRef = ref(db, 'players');
 
-    // Синхронизация данных (как и раньше)
+    // Синхронизация
     onValue(playersRef, (snapshot) => {
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
@@ -308,8 +328,7 @@
         document.getElementById('connectionStatus').innerText = "• Синхронизировано •";
 
         for (let id in data) {
-            const player = data[id];
-            renderPlayerRow(id, player);
+            renderPlayerRow(id, data[id]);
         }
     });
 
@@ -389,29 +408,48 @@
         update(ref(db, 'players/' + id), { total: newTotal, history: newHistory });
     }
 
-    // --- ЛОГИКА НОВОГО ДНЯ (С ПАРОЛЕМ) ---
-    window.startNewDay = async function() {
-        // 1. Спрашиваем пароль
-        const pass = prompt("Введите код доступа для сброса дня:");
+    window.createNewPlayer = function() {
+        push(playersRef, { name: "Новый игрок", total: 0, history: [] });
+    }
+
+    // --- ФУНКЦИЯ ЭКСТРЕМАЛЬНОГО СБРОСА ---
+    window.extremeReset = async function() {
+        const pass = prompt("!!! ВНИМАНИЕ !!!\nЭта кнопка обнулит счета ВСЕХ игроков до 0.\n\nВведите код подтверждения:");
         if (pass !== "108020") {
-            alert("Ошибка: Неверный код!");
+            alert("Неверный код! Операция отменена.");
             return;
         }
 
-        // 2. Получаем текущие данные всех игроков
         const snapshot = await get(playersRef);
         const data = snapshot.val();
         if (!data) return;
 
         const updates = {};
-        
-        // 3. Проходим по каждому игроку
+        for (let id in data) {
+            updates['players/' + id + '/total'] = 0;
+            updates['players/' + id + '/history'] = [];
+        }
+
+        await update(ref(db), updates);
+        alert("Внимание: Выполнен полный сброс. Все счета обнулены.");
+    }
+
+    // --- ФУНКЦИЯ НОВОГО ДНЯ ---
+    window.startNewDay = async function() {
+        const pass = prompt("Введите код доступа для нового дня:");
+        if (pass !== "108020") {
+            alert("Ошибка: Неверный код!");
+            return;
+        }
+
+        const snapshot = await get(playersRef);
+        const data = snapshot.val();
+        if (!data) return;
+
+        const updates = {};
         for (let id in data) {
             let player = data[id];
             let currentTotal = player.total || 0;
-            
-            // Новая история: [Старый счет, +500]
-            // Таким образом итог будет: Старый счет + 500
             let newHistory = [currentTotal, 500];
             let newTotal = currentTotal + 500;
 
@@ -419,13 +457,8 @@
             updates['players/' + id + '/total'] = newTotal;
         }
 
-        // 4. Обновляем всё разом
         await update(ref(db), updates);
-        alert("Новый день начат! Счета перенесены, всем начислено +500.");
-    }
-
-    window.createNewPlayer = function() {
-        push(playersRef, { name: "Новый игрок", total: 0, history: [] });
+        alert("Новый день начат! Всем начислено +500.");
     }
 
     function initDefaultPlayers() {
