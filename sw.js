@@ -1,5 +1,5 @@
-// Версия v17 - Online User Counter
-const CACHE_NAME = 'orelpoker-v17-online';
+// Версия v18 - Version Tag Bottom Right
+const CACHE_NAME = 'orelpoker-v18-ui-fix';
 const ASSETS = [
     './',
     './index.html',
