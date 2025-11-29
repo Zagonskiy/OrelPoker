@@ -1,5 +1,5 @@
-// Версия v62 - Fix Nickname Edit Logic
-const CACHE_NAME = 'orelpoker-v62-nick-fix';
+// Версия v63 - Refresh Table Button
+const CACHE_NAME = 'orelpoker-v63-refresh';
 const ASSETS = [
     './',
     './index.html',
