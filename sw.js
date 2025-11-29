@@ -1,5 +1,5 @@
-// Версия v41 - Journal Delete Button
-const CACHE_NAME = 'orelpoker-v41-journal-del';
+// Версия v42 - Sidebar Layout Fix (Final)
+const CACHE_NAME = 'orelpoker-v42-layout';
 const ASSETS = [
     './',
     './index.html',
