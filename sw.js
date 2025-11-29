@@ -1,5 +1,5 @@
-// Версия v37 - Remove Top-Right Badge
-const CACHE_NAME = 'orelpoker-v37-clean-ui';
+// Версия v38 - Reset Button Position Fix
+const CACHE_NAME = 'orelpoker-v38-reset-pos';
 const ASSETS = [
     './',
     './index.html',
