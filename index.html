@@ -220,7 +220,7 @@
 
 <div class="container">
     <h2>— OrelPoker Журнал —</h2>
-    <div class="sync-info">Delta-Sync v6.0 (Conflict Free)</div>
+    <div class="sync-info">Final Version v7.0 (Force Update)</div>
 
     <div class="date-section">
         <label for="gameDate">Дата игры:</label>
@@ -251,7 +251,25 @@
 <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js');
+            navigator.serviceWorker.register('./sw.js')
+            .then(reg => {
+                // Логика принудительного обновления
+                reg.onupdatefound = () => {
+                    const newWorker = reg.installing;
+                    newWorker.onstatechange = () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            if(confirm("Вышла новая версия приложения! Нажмите ОК, чтобы обновить.")) {
+                                window.location.reload();
+                            }
+                        }
+                    };
+                };
+            });
+        });
+        
+        // Перезагрузка при смене контроллера
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            window.location.reload();
         });
     }
 </script>
@@ -287,24 +305,25 @@
         }
     });
 
-    // --- ЗАГРУЗКА ДАННЫХ ---
+    // --- ЗАГРУЗКА ---
+    // 1. Грузим из локалки (быстро)
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data');
+        const localData = localStorage.getItem('poker_data_v2'); // Новое имя ключа
         if (localData) renderTable(JSON.parse(localData));
     });
 
+    // 2. Грузим из базы
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) {
             initDefaultPlayers();
             return;
         }
-        localStorage.setItem('poker_data', JSON.stringify(data));
+        localStorage.setItem('poker_data_v2', JSON.stringify(data));
         renderTable(data);
     });
 
     function renderTable(data) {
-        // Если пользователь вводит текст, не обновляем таблицу, чтобы не сбить фокус
         if (document.activeElement.tagName === 'INPUT') return; 
 
         const tableBody = document.getElementById('tableBody');
@@ -314,21 +333,19 @@
         }
     }
 
-    // --- ФУНКЦИЯ ПОДСЧЕТА ИСТОРИИ ---
-    // Преобразует объект истории Firebase в массив чисел и считает сумму
+    // Вспомогательная функция: Считает сумму только из истории
     function calculatePlayerStats(player) {
         let historyArray = [];
         let total = 0;
 
         if (player.history) {
-            // Поддержка старого формата (массив) и нового (объект)
-            if (Array.isArray(player.history)) {
-                historyArray = player.history;
-            } else {
+            // Если history - это объект (Firebase push ID), превращаем в массив
+            if (typeof player.history === 'object' && !Array.isArray(player.history)) {
                 historyArray = Object.values(player.history);
+            } else if (Array.isArray(player.history)) {
+                historyArray = player.history;
             }
         }
-
         historyArray.forEach(val => total += val);
         return { total, historyArray };
     }
@@ -337,7 +354,7 @@
         const tableBody = document.getElementById('tableBody');
         const newRow = tableBody.insertRow();
 
-        // 1. Считаем сумму динамически на основе истории
+        // Динамический подсчет
         const { total, historyArray } = calculatePlayerStats(player);
 
         const cellName = newRow.insertCell(0);
@@ -356,13 +373,13 @@
         
         const btnPlus = createBtn('+', 'btn-calc', () => handleScore(id, inputNum, 1));
         const btnMinus = createBtn('-', 'btn-calc', () => handleScore(id, inputNum, -1));
-        const btnUndo = createBtn('↩', 'btn-undo', () => undoLast(id, inputNum));
+        const btnUndo = createBtn('↩', 'btn-undo', () => undoLast(id));
 
         cellAction.append(inputNum, btnPlus, btnMinus, btnUndo);
 
         const cellTotal = newRow.insertCell(2);
         cellTotal.className = 'score-cell';
-        cellTotal.innerText = total; // Показываем посчитанную сумму
+        cellTotal.innerText = total; // ВСЕГДА считаем сами, не берем из базы поле total
 
         const cellHistory = newRow.insertCell(3);
         cellHistory.className = 'history-log';
@@ -388,26 +405,25 @@
         return btn;
     }
 
-    // --- НОВАЯ ЛОГИКА: МЫ НЕ МЕНЯЕМ TOTAL, МЫ ДОБАВЛЯЕМ ЗАПИСЬ ---
+    // --- ДОБАВЛЕНИЕ (PUSH ONLY) ---
+    // Это невозможно перезаписать. Это всегда создание НОВОЙ записи.
     window.handleScore = function(id, inputElem, multiplier) {
         let val = parseFloat(inputElem.value);
         if (isNaN(val)) return;
         let change = val * multiplier;
 
-        // Вместо перезаписи массива, мы делаем PUSH (добавление новой записи)
-        // Это гарантирует, что даже если два человека нажмут одновременно, сохранятся ОБЕ записи.
+        // Отправляем в базу
         push(ref(db, 'players/' + id + '/history'), change);
         
+        // Очищаем поле
         inputElem.value = '';
         inputElem.focus();
     }
 
-    // --- ОТМЕНА: УДАЛЯЕМ ПОСЛЕДНЮЮ ЗАПИСЬ ---
-    window.undoLast = async function(id, inputElem) {
-        // Находим последнюю запись в истории и удаляем её
+    // --- ОТМЕНА ---
+    window.undoLast = async function(id) {
         const historyRef = ref(db, 'players/' + id + '/history');
         const lastItemQuery = query(historyRef, orderByKey(), limitToLast(1));
-        
         const snapshot = await get(lastItemQuery);
         snapshot.forEach((child) => {
             remove(child.ref);
@@ -415,31 +431,26 @@
     }
 
     window.createNewPlayer = function() {
-        // Создаем игрока, history теперь объект, а не массив, но push работает так же
-        push(playersRef, { name: "Новый игрок", history: {} }); 
+        push(playersRef, { name: "Новый игрок", history: {} });
     }
 
-    // --- ПОЛНЫЙ СБРОС (Очищает историю) ---
     window.extremeReset = async function() {
-        const pass = prompt("!!! ВНИМАНИЕ !!!\nЭта кнопка обнулит счета ВСЕХ игроков до 0.\n\nВведите код подтверждения:");
+        const pass = prompt("Код подтверждения (СБРОС В НОЛЬ):");
         if (pass !== "108020") { alert("Неверный код!"); return; }
-        
         const snapshot = await get(playersRef);
         const data = snapshot.val();
         if (!data) return;
         
         const updates = {};
         for (let id in data) {
-            // Удаляем историю целиком. Total удаляем, так как он теперь не нужен (считается на лету)
-            updates['players/' + id + '/history'] = null;
-            updates['players/' + id + '/total'] = null; 
+            updates['players/' + id + '/history'] = null; // Просто удаляем историю
+            // Не трогаем total, так как мы его больше не храним
         }
         await update(ref(db), updates);
     }
 
-    // --- НОВЫЙ ДЕНЬ (Сброс истории + добавление 500) ---
     window.startNewDay = async function() {
-        const pass = prompt("Введите код доступа для нового дня:");
+        const pass = prompt("Код подтверждения (НОВЫЙ ДЕНЬ):");
         if (pass !== "108020") { alert("Ошибка: Неверный код!"); return; }
         
         const snapshot = await get(playersRef);
@@ -449,15 +460,13 @@
         const updates = {};
         for (let id in data) {
             let player = data[id];
-            // Считаем текущий баланс
             const stats = calculatePlayerStats(player);
             const currentTotal = stats.total;
             
             // Очищаем историю
             updates['players/' + id + '/history'] = null;
             
-            // Сразу после очистки добавляем две записи: старый баланс и бонус
-            // Используем push-ключи (генерируем их вручную для update)
+            // Генерируем два новых ключа для двух записей
             const key1 = push(ref(db, 'players/' + id + '/history')).key;
             const key2 = push(ref(db, 'players/' + id + '/history')).key;
             
@@ -465,7 +474,7 @@
             updates['players/' + id + '/history/' + key2] = 500;
         }
         await update(ref(db), updates);
-        alert("Новый день начат! Всем начислено +500.");
+        alert("День начат! +500 начислено.");
     }
 
     function initDefaultPlayers() {
