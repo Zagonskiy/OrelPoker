@@ -1,5 +1,5 @@
-// Версия v46 - Full Registration System
-const CACHE_NAME = 'orelpoker-v46-auth';
+// Версия v47 - Separate Registration Menu
+const CACHE_NAME = 'orelpoker-v47-reg-menu';
 const ASSETS = [
     './',
     './index.html',
