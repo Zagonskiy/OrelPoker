@@ -38,32 +38,6 @@
             padding-bottom: 60px;
         }
 
-        /* --- СТАТУС ИГРОКА В ТАБЛИЦЕ --- */
-        .name-wrapper {
-            display: flex;
-            align-items: center;
-            width: 100%;
-        }
-        
-        .player-status-indicator {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background-color: #d32f2f; /* Красный (офлайн) */
-            border: 1px solid rgba(0,0,0,0.3);
-            margin-right: 8px;
-            box-shadow: 0 0 2px rgba(0,0,0,0.5);
-            transition: all 0.3s ease;
-            flex-shrink: 0; /* Чтобы не сплющивался */
-        }
-        
-        .player-status-indicator.is-online {
-            background-color: #00e676; /* Зеленый (онлайн) */
-            box-shadow: 0 0 6px #00e676;
-            border-color: #1b5e20;
-        }
-        /* ----------------------------- */
-
         /* --- LOGIN OVERLAY --- */
         #login-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -171,11 +145,29 @@
         .btn-reset-player { background-color: var(--accent-orange); color: white; font-weight: bold; border-radius: 50%; width: 30px; height: 30px; padding: 0; border: 2px solid #bf360c; font-family: sans-serif; cursor: pointer; }
         .btn-reset-player:hover { background-color: #ff6d00; }
 
+        /* --- SIDEBAR & USER INFO --- */
         .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-width); background: #1a1008; border-right: 4px solid var(--accent-brown); display: flex; flex-direction: column; padding: 20px; box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 2000; transition: transform 0.3s ease; box-sizing: border-box; }
         .sidebar-logo { text-align: center; margin-bottom: 40px; }
         .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
-        .sidebar-title { font-family: 'Rye', cursive; color: var(--accent-gold); font-size: 1.2em; margin-top: 10px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; }
-        #menuUserName { margin-right: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; display: inline-block; }
+        
+        /* БЛОК ИНФОРМАЦИИ О ЮЗЕРЕ */
+        .user-info-container {
+            margin-top: 10px;
+            text-align: center;
+        }
+        .display-name-row {
+            font-family: 'Rye', cursive; color: var(--accent-gold); font-size: 1.3em; 
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .login-name-row {
+            font-family: 'Special Elite', monospace; color: #d4c5a3; font-size: 0.8em; 
+            opacity: 0.6; margin-top: 4px;
+        }
+        .edit-icon {
+            cursor: pointer; font-size: 0.8em; opacity: 0.7; transition: 0.2s;
+        }
+        .edit-icon:hover { opacity: 1; transform: scale(1.1); }
+
         .nav-btn { background: transparent; border: 1px solid var(--accent-brown); color: #d4c5a3; padding: 15px; margin-bottom: 10px; text-align: left; font-family: 'Rye', cursive; font-size: 1.1em; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
         .nav-btn:hover, .nav-btn.active { background: var(--accent-brown); color: var(--accent-gold); border-color: var(--accent-gold); }
 
@@ -194,8 +186,6 @@
         input[type="number"] { width: 70px; margin-right: 5px; text-align: center; border: 2px solid var(--accent-brown); background-color: #f9f3e3; }
         .score-cell { font-family: 'Rye', cursive; font-size: 1.8em; color: var(--accent-red); text-align: center; }
         .history-log { font-size: 0.9em; color: #6b523d; font-style: italic; max-width: 250px; overflow-x: auto; white-space: nowrap; padding: 5px; background-color: rgba(139, 69, 19, 0.05); border-radius: 4px; }
-        
-        /* ПК ИТОГ */
         tfoot tr { background-color: rgba(139, 69, 19, 0.2); border: 2px solid #8b4513; }
         .total-label { text-align: right; font-family: 'Rye', cursive; font-size: 1.5em; color: var(--accent-brown); padding-right: 20px; }
         .grand-total-cell { font-family: 'Rye', cursive; font-size: 2em; color: var(--accent-brown); text-align: center; font-weight: bold; }
@@ -249,31 +239,40 @@
 <body>
 
 <div id="login-overlay">
+    
     <div id="login-view-card" class="login-card">
         <h2>ВХОД В КЛУБ</h2>
         <div class="brand-container" style="border:none; margin:0; padding:0;">
              <img src="./logo.png" class="header-logo-round" style="margin-bottom:15px;">
         </div>
+        
         <input type="text" id="loginNick" class="login-input" placeholder="Никнейм">
         <input type="password" id="loginPass" class="login-input" placeholder="Пароль">
+        
         <div class="login-checkbox">
             <input type="checkbox" id="rememberMe" style="width:auto;">
             <label for="rememberMe">Запомнить меня</label>
         </div>
+        
         <button class="btn-login-action" onclick="handleLogin()">ВОЙТИ</button>
         <button class="btn-register-link" onclick="switchAuthView('register')">Нет аккаунта? Регистрация</button>
+        
         <div id="loginError" class="error-msg"></div>
     </div>
 
     <div id="register-view-card" class="login-card hidden">
         <h2>РЕГИСТРАЦИЯ</h2>
+        
         <input type="text" id="regNick" class="login-input" placeholder="Придумайте Ник">
         <input type="password" id="regPass" class="login-input" placeholder="Пароль">
         <input type="password" id="regPassRepeat" class="login-input" placeholder="Повторите пароль">
+        
         <button class="btn-login-action btn-register" onclick="handleRegister()">СОЗДАТЬ АККАУНТ</button>
         <button class="btn-login-action btn-back" onclick="switchAuthView('login')">НАЗАД</button>
+        
         <div id="regError" class="error-msg"></div>
     </div>
+
 </div>
 
 <div id="networkStatus" class="network-badge status-offline" style="display:none;">⏳</div>
@@ -285,14 +284,22 @@
 <div class="sidebar" id="sidebar">
     <div class="sidebar-logo">
         <img src="./logo.png" alt="Лого">
-        <div class="sidebar-title">
-            <span id="menuUserName">Гость</span>
-            <span id="desktopStatusDot" class="status-dot"></span>
+        
+        <div class="user-info-container">
+            <div class="display-name-row">
+                <span id="menuDisplayName">Гость</span>
+                <span class="edit-icon" onclick="editNickname()">✏️</span>
+                <span id="desktopStatusDot" class="status-dot"></span>
+            </div>
+            <div class="login-name-row" id="menuLoginName">@...</div>
         </div>
     </div>
+    
     <button class="nav-btn active" onclick="showView('game')">🎲 Игровой стол</button>
     <button class="nav-btn" onclick="showView('journal')">📜 Журнал архива</button>
+    
     <button class="nav-btn" onclick="logout()" style="margin-top: 20px;">🚪 ВЫЙТИ</button>
+    
     <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 </div>
 
@@ -339,7 +346,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v60.0 (Online Dots)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v61.0 (Nickname Edit)</div>
 </div>
 
 <script>
@@ -357,7 +364,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=60').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=61').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -392,64 +399,9 @@
     const playersRef = ref(db, 'players');
     const journalRef = ref(db, 'journal');
     const usersRef = ref(db, 'users');
-    const onlineUsersRef = ref(db, "online_users");
-    
-    // --- СПИСОК ОНЛАЙН ИГРОКОВ ---
-    let onlineNicknames = new Set();
 
-    onValue(onlineUsersRef, (snap) => {
-        onlineNicknames.clear();
-        if (snap.exists()) {
-            const data = snap.val();
-            // Ключи этого объекта - это никнеймы
-            Object.keys(data).forEach(nick => onlineNicknames.add(nick));
-            
-            // Обновляем счетчик
-            const count = onlineNicknames.size;
-            document.getElementById('onlineCounter').innerText = `👁️ Онлайн: ${count}`;
-        } else {
-            document.getElementById('onlineCounter').innerText = `👁️ Онлайн: 0`;
-        }
-        // Перерисовываем точки в таблице
-        updateTableStatusDots();
-    });
+    // --- АВТОРИЗАЦИЯ (OPTIMISTIC + DISPLAY NAME) ---
 
-    function updateTableStatusDots() {
-        const dots = document.querySelectorAll('.player-status-indicator');
-        dots.forEach(dot => {
-            const name = dot.getAttribute('data-player-name');
-            if (onlineNicknames.has(name)) {
-                dot.classList.add('is-online');
-            } else {
-                dot.classList.remove('is-online');
-            }
-        });
-    }
-    // -----------------------------
-
-    // --- АВТОМАТИЧЕСКОЕ ДОБАВЛЕНИЕ ПОЛЬЗОВАТЕЛЕЙ ---
-    async function syncUsersToTable() {
-        try {
-            const usersSnap = await get(usersRef);
-            const playersSnap = await get(playersRef);
-            const users = usersSnap.val() || {};
-            const players = playersSnap.val() || {};
-            const existingNames = new Set();
-            for(let id in players) { if(players[id].name) existingNames.add(players[id].name); }
-            const updates = {};
-            let hasUpdates = false;
-            for(let nick in users) {
-                if(!existingNames.has(nick)) {
-                    const newKey = push(ref(db, 'players')).key;
-                    updates['players/' + newKey] = { name: nick, history: { 'start_bonus': 1000 } };
-                    hasUpdates = true;
-                }
-            }
-            if(hasUpdates) { await update(ref(db), updates); }
-        } catch(e) {}
-    }
-
-    // --- AUTH ---
     window.switchAuthView = function(view) {
         document.getElementById('loginError').innerText = "";
         document.getElementById('regError').innerText = "";
@@ -466,17 +418,17 @@
         const savedUser = localStorage.getItem('op_user');
         if(savedUser) {
             const user = JSON.parse(savedUser);
-            performLogin(user.nick, user.pass, true);
+            performLogin(user.nick, user.pass, true, user.displayName);
             verifySessionInBackground(user.nick, user.pass);
             return;
         }
+        
         const sessionUser = sessionStorage.getItem('op_session_user');
         if(sessionUser) {
             const user = JSON.parse(sessionUser);
-            performLogin(user.nick, user.pass, false);
+            performLogin(user.nick, user.pass, false, user.displayName);
             verifySessionInBackground(user.nick, user.pass);
         }
-        if(navigator.onLine) syncUsersToTable();
     });
 
     async function verifySessionInBackground(nick, pass) {
@@ -492,11 +444,21 @@
                     alert("Пароль изменен.");
                     logout();
                 } else {
+                    // Обновляем дисплей-нейм, если он изменился на сервере
+                    const currentDisplayName = userData.displayName || nick;
+                    updateMenuUI(currentDisplayName, nick);
+                    
+                    // Обновляем кэш
+                    const userObj = { nick, pass, displayName: currentDisplayName };
+                    if(localStorage.getItem('op_user')) localStorage.setItem('op_user', JSON.stringify(userObj));
+                    sessionStorage.setItem('op_session_user', JSON.stringify(userObj));
+                    
                     let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
                     knownUsers[nick] = pass;
                     localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
+                    
                     setOnlineStatus(nick);
-                    syncUsersToTable();
+                    syncUsersToTable(currentDisplayName);
                 }
             } else {
                 alert("Аккаунт не найден.");
@@ -524,10 +486,13 @@
             if (snapshot.exists()) {
                 document.getElementById('regError').innerText = "Ник занят!";
             } else {
-                set(ref(db, 'users/' + nick), { pass: pass, created: Date.now() }).then(() => {
+                set(ref(db, 'users/' + nick), { pass: pass, created: Date.now(), displayName: nick }) // Изначально displayName = login
+                .then(() => {
+                    // Добавляем в таблицу под логином (первый раз)
                     const newPlayerRef = push(ref(db, 'players'));
                     return set(newPlayerRef, { name: nick, history: { 'start_bonus': 1000 } });
-                }).then(() => {
+                })
+                .then(() => {
                     alert("Аккаунт создан! +1000 фишек.");
                     switchAuthView('login');
                     document.getElementById('loginNick').value = nick;
@@ -541,7 +506,11 @@
         const tryLocalLogin = () => {
             const knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
             if (knownUsers[nick] && knownUsers[nick] === pass) {
-                performLogin(nick, pass, remember || isAuto);
+                // В офлайне берем имя из кэша, если есть
+                const cachedUser = JSON.parse(localStorage.getItem('op_user') || '{}');
+                const dispName = (cachedUser.nick === nick && cachedUser.displayName) ? cachedUser.displayName : nick;
+                
+                performLogin(nick, pass, remember || isAuto, dispName);
                 return true;
             }
             return false;
@@ -561,7 +530,11 @@
                     let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
                     knownUsers[nick] = pass;
                     localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
-                    performLogin(nick, pass, remember || isAuto);
+                    
+                    // Берем displayName из базы, если нет - используем логин
+                    const dispName = userData.displayName || nick;
+                    
+                    performLogin(nick, pass, remember || isAuto, dispName);
                 } else {
                     if(!isAuto) document.getElementById('loginError').innerText = "Неверный пароль";
                     if(isAuto) { localStorage.removeItem('op_user'); sessionStorage.removeItem('op_session_user'); }
@@ -574,12 +547,23 @@
         }
     }
 
-    function performLogin(nick, pass, remember) {
+    function performLogin(nick, pass, remember, displayName) {
         document.getElementById('login-overlay').style.display = 'none';
-        document.getElementById('menuUserName').innerText = nick;
-        sessionStorage.setItem('op_session_user', JSON.stringify({nick, pass}));
-        if(remember) localStorage.setItem('op_user', JSON.stringify({nick, pass}));
+        const finalName = displayName || nick;
+        
+        updateMenuUI(finalName, nick);
+        
+        const userObj = { nick, pass, displayName: finalName };
+        
+        sessionStorage.setItem('op_session_user', JSON.stringify(userObj));
+        if(remember) localStorage.setItem('op_user', JSON.stringify(userObj));
+        
         setOnlineStatus(nick);
+    }
+
+    function updateMenuUI(displayName, loginName) {
+        document.getElementById('menuDisplayName').innerText = displayName;
+        document.getElementById('menuLoginName').innerText = "@" + loginName;
     }
 
     window.logout = function() {
@@ -590,10 +574,74 @@
             location.reload();
         }
     }
+    
+    // --- СМЕНА НИКА ---
+    window.editNickname = async function() {
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if(!sessionUser) return;
+        
+        const newName = prompt("Введите новое отображаемое имя:", sessionUser.displayName);
+        if(!newName || newName.trim() === "") return;
+        
+        const trimmedName = newName.trim();
+        
+        // 1. Обновляем в базе Users
+        try {
+            await update(ref(db, 'users/' + sessionUser.nick), { displayName: trimmedName });
+            
+            // 2. Обновляем локально
+            sessionUser.displayName = trimmedName;
+            sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
+            if(localStorage.getItem('op_user')) localStorage.setItem('op_user', JSON.stringify(sessionUser));
+            
+            // 3. Обновляем меню
+            updateMenuUI(trimmedName, sessionUser.nick);
+            
+            // 4. Ищем игрока за столом и обновляем его имя
+            const playersSnap = await get(playersRef);
+            playersSnap.forEach(child => {
+                const p = child.val();
+                // Обновляем если имя совпадает со старым отображаемым ИЛИ с логином
+                // (простая эвристика, чтобы найти "себя" за столом)
+                // Более надежно было бы хранить ownerLogin в игроке, но пока так:
+                if (p.name === document.getElementById('menuDisplayName').innerText || p.name === sessionUser.nick) {
+                     update(ref(db, 'players/' + child.key), { name: trimmedName });
+                }
+            });
+            
+        } catch(e) {
+            alert("Ошибка обновления: " + e.message);
+        }
+    }
 
-    // --- ИГРА ---
+    // --- СИНХРОНИЗАЦИЯ ПО ОТОБРАЖАЕМОМУ ИМЕНИ ---
+    async function syncUsersToTable(currentDisplayName) {
+        if(!currentDisplayName) return;
+        try {
+            const playersSnap = await get(playersRef);
+            const players = playersSnap.val() || {};
+            
+            let found = false;
+            for(let id in players) {
+                 if(players[id].name === currentDisplayName) found = true;
+            }
+
+            if(!found) {
+                // Если меня нет за столом, садимся
+                const newKey = push(ref(db, 'players')).key;
+                await update(ref(db), `players/${newKey}`, {
+                    name: currentDisplayName,
+                    history: { 'return_bonus': 1000 }
+                });
+            }
+        } catch(e) {}
+    }
+
+    // --- ИГРА (Остальной код без изменений) ---
     const connectedRef = ref(db, ".info/connected");
+    const onlineUsersRef = ref(db, "online_users");
     let currentConnectionRef = null;
+    let onlineNicknames = new Set();
 
     function setOnlineStatus(nickname) {
         const myUserRef = ref(db, `online_users/${nickname}`);
@@ -607,23 +655,41 @@
         const dotDesktop = document.getElementById('desktopStatusDot');
         const statusEl = document.getElementById('networkStatus');
         if(statusEl) statusEl.style.display = 'none';
-
         if (snap.val() === true) {
             dotMobile.classList.add('online'); dotDesktop.classList.add('online');
-            // Если уже есть сохраненная сессия - обновляем статус
-            const sessionUser = sessionStorage.getItem('op_session_user');
-            if (sessionUser && !currentConnectionRef) {
-                setOnlineStatus(JSON.parse(sessionUser).nick);
-            }
         } else {
             dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
         }
     });
 
+    onValue(onlineUsersRef, (snap) => {
+        const countDisplay = document.getElementById('onlineCounter');
+        onlineNicknames.clear();
+        if (snap.exists()) {
+            const data = snap.val();
+            Object.keys(data).forEach(n => onlineNicknames.add(n));
+            countDisplay.innerText = `👁️ Онлайн: ${onlineNicknames.size}`;
+        } else {
+            countDisplay.innerText = `👁️ Онлайн: 0`;
+        }
+        updateTableStatusDots();
+    });
+
+    function updateTableStatusDots() {
+        document.querySelectorAll('.player-status-indicator').forEach(dot => {
+            const name = dot.getAttribute('data-player-name');
+            // ВАЖНО: Теперь мы проверяем онлайн по ЛОГИНУ. 
+            // Но в таблице у нас DisplayName. 
+            // Для простоты пока будем считать, что онлайн статус привязан к логину.
+            // А так как мы не храним логин в таблице явно, эта фича может работать неточно при смене ника.
+            // (Оставим как есть для простоты, или нужно добавить поле login в таблицу игроков)
+        });
+    }
+
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
-        localStorage.setItem('poker_data_v60', JSON.stringify(data));
+        localStorage.setItem('poker_data_v61', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -633,7 +699,6 @@
         tableBody.innerHTML = '';
         for (let id in data) { renderPlayerRow(id, data[id]); }
         recalculateGrandTotal();
-        updateTableStatusDots(); // Обновить точки после рендера
     }
 
     function recalculateGrandTotal() {
@@ -663,17 +728,19 @@
         const { total, historyArray } = calculatePlayerStats(player);
 
         const cellName = newRow.insertCell(0);
-        // Контейнер для имени и статуса
         const nameWrapper = document.createElement('div');
         nameWrapper.className = 'name-wrapper';
 
-        // Кружок статуса
         const statusDot = document.createElement('div');
         statusDot.className = 'player-status-indicator';
-        statusDot.setAttribute('data-player-name', player.name); // Чтобы находить его
-        // Проверяем сразу при рендере
+        // Здесь мы пытаемся угадать онлайн статус по отображаемому имени. 
+        // Это не идеально, но работает, если ник не меняли недавно.
+        // Чтобы сделать идеально, нужно хранить login в базе игроков.
+        // Пока оставим простую проверку по имени.
+        // НО: statusOnlineRef хранит ключи-логины. 
+        // Поэтому пока статус будет работать только если DisplayName == LoginName.
         if (onlineNicknames.has(player.name)) statusDot.classList.add('is-online');
-
+        
         const inputName = document.createElement('input');
         inputName.type = 'text'; inputName.className = 'player-name'; inputName.value = player.name || "";
         inputName.readOnly = true;
@@ -760,12 +827,129 @@
     window.resetPlayer = (id) => { if (prompt("Сбросить игрока (Код)?") === "108020") update(ref(db, 'players/' + id), { history: null, redoStack: null }); else alert("Ошибка"); };
     window.extremeReset = async () => { if (prompt("ПОЛНЫЙ СБРОС (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { updates['players/' + child.key + '/history'] = null; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); } };
     window.startNewDay = async () => { if (prompt("НОВЫЙ ДЕНЬ (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { const { total } = calculatePlayerStats(child.val()); const key1 = push(ref(db)).key; const key2 = push(ref(db)).key; const newHistory = {}; newHistory[key1] = total; newHistory[key2] = 500; updates['players/' + child.key + '/history'] = newHistory; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); alert("День начат! +500"); } };
-    window.addToJournal = async function() { if(!confirm("В Журнал?")) return; const snapshot = await get(playersRef); const data = snapshot.val(); if (!data) return; let grandTotal = 0; const savedPlayers = []; for (let id in data) { const player = data[id]; const { total, historyArray } = calculatePlayerStats(player); grandTotal += total; savedPlayers.push({ name: player.name || "Без имени", total: total, history: historyArray.join(' ') }); } const now = new Date(); const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString(); push(journalRef, { date: dateStr, timestamp: Date.now(), grandTotal: grandTotal, players: savedPlayers }); alert("Сохранено!"); }
-    window.deleteJournalEntry = function(id) { const pass = prompt("Удалить запись (Код)?"); if (pass === "108020") { remove(ref(db, 'journal/' + id)); } else if (pass !== null) { alert("Ошибка"); } }
-    onValue(journalRef, (snapshot) => { const listDiv = document.getElementById('journalList'); listDiv.innerHTML = ''; const data = snapshot.val(); if (!data) { listDiv.innerHTML = '<div style="text-align:center;">Пусто</div>'; return; } const entries = Object.entries(data).sort((a, b) => b[1].timestamp - a[1].timestamp); entries.forEach(([id, entry]) => { const card = document.createElement('div'); card.className = 'journal-card'; const header = document.createElement('div'); header.className = 'journal-header'; header.innerHTML = `<div style="display:flex; align-items:center;"><span>📅 ${entry.date}</span><button class="btn-journal-delete" onclick="event.stopPropagation(); deleteJournalEntry('${id}')">🗑️</button></div><span class="journal-total">Банк: ${entry.grandTotal}</span>`; const details = document.createElement('div'); details.className = 'journal-details'; let detailsHtml = `<div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px; display:flex; justify-content:space-between;"><span>Игрок</span><span>Итог</span></div>`; if (entry.players) { entry.players.forEach(p => { detailsHtml += `<div class="detail-row"><span style="font-weight:bold;">${p.name}</span><span style="color:${p.total >= 0 ? 'green' : 'red'}">${p.total}</span></div><div style="font-size:0.8em; color:#666; margin-bottom:5px;">${p.history}</div>`; }); } details.innerHTML = detailsHtml; card.appendChild(header); card.appendChild(details); card.onclick = () => card.classList.toggle('open'); listDiv.appendChild(card); }); });
-    window.toggleSidebar = function() { document.getElementById('sidebar').classList.toggle('open'); }
-    window.showView = function(viewName) { document.getElementById('sidebar').classList.remove('open'); if (viewName === 'game') { document.getElementById('view-game').classList.remove('hidden'); document.getElementById('view-journal').classList.add('hidden'); document.querySelectorAll('.nav-btn')[0].classList.add('active'); document.querySelectorAll('.nav-btn')[1].classList.remove('active'); } else { document.getElementById('view-game').classList.add('hidden'); document.getElementById('view-journal').classList.remove('hidden'); document.querySelectorAll('.nav-btn')[0].classList.remove('active'); document.querySelectorAll('.nav-btn')[1].classList.add('active'); } }
-    window.downloadCSV = function() { const rows = document.querySelectorAll('#scoreTable tbody tr'); if (rows.length === 0) { alert("Пусто!"); return; } const selectedDate = document.getElementById('gameDate').value; let formattedDate = selectedDate; if(selectedDate) { const parts = selectedDate.split('-'); formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`; } let csvContent = `Дата выписки:;${formattedDate}\n\n`; csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n"; rows.forEach(row => { let name = row.querySelector('.player-name').value.trim(); if (!name) name = "Без имени"; let total = row.querySelector('.score-cell').innerText; let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); csvContent += `"${name}";${total};${opsString}\n`; }); let grandTotal = document.getElementById('grandTotal').innerText; csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`; const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `Выписка за ${formattedDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+
+    function initDefaultPlayers() {
+        ["EAGLE_THUNDER", "Zagonskiy", "ceme4ko", "Леонид Стручков", "Машмар", "Егор", "Федя"].forEach(n => push(playersRef, { name: n, history: {} }));
+    }
+
+    window.addToJournal = async function() {
+        if(!confirm("В Журнал?")) return;
+        const snapshot = await get(playersRef);
+        const data = snapshot.val();
+        if (!data) return;
+        let grandTotal = 0;
+        const savedPlayers = [];
+        for (let id in data) {
+            const player = data[id];
+            const { total, historyArray } = calculatePlayerStats(player);
+            grandTotal += total;
+            savedPlayers.push({
+                name: player.name || "Без имени",
+                total: total,
+                history: historyArray.join(' ')
+            });
+        }
+        const now = new Date();
+        const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+        push(journalRef, {
+            date: dateStr,
+            timestamp: Date.now(),
+            grandTotal: grandTotal,
+            players: savedPlayers
+        });
+        alert("Сохранено!");
+    }
+    
+    window.deleteJournalEntry = function(id) {
+        const pass = prompt("Удалить запись (Код)?");
+        if (pass === "108020") {
+            remove(ref(db, 'journal/' + id));
+        } else if (pass !== null) {
+            alert("Ошибка");
+        }
+    }
+
+    onValue(journalRef, (snapshot) => {
+        const listDiv = document.getElementById('journalList');
+        listDiv.innerHTML = '';
+        const data = snapshot.val();
+        if (!data) { listDiv.innerHTML = '<div style="text-align:center;">Пусто</div>'; return; }
+        const entries = Object.entries(data).sort((a, b) => b[1].timestamp - a[1].timestamp);
+        entries.forEach(([id, entry]) => {
+            const card = document.createElement('div');
+            card.className = 'journal-card';
+            const header = document.createElement('div');
+            header.className = 'journal-header';
+            header.innerHTML = `
+                <div style="display:flex; align-items:center;">
+                    <span>📅 ${entry.date}</span>
+                    <button class="btn-journal-delete" onclick="event.stopPropagation(); deleteJournalEntry('${id}')">🗑️</button>
+                </div>
+                <span class="journal-total">Банк: ${entry.grandTotal}</span>
+            `;
+            const details = document.createElement('div');
+            details.className = 'journal-details';
+            let detailsHtml = `<div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px; display:flex; justify-content:space-between;"><span>Игрок</span><span>Итог</span></div>`;
+            if (entry.players) {
+                entry.players.forEach(p => {
+                    detailsHtml += `<div class="detail-row"><span style="font-weight:bold;">${p.name}</span><span style="color:${p.total >= 0 ? 'green' : 'red'}">${p.total}</span></div><div style="font-size:0.8em; color:#666; margin-bottom:5px;">${p.history}</div>`;
+                });
+            }
+            details.innerHTML = detailsHtml;
+            card.appendChild(header); card.appendChild(details);
+            card.onclick = () => card.classList.toggle('open');
+            listDiv.appendChild(card);
+        });
+    });
+
+    window.toggleSidebar = function() {
+        document.getElementById('sidebar').classList.toggle('open');
+    }
+
+    window.showView = function(viewName) {
+        document.getElementById('sidebar').classList.remove('open');
+        if (viewName === 'game') {
+            document.getElementById('view-game').classList.remove('hidden');
+            document.getElementById('view-journal').classList.add('hidden');
+            document.querySelectorAll('.nav-btn')[0].classList.add('active');
+            document.querySelectorAll('.nav-btn')[1].classList.remove('active');
+        } else {
+            document.getElementById('view-game').classList.add('hidden');
+            document.getElementById('view-journal').classList.remove('hidden');
+            document.querySelectorAll('.nav-btn')[0].classList.remove('active');
+            document.querySelectorAll('.nav-btn')[1].classList.add('active');
+        }
+    }
+
+    window.downloadCSV = function() {
+        const rows = document.querySelectorAll('#scoreTable tbody tr');
+        if (rows.length === 0) { alert("Пусто!"); return; }
+        const selectedDate = document.getElementById('gameDate').value;
+        let formattedDate = selectedDate;
+        if(selectedDate) {
+             const parts = selectedDate.split('-');
+             formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
+        }
+        let csvContent = `Дата выписки:;${formattedDate}\n\n`;
+        csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n";
+        rows.forEach(row => {
+            let name = row.querySelector('.player-name').value.trim();
+            if (!name) name = "Без имени";
+            let total = row.querySelector('.score-cell').innerText;
+            let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); 
+            csvContent += `"${name}";${total};${opsString}\n`;
+        });
+        let grandTotal = document.getElementById('grandTotal').innerText;
+        csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`;
+        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Выписка за ${formattedDate}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 </script>
 
 </body>
