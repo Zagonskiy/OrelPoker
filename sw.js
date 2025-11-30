@@ -1,5 +1,5 @@
-// Версия v80 - Fix Auth Handler Scope
-const CACHE_NAME = 'orelpoker-v80-auth-scope-fix';
+// Версия v81 - Restore Buttons Style
+const CACHE_NAME = 'orelpoker-v81-buttons-style-fix';
 const ASSETS = [
     './',
     './index.html',
