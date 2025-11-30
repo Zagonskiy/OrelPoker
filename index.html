@@ -38,6 +38,60 @@
             padding-bottom: 60px;
         }
 
+        /* --- НОВЫЙ ДИЗАЙН ОБЩЕГО БАНКА --- */
+        .grand-total-panel {
+            margin-top: 20px;
+            background: linear-gradient(145deg, #3e2b1f, #2a1b0f);
+            border: 3px solid var(--accent-gold);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Блик на золотой рамке */
+        .grand-total-panel::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .gt-label {
+            font-family: 'Rye', cursive;
+            font-size: 1.5em;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .gt-value {
+            font-family: 'Rye', cursive;
+            font-size: 2.5em;
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(203, 161, 53, 0.5), 3px 3px 0px #000;
+        }
+
+        /* Адаптация для мобильных */
+        @media screen and (max-width: 768px) {
+            .grand-total-panel {
+                flex-direction: column;
+                text-align: center;
+                gap: 5px;
+                padding: 15px;
+            }
+            .gt-label { font-size: 1.2em; }
+            .gt-value { font-size: 3em; line-height: 1; }
+        }
+        /* --------------------------------- */
+
         /* --- LOGIN OVERLAY --- */
         #login-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -175,11 +229,6 @@
         .score-cell { font-family: 'Rye', cursive; font-size: 1.8em; color: var(--accent-red); text-align: center; }
         .history-log { font-size: 0.9em; color: #6b523d; font-style: italic; max-width: 250px; overflow-x: auto; white-space: nowrap; padding: 5px; background-color: rgba(139, 69, 19, 0.05); border-radius: 4px; }
         
-        /* ПК ИТОГ */
-        tfoot tr { background-color: rgba(139, 69, 19, 0.2); border: 2px solid #8b4513; }
-        .total-label { text-align: right; font-family: 'Rye', cursive; font-size: 1.5em; color: var(--accent-brown); padding-right: 20px; }
-        .grand-total-cell { font-family: 'Rye', cursive; font-size: 2em; color: var(--accent-brown); text-align: center; font-weight: bold; }
-
         .journal-list { display: flex; flex-direction: column; gap: 15px; }
         .journal-card { background: rgba(255, 255, 255, 0.6); border: 2px solid var(--accent-brown); padding: 15px; cursor: pointer; transition: 0.2s; }
         .journal-card:hover { background: rgba(255, 255, 255, 0.9); }
@@ -211,41 +260,6 @@
             td:nth-of-type(4) { font-size: 0.8em; color: #666; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 4px; max-width: 100%; }
             td:nth-of-type(5) { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; padding: 0; }
             .btn-reset-player, .btn-delete { width: 28px; height: 28px; font-size: 0.9em; }
-            
-            /* --- МОБИЛЬНЫЙ ДИЗАЙН "ОБЩИЙ БАНК" (ИСПРАВЛЕНИЕ) --- */
-            tfoot { 
-                display: block; 
-                margin-top: 20px; 
-                width: 100%; 
-            }
-            tfoot tr { 
-                display: flex; 
-                flex-direction: column;
-                align-items: center; 
-                justify-content: center; 
-                background: #3e2b1f; 
-                border: 2px solid #cba135; 
-                border-radius: 12px; 
-                padding: 15px; 
-                box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-                width: 100%;
-                box-sizing: border-box;
-            }
-            tfoot td { display: block; padding: 0; border: none; width: 100%; }
-            
-            /* Удаляем контент "Баланс" только из ячеек подвала */
-            tfoot td:nth-of-type(3)::before { content: none !important; } 
-            
-            tfoot td:nth-child(4), tfoot td:nth-child(5) { display: none; }
-            .total-label { display: none; }
-            .grand-total-cell { 
-                text-align: center; 
-                font-size: 2.8em; 
-                color: #fff; 
-                font-weight: bold; 
-                text-shadow: 0 0 10px rgba(203, 161, 53, 0.6); 
-                margin-top: 0; 
-            }
         }
     </style>
 </head>
@@ -267,6 +281,7 @@
         <button class="btn-register-link" onclick="switchAuthView('register')">Нет аккаунта? Регистрация</button>
         <div id="loginError" class="error-msg"></div>
     </div>
+
     <div id="register-view-card" class="login-card hidden">
         <h2>РЕГИСТРАЦИЯ</h2>
         <input type="text" id="regNick" class="login-input" placeholder="Придумайте Ник">
@@ -312,7 +327,6 @@
         </div>
         <div class="controls">
             <button class="btn-add" onclick="createNewPlayer()">+ Игрок</button>
-            <button class="btn-refresh" onclick="refreshTable()">🔄 Обновить</button>
             <button class="btn-newday" onclick="startNewDay()">🌅 Новый день</button>
             <button class="btn-journal-add" onclick="addToJournal()">💾 В Журнал</button>
         </div>
@@ -327,15 +341,15 @@
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
-            <tfoot>
-                <tr class="total-row">
-                    <td colspan="2" class="total-label">ОБЩИЙ БАНК:</td>
-                    <td id="grandTotal" class="grand-total-cell">0</td>
-                    <td colspan="2"></td>
-                </tr>
-            </tfoot>
         </table>
+        
+        <div class="grand-total-panel">
+            <div class="gt-label">ОБЩИЙ БАНК</div>
+            <div id="grandTotal" class="gt-value">0</div>
+        </div>
+
     </div>
+
     <div id="view-journal" class="hidden">
         <div class="brand-container">
             <h1 class="header-title">Архив Журнала</h1>
@@ -344,7 +358,8 @@
             <div style="text-align:center;">Загрузка архива...</div>
         </div>
     </div>
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v66.0 (Label Fix)</div>
+
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v65.0 (Luxury Bank)</div>
 </div>
 
 <script>
@@ -362,7 +377,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=66').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=65').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -397,25 +412,53 @@
     const playersRef = ref(db, 'players');
     const journalRef = ref(db, 'journal');
     const usersRef = ref(db, 'users');
+    
     const connectedRef = ref(db, ".info/connected");
     const onlineUsersRef = ref(db, "online_users");
     let currentConnectionRef = null;
     let onlineNicknames = new Set();
 
-    // --- НОВАЯ ФУНКЦИЯ ОБНОВЛЕНИЯ (ВОЗВРАЩАЕТ ПОТЕРЯННЫХ) ---
-    window.refreshTable = async function() {
-        const pass = prompt("Для обновления введите код доступа:");
-        if (pass !== "108020") {
-            if(pass !== null) alert("Ошибка доступа");
-            return;
+    function setOnlineStatus(nickname) {
+        const myUserRef = ref(db, `online_users/${nickname}`);
+        currentConnectionRef = push(myUserRef);
+        onDisconnect(currentConnectionRef).remove();
+        set(currentConnectionRef, true);
+    }
+
+    onValue(connectedRef, (snap) => {
+        const dotMobile = document.getElementById('mobileStatusDot');
+        const dotDesktop = document.getElementById('desktopStatusDot');
+        const statusEl = document.getElementById('networkStatus');
+        if(statusEl) statusEl.style.display = 'none';
+
+        if (snap.val() === true) {
+            dotMobile.classList.add('online'); dotDesktop.classList.add('online');
+            const savedUser = localStorage.getItem('op_user');
+            // ...
+        } else {
+            dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
         }
-        
-        try {
-            await syncUsersToTable();
-            alert("Таблица синхронизирована! Удаленные игроки возвращены.");
-        } catch(e) {
-            alert("Ошибка: " + e.message);
-        }
+    });
+
+    onValue(onlineUsersRef, (snap) => {
+        const countDisplay = document.getElementById('onlineCounter');
+        onlineNicknames.clear();
+        if (snap.exists()) {
+            const data = snap.val();
+            Object.keys(data).forEach(n => onlineNicknames.add(n));
+            countDisplay.innerText = `👁️ Онлайн: ${onlineNicknames.size}`;
+        } else { countDisplay.innerText = `👁️ Онлайн: 0`; }
+        updateTableStatusDots();
+    });
+
+    function updateTableStatusDots() {
+        document.querySelectorAll('.player-status-indicator').forEach(dot => {
+            const name = dot.getAttribute('data-player-name');
+            const login = dot.getAttribute('data-player-login');
+            const keyToCheck = login || name;
+            if (onlineNicknames.has(keyToCheck)) dot.classList.add('is-online');
+            else dot.classList.remove('is-online');
+        });
     }
 
     async function syncUsersToTable(currentDisplayName) {
@@ -424,60 +467,21 @@
             const playersSnap = await get(playersRef);
             const users = usersSnap.val() || {};
             const players = playersSnap.val() || {};
-
             const existingLogins = new Set();
-            for(let id in players) {
-                 const pLogin = players[id].login || players[id].name;
-                 existingLogins.add(pLogin);
-            }
-
+            for(let id in players) { const pLogin = players[id].login || players[id].name; existingLogins.add(pLogin); }
             const updates = {};
             let hasUpdates = false;
-
             for(let login in users) {
                 if(!existingLogins.has(login)) {
                     const userData = users[login];
                     const dispName = userData.displayName || login;
-                    
                     const newKey = push(ref(db, 'players')).key;
-                    updates['players/' + newKey] = {
-                        name: dispName,
-                        login: login,
-                        history: { 'start_bonus': 1000 }
-                    };
+                    updates['players/' + newKey] = { name: dispName, login: login, history: { 'start_bonus': 1000 } };
                     hasUpdates = true;
                 }
             }
-
-            if(hasUpdates) {
-                await update(ref(db), updates);
-            }
-        } catch(e) { console.error("Sync error", e); }
-    }
-
-    // --- AUTH / NICKNAME ---
-    window.editNickname = async function() {
-        let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        if (!sessionUser) sessionUser = JSON.parse(localStorage.getItem('op_user'));
-        if (!sessionUser) return;
-        const oldDisplayName = sessionUser.displayName || sessionUser.nick;
-        const newName = prompt("Новое имя:", oldDisplayName);
-        if(!newName || newName.trim() === "") return;
-        const trimmedName = newName.trim();
-        try {
-            await update(ref(db, 'users/' + sessionUser.nick), { displayName: trimmedName });
-            sessionUser.displayName = trimmedName;
-            sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
-            if(localStorage.getItem('op_user')) localStorage.setItem('op_user', JSON.stringify(sessionUser));
-            updateMenuUI(trimmedName, sessionUser.nick);
-            const playersSnap = await get(playersRef);
-            playersSnap.forEach(child => {
-                const p = child.val();
-                if (p.login === sessionUser.nick || p.name === oldDisplayName) {
-                     update(ref(db, 'players/' + child.key), { name: trimmedName, login: sessionUser.nick });
-                }
-            });
-        } catch(e) { alert("Error: " + e.message); }
+            if(hasUpdates) { await update(ref(db), updates); }
+        } catch(e) {}
     }
 
     window.switchAuthView = function(view) {
@@ -493,6 +497,9 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+        const localData = localStorage.getItem('poker_data_v65'); 
+        if (localData) renderTable(JSON.parse(localData));
+        
         const savedUser = localStorage.getItem('op_user');
         if(savedUser) {
             const user = JSON.parse(savedUser);
@@ -519,8 +526,7 @@
             if (snapshot.exists()) {
                 const userData = snapshot.val();
                 if(userData.pass !== pass) {
-                    alert("Пароль изменен.");
-                    logout();
+                    alert("Пароль изменен."); logout();
                 } else {
                     const currentDisplayName = userData.displayName || nick;
                     updateMenuUI(currentDisplayName, nick);
@@ -549,17 +555,15 @@
         const nick = document.getElementById('regNick').value.trim();
         const pass = document.getElementById('regPass').value.trim();
         const passRepeat = document.getElementById('regPassRepeat').value.trim();
-        if(!nick || !pass) { document.getElementById('regError').innerText = "Заполните поля"; return; }
+        if(!nick || !pass) { document.getElementById('regError').innerText = "Заполните все поля"; return; }
         if(pass !== passRepeat) { document.getElementById('regError').innerText = "Пароли не совпадают!"; return; }
         get(child(ref(db), `users/${nick}`)).then((snapshot) => {
             if (snapshot.exists()) { document.getElementById('regError').innerText = "Ник занят!"; }
             else {
-                set(ref(db, 'users/' + nick), { pass: pass, created: Date.now(), displayName: nick })
-                .then(() => {
+                set(ref(db, 'users/' + nick), { pass: pass, created: Date.now(), displayName: nick }).then(() => {
                     const newPlayerRef = push(ref(db, 'players'));
                     return set(newPlayerRef, { name: nick, login: nick, history: { 'start_bonus': 1000 } });
-                })
-                .then(() => {
+                }).then(() => {
                     alert("Аккаунт создан! +1000 фишек.");
                     switchAuthView('login');
                     document.getElementById('loginNick').value = nick;
@@ -633,50 +637,34 @@
         }
     }
 
-    function setOnlineStatus(nickname) {
-        const myUserRef = ref(db, `online_users/${nickname}`);
-        currentConnectionRef = push(myUserRef);
-        onDisconnect(currentConnectionRef).remove();
-        set(currentConnectionRef, true);
-    }
-
-    onValue(connectedRef, (snap) => {
-        const dotMobile = document.getElementById('mobileStatusDot');
-        const dotDesktop = document.getElementById('desktopStatusDot');
-        const statusEl = document.getElementById('networkStatus');
-        if(statusEl) statusEl.style.display = 'none';
-        if (snap.val() === true) {
-            dotMobile.classList.add('online'); dotDesktop.classList.add('online');
-        } else {
-            dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
-        }
-    });
-
-    onValue(onlineUsersRef, (snap) => {
-        const countDisplay = document.getElementById('onlineCounter');
-        onlineNicknames.clear();
-        if (snap.exists()) {
-            const data = snap.val();
-            Object.keys(data).forEach(n => onlineNicknames.add(n));
-            countDisplay.innerText = `👁️ Онлайн: ${onlineNicknames.size}`;
-        } else { countDisplay.innerText = `👁️ Онлайн: 0`; }
-        updateTableStatusDots();
-    });
-
-    function updateTableStatusDots() {
-        document.querySelectorAll('.player-status-indicator').forEach(dot => {
-            const name = dot.getAttribute('data-player-name');
-            const login = dot.getAttribute('data-player-login');
-            const keyToCheck = login || name;
-            if (onlineNicknames.has(keyToCheck)) dot.classList.add('is-online');
-            else dot.classList.remove('is-online');
-        });
+    window.editNickname = async function() {
+        let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (!sessionUser) sessionUser = JSON.parse(localStorage.getItem('op_user'));
+        if (!sessionUser) return;
+        const oldDisplayName = sessionUser.displayName || sessionUser.nick;
+        const newName = prompt("Новое имя:", oldDisplayName);
+        if(!newName || newName.trim() === "") return;
+        const trimmedName = newName.trim();
+        try {
+            await update(ref(db, 'users/' + sessionUser.nick), { displayName: trimmedName });
+            sessionUser.displayName = trimmedName;
+            sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
+            if(localStorage.getItem('op_user')) localStorage.setItem('op_user', JSON.stringify(sessionUser));
+            updateMenuUI(trimmedName, sessionUser.nick);
+            const playersSnap = await get(playersRef);
+            playersSnap.forEach(child => {
+                const p = child.val();
+                if (p.login === sessionUser.nick || p.name === oldDisplayName) {
+                     update(ref(db, 'players/' + child.key), { name: trimmedName, login: sessionUser.nick });
+                }
+            });
+        } catch(e) { alert("Error: " + e.message); }
     }
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
-        localStorage.setItem('poker_data_v66', JSON.stringify(data));
+        localStorage.setItem('poker_data_v65', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -724,7 +712,7 @@
         if(player.login) statusDot.setAttribute('data-player-login', player.login);
         const keyToCheck = player.login || player.name;
         if (onlineNicknames.has(keyToCheck)) statusDot.classList.add('is-online');
-
+        
         const inputName = document.createElement('input');
         inputName.type = 'text'; inputName.className = 'player-name'; inputName.value = player.name || "";
         inputName.readOnly = true;
@@ -811,15 +799,6 @@
     window.toggleSidebar = function() { document.getElementById('sidebar').classList.toggle('open'); }
     window.showView = function(viewName) { document.getElementById('sidebar').classList.remove('open'); if (viewName === 'game') { document.getElementById('view-game').classList.remove('hidden'); document.getElementById('view-journal').classList.add('hidden'); document.querySelectorAll('.nav-btn')[0].classList.add('active'); document.querySelectorAll('.nav-btn')[1].classList.remove('active'); } else { document.getElementById('view-game').classList.add('hidden'); document.getElementById('view-journal').classList.remove('hidden'); document.querySelectorAll('.nav-btn')[0].classList.remove('active'); document.querySelectorAll('.nav-btn')[1].classList.add('active'); } }
     window.downloadCSV = function() { const rows = document.querySelectorAll('#scoreTable tbody tr'); if (rows.length === 0) { alert("Пусто!"); return; } const selectedDate = document.getElementById('gameDate').value; let formattedDate = selectedDate; if(selectedDate) { const parts = selectedDate.split('-'); formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`; } let csvContent = `Дата выписки:;${formattedDate}\n\n`; csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n"; rows.forEach(row => { let name = row.querySelector('.player-name').value.trim(); if (!name) name = "Без имени"; let total = row.querySelector('.score-cell').innerText; let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); csvContent += `"${name}";${total};${opsString}\n`; }); let grandTotal = document.getElementById('grandTotal').innerText; csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`; const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `Выписка за ${formattedDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
-    
-    // --- ADMIN: Delete User ---
-    window.deleteUserAccount = function(nickname) {
-        const pass = prompt(`Удалить аккаунт "${nickname}"? (Код 108020):`);
-        if (pass !== "108020") { alert("Ошибка доступа"); return; }
-        remove(ref(db, 'users/' + nickname))
-        .then(() => { alert(`Аккаунт ${nickname} удален.`); })
-        .catch((error) => { alert("Ошибка: " + error.message); });
-    }
 </script>
 
 </body>
