@@ -1,5 +1,5 @@
-// Версия v68 - Fix Desktop Layout overlap (Final)
-const CACHE_NAME = 'orelpoker-v68-layout-final';
+// Версия v69 - Remove Body Padding (Fix Black Strip)
+const CACHE_NAME = 'orelpoker-v69-layout-fix';
 const ASSETS = [
     './',
     './index.html',
