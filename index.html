@@ -102,10 +102,19 @@
             font-family: 'Rye', cursive;
             color: var(--accent-gold);
             font-size: 1.3em;
+            line-height: 1.2;       /* Улучшает вид, если текст в 2 строки */
+    
             display: flex;
+            flex-wrap: wrap;        /* Разрешаем перенос элементов */
             align-items: center;
-            justify-content: center;
+            justify-content: center; /* Центруем содержимое */
+            text-align: center;      /* Центруем сам текст внутри строк */
             gap: 8px;
+    
+            /* Ограничители для длинных ников */
+            max-width: 100%;
+            word-break: break-word;  /* Ломает длинные слова без пробелов */
+            padding: 0 10px;         /* Чтобы текст не прилипал к краям */
         }
         .login-name-row {
             font-family: 'Special Elite', monospace;
@@ -974,6 +983,7 @@
 
 </body>
 </html>
+
 
 
 
