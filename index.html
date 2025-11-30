@@ -137,6 +137,31 @@
         }
         .nav-btn:hover, .nav-btn.active { background: var(--accent-brown); color: var(--accent-gold); border-color: var(--accent-gold); }
 
+        /* СЧЁТЧИК СООБЩЕНИЙ */
+        .notification-badge {
+            background-color: #ff0000;
+            color: white;
+            border-radius: 50%; /* Делает круглым */
+            padding: 2px 6px;
+            font-size: 0.8em;
+            margin-left: auto; /* Прижимает вправо */
+            font-family: sans-serif;
+            border: 1px solid #fff;
+            box-shadow: 0 0 8px rgba(255, 0, 0, 0.8);
+            display: none; /* Скрыт, пока нет сообщений */
+            animation: pulse-red 2s infinite;
+        }
+    
+        .notification-badge.visible {
+            display: inline-block;
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(255, 0, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+        }
+
         /* КНОПКА СБРОСА */
         .btn-extreme-reset {
             margin-top: auto; background-color: #500000; color: #ffcccc; border: 2px solid #ff0000;
@@ -487,7 +512,9 @@
         </div>
     </div>
     <button id="btn-nav-game" class="nav-btn active" onclick="showView('game')">🎲 Игровой стол</button>
-    <button id="btn-nav-chat" class="nav-btn" onclick="showView('chat')">💬 Чат</button>
+    <button id="btn-nav-chat" class="nav-btn" onclick="showView('chat')">
+    💬 Чат <span id="chatBadge" class="notification-badge">0</span>
+    </button>
     <button id="btn-nav-journal" class="nav-btn" onclick="showView('journal')">📜 Журнал архива</button>
     
     <button class="nav-btn" onclick="logout()" style="margin-top: 20px;">🚪 ВЫЙТИ</button>
@@ -783,12 +810,17 @@
         }
     }
 
-    // Отрисовка сообщений
+   // Переменная, чтобы не считать старые сообщения при загрузке как "новые"
+    let isChatLoadedOnce = false;
+
     onValue(chatRef, (snapshot) => {
         const container = document.getElementById('chatMessages');
         container.innerHTML = '';
         
-        if (!snapshot.exists()) return;
+        if (!snapshot.exists()) {
+            isChatLoadedOnce = true;
+            return;
+        }
 
         const messages = [];
         snapshot.forEach(child => {
@@ -810,12 +842,9 @@
 
             bubble.className = `message-bubble ${isMine ? 'my-message' : 'other-message'}`;
             
-            // Кнопки (только если моё и < 24ч)
             let actionsHtml = '';
             if (isMine && (now - msg.timestamp < oneDay)) {
-                // Экранируем кавычки в тексте, чтобы не сломать HTML
                 const safeText = msg.text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                
                 actionsHtml = `
                 <span class="msg-actions">
                     <button class="btn-msg-action" onclick="startEditMessage('${msg.key}', '${safeText}', ${msg.timestamp})">✏️</button>
@@ -823,13 +852,33 @@
                 </span>`;
             }
 
-            // Метка (ред.)
             const editedMark = msg.isEdited ? `<span class="edited-label">(ред.)</span>` : '';
-
             bubble.innerHTML = `<span class="message-sender">${msg.sender} <span class="msg-time">${timeStr}</span></span>${msg.text} ${editedMark} ${actionsHtml}`;
             container.appendChild(bubble);
         });
         container.scrollTop = container.scrollHeight;
+
+        // --- ЛОГИКА УВЕДОМЛЕНИЙ (НОВОЕ) ---
+        // Если это не первая загрузка страницы И мы НЕ находимся в чате прямо сейчас
+        if (isChatLoadedOnce) {
+            const chatView = document.getElementById('view-chat');
+            if (chatView && chatView.classList.contains('hidden')) {
+                const badge = document.getElementById('chatBadge');
+                if (badge) {
+                    // Увеличиваем цифру на 1
+                    let currentCount = parseInt(badge.innerText) || 0;
+                    // Простая проверка: если последнее сообщение не мое, то +1
+                    const lastMsg = messages[messages.length - 1];
+                    if (lastMsg && lastMsg.senderLogin !== myLogin) {
+                         // Мы не хотим +1 при каждом редактировании старого, 
+                         // но для простоты сейчас просто показываем, что есть активность
+                         badge.innerText = currentCount + 1;
+                         badge.classList.add('visible');
+                    }
+                }
+            }
+        }
+        isChatLoadedOnce = true;
     });
 
     // --- УМНОЕ ВОССТАНОВЛЕНИЕ ИГРОКОВ ---
@@ -1454,30 +1503,53 @@
 
     window.showView = function(viewName) {
         document.getElementById('sidebar').classList.remove('open');
+        
+        // Скрываем все окна
         document.getElementById('view-game').classList.add('hidden');
         document.getElementById('view-journal').classList.add('hidden');
         document.getElementById('view-chat').classList.add('hidden');
+        
+        const blacklistDiv = document.getElementById('view-blacklist');
+        if(blacklistDiv) blacklistDiv.classList.add('hidden');
+
+        // Сбрасываем активные кнопки
         document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
 
         if (viewName === 'game') {
             document.getElementById('view-game').classList.remove('hidden');
             document.getElementById('btn-nav-game').classList.add('active');
-        } else if (viewName === 'chat') {
+        } 
+        else if (viewName === 'chat') {
             document.getElementById('view-chat').classList.remove('hidden');
             document.getElementById('btn-nav-chat').classList.add('active');
+            
+            // --- СБРОС СЧЁТЧИКА (НОВОЕ) ---
+            const badge = document.getElementById('chatBadge');
+            if(badge) {
+                badge.innerText = '0';
+                badge.classList.remove('visible');
+            }
+            
             const container = document.getElementById('chatMessages');
             setTimeout(() => container.scrollTop = container.scrollHeight, 100);
-        } else if (viewName === 'journal') {
+        } 
+        else if (viewName === 'journal') {
             document.getElementById('view-journal').classList.remove('hidden');
             document.getElementById('btn-nav-journal').classList.add('active');
+        } 
+        else if (viewName === 'blacklist') {
+            if(blacklistDiv) blacklistDiv.classList.remove('hidden');
+            const btnBlacklist = document.getElementById('btn-nav-blacklist');
+            if(btnBlacklist) btnBlacklist.classList.add('active');
+            if(typeof renderBlacklist === 'function') renderBlacklist();
         }
     }
-
     window.downloadCSV = function() { const rows = document.querySelectorAll('#scoreTable tbody tr'); if (rows.length === 0) { alert("Пусто!"); return; } const selectedDate = document.getElementById('gameDate').value; let formattedDate = selectedDate; if(selectedDate) { const parts = selectedDate.split('-'); formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`; } let csvContent = `Дата выписки:;${formattedDate}\n\n`; csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n"; rows.forEach(row => { let name = row.querySelector('.player-name').value.trim(); if (!name) name = "Без имени"; let total = row.querySelector('.score-cell').innerText; let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); csvContent += `"${name}";${total};${opsString}\n`; }); let grandTotal = document.getElementById('grandTotal').innerText; csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`; const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `Выписка за ${formattedDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
 </script>
 
 </body>
 </html>
+
 
 
 
