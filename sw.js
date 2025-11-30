@@ -1,5 +1,5 @@
-// Версия v79 - Fix Giant Login Logo
-const CACHE_NAME = 'orelpoker-v79-logo-fix';
+// Версия v79 - Final View Overlap Fix
+const CACHE_NAME = 'orelpoker-v79-final-overlap-fix';
 const ASSETS = [
     './',
     './index.html',
