@@ -1,5 +1,5 @@
-// Версия v72 - Fix Mobile Menu
-const CACHE_NAME = 'orelpoker-v72-menu-fix';
+// Версия v73 - Mobile Menu Close Button
+const CACHE_NAME = 'orelpoker-v73-menu-x';
 const ASSETS = [
     './',
     './index.html',
