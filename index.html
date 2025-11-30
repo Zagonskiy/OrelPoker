@@ -288,6 +288,19 @@
             padding: 0;
             color: inherit;
         }
+        /* Метка (ред.) */
+        .edited-label {
+            font-size: 0.7em;
+            color: #888;
+            font-style: italic;
+            margin-left: 5px;
+        }
+        /* Подсветка поля ввода при редактировании */
+        .input-editing {
+            background-color: #fff8e1 !important;
+            border-color: #ffb300 !important;
+            box-shadow: 0 0 5px rgba(255, 179, 0, 0.5);
+        }
         .btn-msg-action:hover { opacity: 1; transform: scale(1.2); }
         .my-message { align-self: flex-end; background-color: #e8f5e9; border: 1px solid var(--accent-green); border-bottom-right-radius: 0; }
         .my-message .message-sender { color: var(--accent-green); text-align: right; }
@@ -517,7 +530,8 @@
         <div id="chatMessages" class="chat-messages"></div>
         <div class="chat-input-bar">
             <input type="text" id="chatInput" class="chat-input" placeholder="Написать сообщение...">
-            <button class="btn-send" onclick="sendMessage()">➤</button>
+            <button id="btnCancelEdit" class="btn-delete hidden" style="border-radius: 4px; margin-right:5px;" onclick="cancelEditMode()">✕</button>
+            <button id="btnSendChat" class="btn-send" onclick="sendMessage()">➤</button>
         </div>
     </div>
 
@@ -673,66 +687,137 @@
             update(ref(db, 'chat/' + key), { text: newText.trim() });
         }
     }
-    // --- CHAT ---
+    // --- CHAT SYSTEM (С редактированием в строке) ---
+    
+    let editingMessageId = null; // Переменная, чтобы знать, какое сообщение правим
+
     window.sendMessage = function() {
         const input = document.getElementById('chatInput');
         const text = input.value.trim();
         if (!text) return;
+
         const nameEl = document.getElementById('menuDisplayName');
         const senderName = nameEl ? nameEl.innerText : "Гость";
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || {};
-        push(chatRef, {
-            sender: senderName,
-            senderLogin: sessionUser.nick || "anon",
-            text: text,
-            timestamp: Date.now()
-        });
+        const currentUserLogin = sessionUser.nick || "anon";
+
+        // РЕЖИМ РЕДАКТИРОВАНИЯ
+        if (editingMessageId) {
+            update(ref(db, 'chat/' + editingMessageId), { 
+                text: text,
+                isEdited: true // Ставим метку, что отредактировано
+            }).then(() => {
+                cancelEditMode(); // Выходим из режима редактирования
+            });
+        } 
+        // РЕЖИМ ОТПРАВКИ НОВОГО
+        else {
+            push(chatRef, {
+                sender: senderName,
+                senderLogin: currentUserLogin,
+                text: text,
+                timestamp: Date.now()
+            });
+        }
+        
         input.value = '';
         input.focus();
     }
+
+    // Включаем режим редактирования (копируем текст в поле)
+    window.startEditMessage = function(key, oldText, timestamp) {
+        // Проверка 24 часа
+        if (Date.now() - timestamp > 86400000) {
+            alert("Время редактирования вышло.");
+            return;
+        }
+
+        const input = document.getElementById('chatInput');
+        const btnSend = document.getElementById('btnSendChat');
+        const btnCancel = document.getElementById('btnCancelEdit');
+
+        // Заполняем поле и запоминаем ID
+        input.value = oldText;
+        input.focus();
+        input.classList.add('input-editing');
+        
+        editingMessageId = key;
+
+        // Меняем интерфейс
+        btnSend.innerText = "💾"; // Иконка дискеты
+        btnCancel.classList.remove('hidden');
+    }
+
+    // Отмена редактирования
+    window.cancelEditMode = function() {
+        const input = document.getElementById('chatInput');
+        const btnSend = document.getElementById('btnSendChat');
+        const btnCancel = document.getElementById('btnCancelEdit');
+
+        input.value = '';
+        input.classList.remove('input-editing');
+        editingMessageId = null;
+
+        btnSend.innerText = "➤";
+        btnCancel.classList.add('hidden');
+    }
+
+    window.deleteChatMessage = function(key, timestamp) {
+        if (Date.now() - timestamp > 86400000) {
+            alert("Время удаления вышло.");
+            return;
+        }
+        if(confirm("Удалить сообщение?")) {
+            remove(ref(db, 'chat/' + key));
+            // Если мы удалили то, что сейчас редактировали — сбрасываем режим
+            if (editingMessageId === key) cancelEditMode();
+        }
+    }
+
+    // Отрисовка сообщений
     onValue(chatRef, (snapshot) => {
         const container = document.getElementById('chatMessages');
         container.innerHTML = '';
         
         if (!snapshot.exists()) return;
 
-        // Преобразуем объект в массив с ключами и сортируем
         const messages = [];
         snapshot.forEach(child => {
-            messages.push({
-                key: child.key,
-                ...child.val()
-            });
+            messages.push({ key: child.key, ...child.val() });
         });
-        // Сортировка по времени
         messages.sort((a, b) => a.timestamp - b.timestamp);
 
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || {};
         const myLogin = sessionUser.nick;
         const now = Date.now();
-        const oneDay = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
+        const oneDay = 24 * 60 * 60 * 1000;
 
         messages.forEach(msg => {
             const bubble = document.createElement('div');
             const isMine = (msg.senderLogin === myLogin);
             
-            // Время
             const date = new Date(msg.timestamp);
             const timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
             bubble.className = `message-bubble ${isMine ? 'my-message' : 'other-message'}`;
             
-            // Собираем кнопки действий, если сообщение мое и не прошло 24 часа
+            // Кнопки (только если моё и < 24ч)
             let actionsHtml = '';
             if (isMine && (now - msg.timestamp < oneDay)) {
+                // Экранируем кавычки в тексте, чтобы не сломать HTML
+                const safeText = msg.text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                
                 actionsHtml = `
                 <span class="msg-actions">
-                    <button class="btn-msg-action" onclick="editChatMessage('${msg.key}', '${msg.text.replace(/'/g, "\\'")}', ${msg.timestamp})">✏️</button>
+                    <button class="btn-msg-action" onclick="startEditMessage('${msg.key}', '${safeText}', ${msg.timestamp})">✏️</button>
                     <button class="btn-msg-action" onclick="deleteChatMessage('${msg.key}', ${msg.timestamp})">🗑</button>
                 </span>`;
             }
 
-            bubble.innerHTML = `<span class="message-sender">${msg.sender} <span class="msg-time">${timeStr}</span></span>${msg.text} ${actionsHtml}`;
+            // Метка (ред.)
+            const editedMark = msg.isEdited ? `<span class="edited-label">(ред.)</span>` : '';
+
+            bubble.innerHTML = `<span class="message-sender">${msg.sender} <span class="msg-time">${timeStr}</span></span>${msg.text} ${editedMark} ${actionsHtml}`;
             container.appendChild(bubble);
         });
         container.scrollTop = container.scrollHeight;
@@ -1358,5 +1443,6 @@
 
 </body>
 </html>
+
 
 
