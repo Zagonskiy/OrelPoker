@@ -656,13 +656,12 @@
             let hasUpdates = false;
             
             for(let login in users) {
-                // Если пользователя НЕТ за столом, добавляем его
                 if(!existingLogins.has(login)) {
                     const userData = users[login];
                     const dispName = userData.displayName || login;
                     const newKey = push(ref(db, 'players')).key;
                     
-                    // БЕЗОПАСНОЕ ВОССТАНОВЛЕНИЕ:
+                    // БЕЗОПАСНОЕ ВОССТАНОВЛЕНИЕ
                     let historyToRestore = { 'start_bonus': 1000 }; 
                     if (userData.saved_history) {
                         historyToRestore = userData.saved_history; 
@@ -716,7 +715,6 @@
         }
     }
 
-    // БЕЗОПАСНОЕ УДАЛЕНИЕ
     window.safeDeletePlayer = async function(id, login) {
         if(!confirm("Убрать игрока со стола? (Баланс сохранится)")) return;
         const snapshot = await get(ref(db, 'players/' + id));
@@ -729,11 +727,7 @@
         remove(ref(db, 'players/' + id));
     }
 
-    // =========================================================
-    // ЛОГИКА АВТОРИЗАЦИИ
-    // =========================================================
-
-    // 1. РЕГИСТРАЦИЯ
+    // --- AUTH LOGIC ---
     window.handleRegister = function() {
         const nick = document.getElementById('regNick').value.trim();
         const pass = document.getElementById('regPass').value.trim();
@@ -764,7 +758,6 @@
         });
     }
 
-    // 2. ВХОД
     window.handleLogin = function() {
         const nick = document.getElementById('loginNick').value.trim();
         const pass = document.getElementById('loginPass').value.trim();
@@ -777,7 +770,6 @@
         checkLogin(nick, pass, false, remember);
     }
 
-    // 3. ПРОВЕРКА
     async function checkLogin(nick, pass, isAuto, remember = false) {
         const tryLocalLogin = () => {
             const knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
@@ -819,7 +811,6 @@
         }
     }
 
-    // 4. ПРИМЕНЕНИЕ ВХОДА
     function performLogin(nick, pass, remember, displayName, loadedRole) {
         document.getElementById('login-overlay').style.display = 'none';
         
@@ -828,7 +819,6 @@
         
         let role = loadedRole || 'player';
         
-        // Главный админ
         if (nick === 'Zagonskiy') {
             role = 'admin';
         } 
@@ -843,7 +833,6 @@
         applyRoleUI();
     }
 
-    // 5. ОБНОВЛЕНИЕ РОЛИ
     function fetchUserRole(nick) {
         if (nick === 'Zagonskiy') return; 
         
@@ -860,7 +849,6 @@
         });
     }
 
-    // --- ИНТЕРФЕЙС ---
     window.applyRoleUI = function() {
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         const role = sessionUser ? sessionUser.role : 'player';
@@ -1054,10 +1042,7 @@
         wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
         
         if (myRole === 'admin') {
-             // Сброс баланса
              wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
-             
-             // Безопасное удаление (для зарегистрированных) или обычное
              if (player.login) {
                  wrapper.appendChild(createBtn('✕', 'btn-delete', () => safeDeletePlayer(id, player.login)));
              } else {
@@ -1232,39 +1217,4 @@
     
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
