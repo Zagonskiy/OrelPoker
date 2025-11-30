@@ -1217,6 +1217,7 @@
         if (onlineNicknames.has(keyToCheck)) statusDot.classList.add('is-online');
 
         // Значок роли
+        // Значок роли
         const roleBadge = document.createElement('span');
         roleBadge.className = 'role-badge';
         
@@ -1224,9 +1225,15 @@
         if (!player.login) {
             roleBadge.innerText = '👽';
             roleBadge.title = 'Гость';
-        } else {
+        } 
+        // Если это СОЗДАТЕЛЬ (Жесткая проверка)
+        else if (player.login === 'Zagonskiy') {
+            roleBadge.innerText = '👑';
+            roleBadge.title = 'Создатель';
+        }
+        else {
             // Если зарегистрирован, загружаем роль
-            roleBadge.innerText = '⏳'; // Временный значок загрузки
+            roleBadge.innerText = '⏳'; // Временный значок
             get(child(ref(db), 'users/' + player.login + '/role')).then((snap) => {
                 const r = snap.val();
                 if (r === 'admin') { roleBadge.innerText = '👑'; roleBadge.title = 'Админ'; }
@@ -1471,6 +1478,7 @@
 
 </body>
 </html>
+
 
 
 
