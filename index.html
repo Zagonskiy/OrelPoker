@@ -57,16 +57,41 @@
         /* --- SIDEBAR --- */
         .sidebar {
             position: fixed;
-            top: 0; left: 0; bottom: 0; width: var(--sidebar-width);
-            background: #1a1008; border-right: 4px solid var(--accent-brown);
-            display: flex; flex-direction: column; padding: 20px;
-            box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 2000;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: #1a1008;
+            border-right: 4px solid var(--accent-brown);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            z-index: 3001; /* Поднял выше кнопки открытия */
             transition: transform 0.3s ease;
+        }
+
+        /* КНОПКА ЗАКРЫТИЯ МЕНЮ (Только для мобильных) */
+        .close-menu-btn {
+            display: none; /* Скрыта на ПК */
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: transparent;
+            border: none;
+            color: var(--accent-red);
+            font-size: 2em;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 3002;
+            padding: 5px;
+            line-height: 0.8;
         }
 
         .sidebar-logo { text-align: center; margin-bottom: 40px; }
         .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
         
+        /* User Info */
         .user-info-container { margin-top: 10px; text-align: center; }
         .display-name-row { font-family: 'Rye', cursive; color: var(--accent-gold); font-size: 1.3em; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .login-name-row { font-family: 'Special Elite', monospace; color: #d4c5a3; font-size: 0.8em; opacity: 0.6; margin-top: 4px; }
@@ -107,8 +132,9 @@
         .error-msg { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
 
         .version-tag { position: fixed; bottom: 5px; right: 10px; font-size: 0.7em; color: #5a3a22; font-family: 'Special Elite', monospace; z-index: 2000; background: rgba(244, 228, 188, 0.9); padding: 2px 6px; border-radius: 4px; border: 1px solid #8b4513; pointer-events: none; opacity: 0.8; cursor: pointer; text-decoration: underline; }
-        .btn-extreme-reset { margin-top: auto; background-color: #500000; color: #ffcccc; border: 2px solid #ff0000; padding: 12px; font-family: 'Special Elite', monospace; font-weight: bold; font-size: 0.9em; cursor: pointer; width: 100%; box-sizing: border-box; border-radius: 4px; transition: all 0.2s; text-align: center; }
+        .btn-extreme-reset { margin-top: auto; background-color: #500000; color: #ffcccc; border: 2px solid #ff0000; padding: 12px; font-family: 'Special Elite', monospace; font-weight: bold; font-size: 0.9em; cursor: pointer; width: 100%; border-radius: 4px; transition: all 0.2s; text-align: center; }
         .btn-extreme-reset:hover { background-color: #ff0000; color: white; box-shadow: 0 0 15px rgba(255, 0, 0, 0.5); }
+        .btn-logout { margin-top: 10px; background-color: var(--accent-brown); color: var(--accent-gold); border: 1px solid var(--accent-gold); padding: 10px; font-family: 'Rye', cursive; cursor: pointer; width: 100%; border-radius: 4px; text-align: center; }
         .network-badge { position: fixed; top: 15px; right: 15px; padding: 8px 15px; font-family: 'Rye', cursive; font-size: 0.9em; border-radius: 4px; z-index: 1000; box-shadow: 2px 2px 5px rgba(0,0,0,0.7); border: 2px solid #3e2b1f; transition: all 0.3s; text-transform: uppercase; }
         .status-online { background-color: var(--accent-green); color: #fff; border-color: #1b5e20; }
         .status-offline { background-color: #d32f2f; color: #fff; border-color: #b71c1c; animation: pulse 2s infinite; }
@@ -150,11 +176,13 @@
         .score-cell { font-family: 'Rye', cursive; font-size: 1.8em; color: var(--accent-red); text-align: center; }
         .history-log { font-size: 0.9em; color: #6b523d; font-style: italic; max-width: 250px; overflow-x: auto; white-space: nowrap; padding: 5px; background-color: rgba(139, 69, 19, 0.05); border-radius: 4px; }
         
+        /* ИТОГ */
         .grand-total-panel { margin-top: 20px; background: linear-gradient(145deg, #3e2b1f, #2a1b0f); border: 3px solid var(--accent-gold); border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 25px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
         .grand-total-panel::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%); pointer-events: none; }
         .gt-label { font-family: 'Rye', cursive; font-size: 1.5em; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
         .gt-value { font-family: 'Rye', cursive; font-size: 2.5em; color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(203, 161, 53, 0.5), 3px 3px 0px #000; }
 
+        /* ЖУРНАЛ */
         .journal-list { display: flex; flex-direction: column; gap: 15px; }
         .journal-card { background: rgba(255, 255, 255, 0.6); border: 2px solid var(--accent-brown); padding: 15px; cursor: pointer; transition: 0.2s; }
         .journal-card:hover { background: rgba(255, 255, 255, 0.9); }
@@ -194,42 +222,13 @@
             .grand-total-panel { flex-direction: column; text-align: center; gap: 5px; padding: 15px; width: 100%; box-sizing: border-box; }
             .gt-label { font-size: 1.2em; }
             .gt-value { font-size: 3em; line-height: 1; }
+            
+            /* Показываем крестик закрытия */
+            .close-menu-btn { display: block; }
         }
     </style>
 </head>
 <body>
-
-<script>
-    function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('open');
-    }
-
-    function showView(viewName) {
-        document.getElementById('sidebar').classList.remove('open');
-        
-        // Скрываем всё
-        document.getElementById('view-game').classList.add('hidden');
-        document.getElementById('view-journal').classList.add('hidden');
-        document.getElementById('view-chat').classList.add('hidden');
-        
-        // Убираем активный класс у кнопок
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-
-        // Показываем нужное
-        if (viewName === 'game') {
-            document.getElementById('view-game').classList.remove('hidden');
-            document.getElementById('btn-nav-game').classList.add('active');
-        } else if (viewName === 'chat') {
-            document.getElementById('view-chat').classList.remove('hidden');
-            document.getElementById('btn-nav-chat').classList.add('active');
-            const container = document.getElementById('chatMessages');
-            setTimeout(() => container.scrollTop = container.scrollHeight, 100);
-        } else if (viewName === 'journal') {
-            document.getElementById('view-journal').classList.remove('hidden');
-            document.getElementById('btn-nav-journal').classList.add('active');
-        }
-    }
-</script>
 
 <div id="login-overlay">
     <div id="login-view-card" class="login-card">
@@ -247,7 +246,6 @@
         <button class="btn-register-link" onclick="switchAuthView('register')">Нет аккаунта? Регистрация</button>
         <div id="loginError" class="error-msg"></div>
     </div>
-
     <div id="register-view-card" class="login-card hidden">
         <h2>РЕГИСТРАЦИЯ</h2>
         <input type="text" id="regNick" class="login-input" placeholder="Придумайте Ник">
@@ -266,6 +264,8 @@
 </button>
 
 <div class="sidebar" id="sidebar">
+    <button class="close-menu-btn" onclick="toggleSidebar()">✕</button>
+    
     <div class="sidebar-logo">
         <img src="./logo.png" alt="Лого">
         <div class="user-info-container">
@@ -280,7 +280,9 @@
     <button id="btn-nav-game" class="nav-btn active" onclick="showView('game')">🎲 Игровой стол</button>
     <button id="btn-nav-chat" class="nav-btn" onclick="showView('chat')">💬 Чат</button>
     <button id="btn-nav-journal" class="nav-btn" onclick="showView('journal')">📜 Журнал архива</button>
+    
     <button class="nav-btn" onclick="logout()" style="margin-top: 20px;">🚪 ВЫЙТИ</button>
+    
     <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
 </div>
 
@@ -315,7 +317,6 @@
             <div class="gt-label">ОБЩИЙ БАНК</div>
             <div id="grandTotal" class="gt-value">0</div>
         </div>
-
     </div>
 
     <div id="view-chat" class="hidden chat-wrapper">
@@ -338,10 +339,41 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v72.0 (Menu Fix)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v73.0 (Menu X Button)</div>
 </div>
 
 <script>
+    // --- UI CONTROLLERS ---
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+    }
+
+    function showView(viewName) {
+        document.getElementById('sidebar').classList.remove('open');
+        
+        // Hide all
+        document.getElementById('view-game').classList.add('hidden');
+        document.getElementById('view-journal').classList.add('hidden');
+        document.getElementById('view-chat').classList.add('hidden');
+        
+        // Reset btns
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+
+        if (viewName === 'game') {
+            document.getElementById('view-game').classList.remove('hidden');
+            document.getElementById('btn-nav-game').classList.add('active');
+        } else if (viewName === 'chat') {
+            document.getElementById('view-chat').classList.remove('hidden');
+            document.getElementById('btn-nav-chat').classList.add('active');
+            const container = document.getElementById('chatMessages');
+            setTimeout(() => container.scrollTop = container.scrollHeight, 100);
+        } else if (viewName === 'journal') {
+            document.getElementById('view-journal').classList.remove('hidden');
+            document.getElementById('btn-nav-journal').classList.add('active');
+        }
+    }
+
+    // --- PWA ---
     window.forceUpdate = async function() {
         if (!confirm("Обновить приложение?")) return;
         if ('serviceWorker' in navigator) {
@@ -356,7 +388,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=72').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=73').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -397,7 +429,7 @@
     let currentConnectionRef = null;
     let onlineNicknames = new Set();
 
-    // --- ENTER KEY HELPERS ---
+    // --- ENTER KEYS ---
     function addEnterTrigger(inputId, actionFunction) {
         const input = document.getElementById(inputId);
         if (input) {
@@ -454,7 +486,7 @@
         container.scrollTop = container.scrollHeight;
     });
 
-    // --- OTHER LOGIC ---
+    // --- TABLE REFRESH ---
     window.refreshTable = async function() {
         const pass = prompt("Для обновления введите код доступа:");
         if (pass !== "108020") { if(pass !== null) alert("Ошибка доступа"); return; }
@@ -701,7 +733,7 @@
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
-        localStorage.setItem('poker_data_v72', JSON.stringify(data));
+        localStorage.setItem('poker_data_v73', JSON.stringify(data));
         renderTable(data);
     });
 
