@@ -1,5 +1,5 @@
-// Версия v77 - Fix Huge Logo in Login
-const CACHE_NAME = 'orelpoker-v77-login-logo-fix';
+// Версия v78 - Fix Menu Logic & Layout
+const CACHE_NAME = 'orelpoker-v78-menu-layout-fix';
 const ASSETS = [
     './',
     './index.html',
