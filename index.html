@@ -457,6 +457,19 @@
     </div>
 
     <div class="version-tag" onclick="forceUpdate()">OrelPoker v74.0 (Final)</div>
+    <div id="roleModal" class="modal-overlay role-hidden">
+    <div class="modal-card">
+        <h3 style="margin-top:0; color:#8b4513; font-family:'Rye', cursive;">НАЗНАЧИТЬ РОЛЬ</h3>
+        <p id="roleTargetName" style="font-weight:bold; font-size:1.2em; margin-bottom:15px;">...</p>
+        
+        <div class="role-buttons-list">
+            <button class="role-select-btn btn-admin" onclick="setRole('admin')">👑 АДМИН</button>
+            <button class="role-select-btn btn-trusted" onclick="setRole('trusted')">🛡️ ДОВЕРЕННОЕ ЛИЦО</button>
+            <button class="role-select-btn btn-player" onclick="setRole('player')">👤 ИГРОК</button>
+        </div>
+
+        <button class="btn-cancel-role" onclick="closeRoleModal()">Отмена</button>
+    </div>
 </div>
 
 <script type="module">
@@ -1114,6 +1127,7 @@
     
 </body>
 </html>
+
 
 
 
