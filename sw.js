@@ -1,5 +1,5 @@
-// Версия v73 - Mobile Menu Close Button
-const CACHE_NAME = 'orelpoker-v73-menu-x';
+// Версия v74 - Restore User Info & Status Dot
+const CACHE_NAME = 'orelpoker-v74-status-restore';
 const ASSETS = [
     './',
     './index.html',
