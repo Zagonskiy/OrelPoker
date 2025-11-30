@@ -1,5 +1,5 @@
-// Версия v74 - Restore User Info & Status Dot
-const CACHE_NAME = 'orelpoker-v74-status-restore';
+// Версия v75 - Chat Edit & Delete
+const CACHE_NAME = 'orelpoker-v75-chat-edit';
 const ASSETS = [
     './',
     './index.html',
