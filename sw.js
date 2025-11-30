@@ -1,5 +1,5 @@
-// Версия v76 - Fix View Switching (Overlap)
-const CACHE_NAME = 'orelpoker-v76-view-fix';
+// Версия v77 - Fix Huge Logo in Login
+const CACHE_NAME = 'orelpoker-v77-login-logo-fix';
 const ASSETS = [
     './',
     './index.html',
