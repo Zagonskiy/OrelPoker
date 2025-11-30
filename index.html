@@ -42,18 +42,6 @@
             min-height: 100vh;
         }
 
-        /* --- MAIN CONTENT --- */
-        .main-content {
-            margin-left: var(--sidebar-width); 
-            width: calc(100% - var(--sidebar-width));
-            min-height: 100vh;
-            padding: 20px;
-            background-image: var(--paper-texture);
-            background-color: var(--paper-bg);
-            padding-bottom: 60px;
-            position: relative;
-        }
-
         /* --- SIDEBAR --- */
         .sidebar {
             position: fixed;
@@ -67,13 +55,14 @@
             flex-direction: column;
             padding: 20px;
             box-shadow: 5px 0 15px rgba(0,0,0,0.5);
-            z-index: 3001; /* Поднял выше кнопки открытия */
+            z-index: 2000;
             transition: transform 0.3s ease;
+            box-sizing: border-box;
         }
 
-        /* КНОПКА ЗАКРЫТИЯ МЕНЮ (Только для мобильных) */
+        /* КНОПКА ЗАКРЫТИЯ МЕНЮ (для мобильных) */
         .close-menu-btn {
-            display: none; /* Скрыта на ПК */
+            display: none;
             position: absolute;
             top: 10px;
             right: 10px;
@@ -88,16 +77,39 @@
             line-height: 0.8;
         }
 
-        .sidebar-logo { text-align: center; margin-bottom: 40px; }
+        .sidebar-logo { text-align: center; margin-bottom: 30px; }
         .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
-        
-        /* User Info */
-        .user-info-container { margin-top: 10px; text-align: center; }
-        .display-name-row { font-family: 'Rye', cursive; color: var(--accent-gold); font-size: 1.3em; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .login-name-row { font-family: 'Special Elite', monospace; color: #d4c5a3; font-size: 0.8em; opacity: 0.6; margin-top: 4px; }
-        .edit-icon { cursor: pointer; font-size: 0.8em; opacity: 0.7; transition: 0.2s; }
+
+        /* ИНФО О ЮЗЕРЕ В МЕНЮ */
+        .user-info-container {
+            margin-top: 10px;
+            text-align: center;
+        }
+        .display-name-row {
+            font-family: 'Rye', cursive;
+            color: var(--accent-gold);
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .login-name-row {
+            font-family: 'Special Elite', monospace;
+            color: #d4c5a3;
+            font-size: 0.8em;
+            opacity: 0.6;
+            margin-top: 4px;
+        }
+        .edit-icon {
+            cursor: pointer;
+            font-size: 0.8em;
+            opacity: 0.7;
+            transition: 0.2s;
+        }
         .edit-icon:hover { opacity: 1; transform: scale(1.1); }
 
+        /* НАВИГАЦИЯ */
         .nav-btn {
             background: transparent; border: 1px solid var(--accent-brown); color: #d4c5a3;
             padding: 15px; margin-bottom: 10px; text-align: left;
@@ -106,24 +118,60 @@
         }
         .nav-btn:hover, .nav-btn.active { background: var(--accent-brown); color: var(--accent-gold); border-color: var(--accent-gold); }
 
-        /* --- CHAT STYLES --- */
-        .chat-wrapper { display: flex; flex-direction: column; height: calc(100vh - 100px); }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 10px; background: rgba(255, 255, 255, 0.3); border: 2px solid var(--accent-brown); border-radius: 8px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; }
-        .message-bubble { max-width: 80%; padding: 8px 12px; border-radius: 12px; position: relative; font-family: 'Special Elite', monospace; font-size: 1em; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); }
-        .message-sender { font-size: 0.75em; font-weight: bold; margin-bottom: 2px; display: block; font-family: 'Rye', cursive; }
-        .my-message { align-self: flex-end; background-color: #e8f5e9; border: 1px solid var(--accent-green); border-bottom-right-radius: 0; }
-        .my-message .message-sender { color: var(--accent-green); text-align: right; }
-        .other-message { align-self: flex-start; background-color: #fff8e1; border: 1px solid var(--accent-brown); border-bottom-left-radius: 0; }
-        .other-message .message-sender { color: var(--accent-brown); }
-        .chat-input-bar { display: flex; gap: 10px; }
-        .chat-input { flex: 1; padding: 10px; border: 2px solid var(--accent-brown); border-radius: 4px; font-family: 'Special Elite', monospace; background: #fff; }
-        .btn-send { background-color: var(--accent-brown); color: var(--accent-gold); border: none; padding: 0 20px; border-radius: 4px; cursor: pointer; font-family: 'Rye', cursive; }
+        /* КНОПКА СБРОСА */
+        .btn-extreme-reset {
+            margin-top: auto; background-color: #500000; color: #ffcccc; border: 2px solid #ff0000;
+            padding: 12px; font-family: 'Special Elite', monospace; font-weight: bold; font-size: 0.9em;
+            cursor: pointer; width: 100%; border-radius: 4px; transition: all 0.2s; text-align: center;
+        }
+        .btn-extreme-reset:hover { background-color: #ff0000; color: white; box-shadow: 0 0 15px rgba(255, 0, 0, 0.5); }
+
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-left: var(--sidebar-width); 
+            width: calc(100% - var(--sidebar-width));
+            min-height: 100vh;
+            padding: 20px;
+            background-image: var(--paper-texture);
+            background-color: var(--paper-bg);
+            padding-bottom: 60px;
+            position: relative;
+        }
+
+        /* --- HEADER & BRAND --- */
+        .brand-container {
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 20px; border-bottom: 3px double var(--accent-brown);
+            padding-bottom: 15px; flex-wrap: wrap; text-align: center;
+        }
+        .header-title {
+            font-family: 'Rye', cursive; text-align: center; color: var(--accent-brown);
+            font-size: 2.2em; margin: 0; text-shadow: 2px 2px 0px var(--paper-bg), 4px 4px 0px rgba(0,0,0,0.2);
+            text-transform: uppercase; letter-spacing: 2px; line-height: 1.2; width: 100%;
+        }
+        .online-counter {
+            text-align: center; font-family: 'Special Elite', monospace; font-size: 1.1em;
+            color: var(--accent-green); background: rgba(46, 125, 50, 0.1);
+            padding: 5px 15px; border-radius: 20px; border: 1px solid var(--accent-green);
+            display: inline-block; margin: 0 auto 15px auto; font-weight: bold;
+        }
+        .center-wrap { text-align: center; }
+
+        /* --- STATUS DOT --- */
+        .status-dot {
+            display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+            background-color: #d32f2f; border: 2px solid rgba(0,0,0,0.3);
+            box-shadow: 0 0 5px rgba(0,0,0,0.5); transition: all 0.3s ease;
+            vertical-align: middle; margin-left: 8px;
+        }
+        .status-dot.online { background-color: #00e676; box-shadow: 0 0 8px #00e676; border-color: #1b5e20; }
 
         /* --- LOGIN OVERLAY --- */
         #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2a1b0f; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .login-card { background-image: var(--paper-texture); background-color: var(--paper-bg); padding: 30px; border: 4px solid var(--accent-brown); border-radius: 8px; text-align: center; width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         .login-card h2 { font-family: 'Rye', cursive; color: var(--accent-brown); margin-bottom: 20px; border-bottom: 2px double var(--accent-brown); }
-        .login-input { width: 100%; padding: 10px; margin-bottom: 15px; border: 2px solid var(--accent-brown); background: rgba(255,255,255,0.5); font-family: 'Special Elite', monospace; font-size: 1.1em; }
+        .login-input { width: 100%; padding: 10px; margin-bottom: 15px; border: 2px solid var(--accent-brown); background: rgba(255,255,255,0.5); font-family: 'Special Elite', monospace; font-size: 1.1em; box-sizing: border-box; }
         .login-checkbox { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; font-size: 0.9em; color: var(--accent-brown); }
         .btn-login-action { width: 100%; padding: 12px; margin-bottom: 10px; background: var(--accent-green); color: white; border: 2px solid #1b5e20; font-family: 'Rye', cursive; cursor: pointer; font-size: 1.1em; border-radius: 4px; }
         .btn-register { background: var(--accent-brown); border-color: #5d4037; }
@@ -132,22 +180,16 @@
         .error-msg { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
 
         .version-tag { position: fixed; bottom: 5px; right: 10px; font-size: 0.7em; color: #5a3a22; font-family: 'Special Elite', monospace; z-index: 2000; background: rgba(244, 228, 188, 0.9); padding: 2px 6px; border-radius: 4px; border: 1px solid #8b4513; pointer-events: none; opacity: 0.8; cursor: pointer; text-decoration: underline; }
-        .btn-extreme-reset { margin-top: auto; background-color: #500000; color: #ffcccc; border: 2px solid #ff0000; padding: 12px; font-family: 'Special Elite', monospace; font-weight: bold; font-size: 0.9em; cursor: pointer; width: 100%; border-radius: 4px; transition: all 0.2s; text-align: center; }
-        .btn-extreme-reset:hover { background-color: #ff0000; color: white; box-shadow: 0 0 15px rgba(255, 0, 0, 0.5); }
-        .btn-logout { margin-top: 10px; background-color: var(--accent-brown); color: var(--accent-gold); border: 1px solid var(--accent-gold); padding: 10px; font-family: 'Rye', cursive; cursor: pointer; width: 100%; border-radius: 4px; text-align: center; }
+        
         .network-badge { position: fixed; top: 15px; right: 15px; padding: 8px 15px; font-family: 'Rye', cursive; font-size: 0.9em; border-radius: 4px; z-index: 1000; box-shadow: 2px 2px 5px rgba(0,0,0,0.7); border: 2px solid #3e2b1f; transition: all 0.3s; text-transform: uppercase; }
         .status-online { background-color: var(--accent-green); color: #fff; border-color: #1b5e20; }
         .status-offline { background-color: #d32f2f; color: #fff; border-color: #b71c1c; animation: pulse 2s infinite; }
 
-        .container { max-width: 1050px; margin: 0 auto; }
-        .brand-container { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; border-bottom: 3px double var(--accent-brown); padding-bottom: 15px; flex-wrap: wrap; text-align: center; }
-        .header-title { font-family: 'Rye', cursive; text-align: center; color: var(--accent-brown); font-size: 2.2em; margin: 0; text-shadow: 2px 2px 0px var(--paper-bg), 4px 4px 0px rgba(0,0,0,0.2); text-transform: uppercase; letter-spacing: 2px; line-height: 1.2; width: 100%; }
-        .online-counter { text-align: center; font-family: 'Special Elite', monospace; font-size: 1.1em; color: var(--accent-green); background: rgba(46, 125, 50, 0.1); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--accent-green); display: inline-block; margin: 0 auto 15px auto; font-weight: bold; }
-        .center-wrap { text-align: center; }
         .date-section { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px; background: rgba(139, 69, 19, 0.1); padding: 10px; border: 2px dashed var(--accent-brown); flex-wrap: wrap; }
         .date-section label { font-weight: bold; font-size: 1.2em; color: var(--accent-brown); }
         input[type="date"] { padding: 8px; border: 2px solid var(--accent-brown); background-color: #f9f3e3; font-family: 'Special Elite', monospace; color: var(--ink-color); outline: none; font-size: 1.1em; }
         .controls { margin-bottom: 25px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; padding-bottom: 20px; border-bottom: 2px solid var(--accent-brown); }
+        
         button { padding: 12px 20px; border: 2px solid rgba(0,0,0,0.3); border-radius: 3px; cursor: pointer; font-size: 15px; font-family: 'Rye', cursive; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; box-shadow: inset 0 0 10px rgba(255,255,255,0.2), 2px 2px 3px rgba(0,0,0,0.3); text-shadow: 1px 1px 1px rgba(0,0,0,0.5); position: relative; top: 0; }
         button:active { top: 2px; box-shadow: inset 0 0 5px rgba(0,0,0,0.4); }
         .btn-add { background-color: var(--accent-green); color: #f4e4bc; border-color: #3a4a20; }
@@ -176,6 +218,19 @@
         .score-cell { font-family: 'Rye', cursive; font-size: 1.8em; color: var(--accent-red); text-align: center; }
         .history-log { font-size: 0.9em; color: #6b523d; font-style: italic; max-width: 250px; overflow-x: auto; white-space: nowrap; padding: 5px; background-color: rgba(139, 69, 19, 0.05); border-radius: 4px; }
         
+        /* CHAT */
+        .chat-wrapper { display: flex; flex-direction: column; height: calc(100vh - 100px); }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 10px; background: rgba(255, 255, 255, 0.3); border: 2px solid var(--accent-brown); border-radius: 8px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .message-bubble { max-width: 80%; padding: 8px 12px; border-radius: 12px; position: relative; font-family: 'Special Elite', monospace; font-size: 1em; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); }
+        .message-sender { font-size: 0.75em; font-weight: bold; margin-bottom: 2px; display: block; font-family: 'Rye', cursive; }
+        .my-message { align-self: flex-end; background-color: #e8f5e9; border: 1px solid var(--accent-green); border-bottom-right-radius: 0; }
+        .my-message .message-sender { color: var(--accent-green); text-align: right; }
+        .other-message { align-self: flex-start; background-color: #fff8e1; border: 1px solid var(--accent-brown); border-bottom-left-radius: 0; }
+        .other-message .message-sender { color: var(--accent-brown); }
+        .chat-input-bar { display: flex; gap: 10px; }
+        .chat-input { flex: 1; padding: 10px; border: 2px solid var(--accent-brown); border-radius: 4px; font-family: 'Special Elite', monospace; background: #fff; }
+        .btn-send { background-color: var(--accent-brown); color: var(--accent-gold); border: none; padding: 0 20px; border-radius: 4px; cursor: pointer; font-family: 'Rye', cursive; }
+
         /* ИТОГ */
         .grand-total-panel { margin-top: 20px; background: linear-gradient(145deg, #3e2b1f, #2a1b0f); border: 3px solid var(--accent-gold); border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 25px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
         .grand-total-panel::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%); pointer-events: none; }
@@ -198,6 +253,7 @@
         .player-status-indicator { width: 10px; height: 10px; border-radius: 50%; background-color: #d32f2f; border: 1px solid rgba(0,0,0,0.3); margin-right: 8px; box-shadow: 0 0 2px rgba(0,0,0,0.5); transition: all 0.3s ease; flex-shrink: 0; }
         .player-status-indicator.is-online { background-color: #00e676; box-shadow: 0 0 6px #00e676; border-color: #1b5e20; }
 
+        /* MOBILE */
         @media screen and (max-width: 768px) {
             .sidebar { transform: translateX(-100%); width: 260px; }
             .sidebar.open { transform: translateX(0); }
@@ -205,6 +261,7 @@
             .menu-toggle { display: block; }
             .brand-container { flex-direction: column; gap: 10px; }
             .header-title { margin-right: 0; font-size: 1.8em; padding-top: 15px; line-height: 1.4; }
+            
             thead { display: none; }
             table, tbody, tr, td { display: block; }
             tbody tr { background: rgba(255, 255, 255, 0.6); border: 2px solid var(--accent-brown); border-radius: 8px; margin-bottom: 20px; padding: 10px; position: relative; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); }
@@ -223,8 +280,8 @@
             .gt-label { font-size: 1.2em; }
             .gt-value { font-size: 3em; line-height: 1; }
             
-            /* Показываем крестик закрытия */
             .close-menu-btn { display: block; }
+            tfoot { display: none; } /* Скрываем старый футер если остался */
         }
     </style>
 </head>
@@ -265,7 +322,6 @@
 
 <div class="sidebar" id="sidebar">
     <button class="close-menu-btn" onclick="toggleSidebar()">✕</button>
-    
     <div class="sidebar-logo">
         <img src="./logo.png" alt="Лого">
         <div class="user-info-container">
@@ -317,6 +373,7 @@
             <div class="gt-label">ОБЩИЙ БАНК</div>
             <div id="grandTotal" class="gt-value">0</div>
         </div>
+
     </div>
 
     <div id="view-chat" class="hidden chat-wrapper">
@@ -339,41 +396,10 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v73.0 (Menu X Button)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v74.0 (Final)</div>
 </div>
 
 <script>
-    // --- UI CONTROLLERS ---
-    function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('open');
-    }
-
-    function showView(viewName) {
-        document.getElementById('sidebar').classList.remove('open');
-        
-        // Hide all
-        document.getElementById('view-game').classList.add('hidden');
-        document.getElementById('view-journal').classList.add('hidden');
-        document.getElementById('view-chat').classList.add('hidden');
-        
-        // Reset btns
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-
-        if (viewName === 'game') {
-            document.getElementById('view-game').classList.remove('hidden');
-            document.getElementById('btn-nav-game').classList.add('active');
-        } else if (viewName === 'chat') {
-            document.getElementById('view-chat').classList.remove('hidden');
-            document.getElementById('btn-nav-chat').classList.add('active');
-            const container = document.getElementById('chatMessages');
-            setTimeout(() => container.scrollTop = container.scrollHeight, 100);
-        } else if (viewName === 'journal') {
-            document.getElementById('view-journal').classList.remove('hidden');
-            document.getElementById('btn-nav-journal').classList.add('active');
-        }
-    }
-
-    // --- PWA ---
     window.forceUpdate = async function() {
         if (!confirm("Обновить приложение?")) return;
         if ('serviceWorker' in navigator) {
@@ -388,7 +414,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=73').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=74').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -441,7 +467,6 @@
             });
         }
     }
-    
     document.addEventListener("DOMContentLoaded", () => {
         addEnterTrigger('chatInput', sendMessage);
         addEnterTrigger('loginNick', handleLogin);
@@ -486,7 +511,6 @@
         container.scrollTop = container.scrollHeight;
     });
 
-    // --- TABLE REFRESH ---
     window.refreshTable = async function() {
         const pass = prompt("Для обновления введите код доступа:");
         if (pass !== "108020") { if(pass !== null) alert("Ошибка доступа"); return; }
@@ -733,7 +757,7 @@
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
-        localStorage.setItem('poker_data_v73', JSON.stringify(data));
+        localStorage.setItem('poker_data_v74', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -875,16 +899,37 @@
     window.deleteJournalEntry = function(id) { const pass = prompt("Удалить запись (Код)?"); if (pass === "108020") { remove(ref(db, 'journal/' + id)); } else if (pass !== null) { alert("Ошибка"); } }
     onValue(journalRef, (snapshot) => { const listDiv = document.getElementById('journalList'); listDiv.innerHTML = ''; const data = snapshot.val(); if (!data) { listDiv.innerHTML = '<div style="text-align:center;">Пусто</div>'; return; } const entries = Object.entries(data).sort((a, b) => b[1].timestamp - a[1].timestamp); entries.forEach(([id, entry]) => { const card = document.createElement('div'); card.className = 'journal-card'; const header = document.createElement('div'); header.className = 'journal-header'; header.innerHTML = `<div style="display:flex; align-items:center;"><span>📅 ${entry.date}</span><button class="btn-journal-delete" onclick="event.stopPropagation(); deleteJournalEntry('${id}')">🗑️</button></div><span class="journal-total">Банк: ${entry.grandTotal}</span>`; const details = document.createElement('div'); details.className = 'journal-details'; let detailsHtml = `<div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px; display:flex; justify-content:space-between;"><span>Игрок</span><span>Итог</span></div>`; if (entry.players) { entry.players.forEach(p => { detailsHtml += `<div class="detail-row"><span style="font-weight:bold;">${p.name}</span><span style="color:${p.total >= 0 ? 'green' : 'red'}">${p.total}</span></div><div style="font-size:0.8em; color:#666; margin-bottom:5px;">${p.history}</div>`; }); } details.innerHTML = detailsHtml; card.appendChild(header); card.appendChild(details); card.onclick = () => card.classList.toggle('open'); listDiv.appendChild(card); }); });
     
-    window.downloadCSV = function() { const rows = document.querySelectorAll('#scoreTable tbody tr'); if (rows.length === 0) { alert("Пусто!"); return; } const selectedDate = document.getElementById('gameDate').value; let formattedDate = selectedDate; if(selectedDate) { const parts = selectedDate.split('-'); formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`; } let csvContent = `Дата выписки:;${formattedDate}\n\n`; csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n"; rows.forEach(row => { let name = row.querySelector('.player-name').value.trim(); if (!name) name = "Без имени"; let total = row.querySelector('.score-cell').innerText; let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); csvContent += `"${name}";${total};${opsString}\n`; }); let grandTotal = document.getElementById('grandTotal').innerText; csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`; const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `Выписка за ${formattedDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
-    
-    // --- ADMIN: Delete User ---
-    window.deleteUserAccount = function(nickname) {
-        const pass = prompt(`Удалить аккаунт "${nickname}"? (Код 108020):`);
-        if (pass !== "108020") { alert("Ошибка доступа"); return; }
-        remove(ref(db, 'users/' + nickname))
-        .then(() => { alert(`Аккаунт ${nickname} удален.`); })
-        .catch((error) => { alert("Ошибка: " + error.message); });
+    // --- UI CONTROLLERS ---
+    window.toggleSidebar = function() {
+        document.getElementById('sidebar').classList.toggle('open');
     }
+
+    window.showView = function(viewName) {
+        document.getElementById('sidebar').classList.remove('open');
+        
+        // Hide all
+        document.getElementById('view-game').classList.add('hidden');
+        document.getElementById('view-journal').classList.add('hidden');
+        document.getElementById('view-chat').classList.add('hidden');
+        
+        // Reset btns
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+
+        if (viewName === 'game') {
+            document.getElementById('view-game').classList.remove('hidden');
+            document.getElementById('btn-nav-game').classList.add('active');
+        } else if (viewName === 'chat') {
+            document.getElementById('view-chat').classList.remove('hidden');
+            document.getElementById('btn-nav-chat').classList.add('active');
+            const container = document.getElementById('chatMessages');
+            setTimeout(() => container.scrollTop = container.scrollHeight, 100);
+        } else if (viewName === 'journal') {
+            document.getElementById('view-journal').classList.remove('hidden');
+            document.getElementById('btn-nav-journal').classList.add('active');
+        }
+    }
+
+    window.downloadCSV = function() { const rows = document.querySelectorAll('#scoreTable tbody tr'); if (rows.length === 0) { alert("Пусто!"); return; } const selectedDate = document.getElementById('gameDate').value; let formattedDate = selectedDate; if(selectedDate) { const parts = selectedDate.split('-'); formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`; } let csvContent = `Дата выписки:;${formattedDate}\n\n`; csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n"; rows.forEach(row => { let name = row.querySelector('.player-name').value.trim(); if (!name) name = "Без имени"; let total = row.querySelector('.score-cell').innerText; let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); csvContent += `"${name}";${total};${opsString}\n`; }); let grandTotal = document.getElementById('grandTotal').innerText; csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`; const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `Выписка за ${formattedDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
 </script>
 
 </body>
