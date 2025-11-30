@@ -633,13 +633,14 @@
         container.scrollTop = container.scrollHeight;
     });
 
-    window.refreshTable = async function() {
-        const pass = prompt("Для обновления введите код доступа:");
-        if (pass !== "108020") { if(pass !== null) alert("Ошибка доступа"); return; }
-        try { await syncUsersToTable(); alert("Таблица синхронизирована!"); } catch(e) { alert("Ошибка: " + e.message); }
+    // --- УМНОЕ ВОССТАНОВЛЕНИЕ ИГРОКОВ ---
+    window.restorePlayers = async function() {
+        if(!confirm("Вернуть всех зарегистрированных игроков за стол?")) return;
+        await syncUsersToTable();
+        alert("Список синхронизирован!");
     }
 
-    async function syncUsersToTable(currentDisplayName) {
+    async function syncUsersToTable() {
         try {
             const usersSnap = await get(usersRef);
             const playersSnap = await get(playersRef);
@@ -656,12 +657,13 @@
             let hasUpdates = false;
             
             for(let login in users) {
+                // Если зарегистрированного игрока НЕТ за столом
                 if(!existingLogins.has(login)) {
                     const userData = users[login];
                     const dispName = userData.displayName || login;
                     const newKey = push(ref(db, 'players')).key;
                     
-                    // БЕЗОПАСНОЕ ВОССТАНОВЛЕНИЕ
+                    // Пытаемся восстановить историю
                     let historyToRestore = { 'start_bonus': 1000 }; 
                     if (userData.saved_history) {
                         historyToRestore = userData.saved_history; 
@@ -715,19 +717,28 @@
         }
     }
 
+    // --- БЕЗОПАСНОЕ УДАЛЕНИЕ ---
     window.safeDeletePlayer = async function(id, login) {
-        if(!confirm("Убрать игрока со стола? (Баланс сохранится)")) return;
-        const snapshot = await get(ref(db, 'players/' + id));
-        const data = snapshot.val();
-        if (data && login) {
-            if (data.history) {
+        if(!confirm("Убрать игрока со стола? (Его баланс сохранится)")) return;
+        
+        try {
+            // 1. Получаем данные
+            const snapshot = await get(ref(db, 'players/' + id));
+            const data = snapshot.val();
+            
+            // 2. Если есть логин и история - сохраняем
+            if (data && login && data.history) {
                 await update(ref(db, 'users/' + login), { saved_history: data.history });
             }
+            
+            // 3. Удаляем со стола
+            remove(ref(db, 'players/' + id));
+        } catch (e) {
+            alert("Ошибка сохранения: " + e.message);
         }
-        remove(ref(db, 'players/' + id));
     }
 
-    // --- AUTH LOGIC ---
+    // --- ЛОГИКА АВТОРИЗАЦИИ ---
     window.handleRegister = function() {
         const nick = document.getElementById('regNick').value.trim();
         const pass = document.getElementById('regPass').value.trim();
@@ -818,7 +829,6 @@
         updateMenuUI(finalName, nick);
         
         let role = loadedRole || 'player';
-        
         if (nick === 'Zagonskiy') {
             role = 'admin';
         } 
@@ -849,22 +859,45 @@
         });
     }
 
+    // --- ИНТЕРФЕЙС И КНОПКИ ---
     window.applyRoleUI = function() {
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         const role = sessionUser ? sessionUser.role : 'player';
 
         const controlsDiv = document.querySelector('.controls');
+        // Очищаем старые кнопки "восстановить", если они есть, чтобы не дублировать
+        const oldRestore = document.getElementById('btnRestore');
+        if(oldRestore) oldRestore.remove();
+
         const extremeResetBtn = document.querySelector('.btn-extreme-reset');
         
         if (role === 'player') {
             if(controlsDiv) controlsDiv.classList.add('role-hidden');
             if(extremeResetBtn) extremeResetBtn.classList.add('role-hidden');
-        } else if (role === 'trusted') {
-            if(controlsDiv) controlsDiv.classList.remove('role-hidden');
-            if(extremeResetBtn) extremeResetBtn.classList.add('role-hidden');
         } else {
-            if(controlsDiv) controlsDiv.classList.remove('role-hidden');
-            if(extremeResetBtn) extremeResetBtn.classList.remove('role-hidden');
+            // Если Админ или Доверенный - показываем управление
+            if(controlsDiv) {
+                controlsDiv.classList.remove('role-hidden');
+                
+                // Добавляем кнопку Восстановления, если её нет
+                if (!document.getElementById('btnRestore')) {
+                    const btnRestore = document.createElement('button');
+                    btnRestore.id = 'btnRestore';
+                    btnRestore.className = 'btn-refresh'; // Используем бирюзовый стиль
+                    btnRestore.innerText = '♻️ Восстановить';
+                    btnRestore.onclick = window.restorePlayers;
+                    // Вставляем после кнопки "+ Игрок"
+                    const btnAdd = document.querySelector('.btn-add');
+                    if(btnAdd && btnAdd.parentNode) btnAdd.parentNode.insertBefore(btnRestore, btnAdd.nextSibling);
+                }
+            }
+            
+            // Ядерный сброс только для Админа
+            if (role === 'admin') {
+                if(extremeResetBtn) extremeResetBtn.classList.remove('role-hidden');
+            } else {
+                if(extremeResetBtn) extremeResetBtn.classList.add('role-hidden');
+            }
         }
 
         const savedData = JSON.parse(localStorage.getItem('poker_data_v74'));
@@ -1046,7 +1079,7 @@
              if (player.login) {
                  wrapper.appendChild(createBtn('✕', 'btn-delete', () => safeDeletePlayer(id, player.login)));
              } else {
-                 wrapper.appendChild(createBtn('✕', 'btn-delete', () => { if(confirm("Удалить гостя?")) remove(ref(db, 'players/' + id)); }));
+                 wrapper.appendChild(createBtn('✕', 'btn-delete', () => { if(confirm("Это Гость. Он удалится НАВСЕГДА.")) remove(ref(db, 'players/' + id)); }));
              }
         }
         cellDelete.appendChild(wrapper);
@@ -1217,4 +1250,5 @@
     
 </body>
 </html>
+
 
