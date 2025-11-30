@@ -1,5 +1,5 @@
-// Версия v81 - Restore Buttons Style
-const CACHE_NAME = 'orelpoker-v81-buttons-style-fix';
+// Версия v82 - Restore Header & Counter Styles
+const CACHE_NAME = 'orelpoker-v82-header-restore';
 const ASSETS = [
     './',
     './index.html',
