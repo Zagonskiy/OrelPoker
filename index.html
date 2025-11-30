@@ -340,6 +340,60 @@
             color: var(--ink-color) !important;
             text-align: center;
         }
+        /* --- МОДАЛЬНОЕ ОКНО РОЛЕЙ --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 5000; /* Самый верхний слой */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-card {
+            background-image: var(--paper-texture);
+            background-color: var(--paper-bg);
+            border: 4px double var(--accent-brown);
+            padding: 25px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 320px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        .role-buttons-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .role-select-btn {
+            padding: 15px;
+            font-family: 'Rye', cursive;
+            font-size: 1.1em;
+            border: 2px solid rgba(0,0,0,0.2);
+            cursor: pointer;
+            color: white;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .btn-admin { background-color: #b71c1c; border-color: #7f0000; }
+        .btn-trusted { background-color: #0277bd; border-color: #01579b; }
+        .btn-player { background-color: #2e7d32; border-color: #1b5e20; }
+
+        .btn-cancel-role {
+            background: transparent;
+            border: none;
+            text-decoration: underline;
+            color: var(--accent-brown);
+            font-family: 'Special Elite', monospace;
+            cursor: pointer;
+            font-size: 1.1em;
+        }
     </style>
 </head>
 <body>
@@ -1083,18 +1137,38 @@
         });
     });
 
+    // --- УПРАВЛЕНИЕ РОЛЯМИ (НОВОЕ) ---
+    
+    let currentRankLogin = null; // Переменная для хранения, кому меняем роль
+
     window.changeRankDialog = function(login, currentName) {
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         if (!sessionUser || sessionUser.role !== 'admin') return;
+        
         if (login === 'Zagonskiy') { alert("Нельзя менять ранг Создателя!"); return; }
-        const newRole = prompt(`Назначить роль для ${currentName} (${login}):\nВведите: admin, trusted или player`, "player");
-        if (newRole === 'admin' || newRole === 'trusted' || newRole === 'player') {
-            update(ref(db, 'users/' + login), { role: newRole })
-                .then(() => alert(`Роль ${newRole} назначена!`))
-                .catch(e => alert("Ошибка: " + e));
-        } else if (newRole !== null) {
-            alert("Некорректная роль! Только: admin, trusted, player");
-        }
+
+        // Запоминаем, кого редактируем
+        currentRankLogin = login;
+
+        // Показываем окно
+        document.getElementById('roleTargetName').innerText = currentName;
+        document.getElementById('roleModal').classList.remove('role-hidden');
+    }
+
+    window.setRole = function(newRole) {
+        if (!currentRankLogin) return;
+
+        update(ref(db, 'users/' + currentRankLogin), { role: newRole })
+            .then(() => {
+                alert(`Роль успешно изменена!`);
+                closeRoleModal();
+            })
+            .catch(e => alert("Ошибка: " + e));
+    }
+
+    window.closeRoleModal = function() {
+        document.getElementById('roleModal').classList.add('role-hidden');
+        currentRankLogin = null;
     }
 
     window.toggleSidebar = function() {
@@ -1127,6 +1201,7 @@
     
 </body>
 </html>
+
 
 
 
