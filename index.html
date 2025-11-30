@@ -645,23 +645,42 @@
             const playersSnap = await get(playersRef);
             const users = usersSnap.val() || {};
             const players = playersSnap.val() || {};
+            
             const existingLogins = new Set();
-            for(let id in players) { const pLogin = players[id].login || players[id].name; existingLogins.add(pLogin); }
+            for(let id in players) { 
+                const pLogin = players[id].login || players[id].name; 
+                existingLogins.add(pLogin); 
+            }
+            
             const updates = {};
             let hasUpdates = false;
+            
             for(let login in users) {
+                // Если пользователя НЕТ за столом, добавляем его
                 if(!existingLogins.has(login)) {
                     const userData = users[login];
                     const dispName = userData.displayName || login;
                     const newKey = push(ref(db, 'players')).key;
-                    updates['players/' + newKey] = { name: dispName, login: login, history: { 'start_bonus': 1000 } };
+                    
+                    // ГЛАВНОЕ ИЗМЕНЕНИЕ:
+                    // Проверяем, есть ли сохраненная история (saved_history)
+                    let historyToRestore = { 'start_bonus': 1000 }; // По умолчанию
+                    
+                    if (userData.saved_history) {
+                        historyToRestore = userData.saved_history; // Восстанавливаем старую
+                    }
+
+                    updates['players/' + newKey] = { 
+                        name: dispName, 
+                        login: login, 
+                        history: historyToRestore 
+                    };
                     hasUpdates = true;
                 }
             }
             if(hasUpdates) { await update(ref(db), updates); }
         } catch(e) { console.error("Sync error", e); }
     }
-
     window.editNickname = async function() {
         let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         if (!sessionUser) sessionUser = JSON.parse(localStorage.getItem('op_user'));
@@ -696,6 +715,25 @@
             document.getElementById('register-view-card').classList.add('hidden');
             document.getElementById('login-view-card').classList.remove('hidden');
         }
+    }
+
+    // Новая функция: Сохраняет баланс перед удалением
+    window.safeDeletePlayer = async function(id, login) {
+        if(!confirm("Убрать игрока со стола? (Баланс сохранится)")) return;
+        
+        // 1. Получаем текущие данные игрока
+        const snapshot = await get(ref(db, 'players/' + id));
+        const data = snapshot.val();
+        
+        if (data && login) {
+            // 2. Если есть история, сохраняем её в профиль пользователя
+            if (data.history) {
+                await update(ref(db, 'users/' + login), { saved_history: data.history });
+            }
+        }
+        
+        // 3. Удаляем со стола
+        remove(ref(db, 'players/' + id));
     }
 
     // =========================================================
@@ -1023,11 +1061,18 @@
         wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
         
         if (myRole === 'admin') {
+             // Кнопка сброса (обнуляет баланс)
              wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
-             wrapper.appendChild(createBtn('✕', 'btn-delete', () => { if(confirm("Удалить игрока?")) remove(ref(db, 'players/' + id)); }));
+             
+             // Кнопка удаления (теперь БЕЗОПАСНАЯ)
+             // Если у игрока есть логин, используем безопасное удаление, иначе (для гостей) обычное
+             if (player.login) {
+                 wrapper.appendChild(createBtn('✕', 'btn-delete', () => safeDeletePlayer(id, player.login)));
+             } else {
+                 wrapper.appendChild(createBtn('✕', 'btn-delete', () => { if(confirm("Удалить гостя?")) remove(ref(db, 'players/' + id)); }));
+             }
         }
         cellDelete.appendChild(wrapper);
-    }
 
     function createBtn(text, cls, onClick) {
         const btn = document.createElement('button');
@@ -1201,6 +1246,7 @@
     
 </body>
 </html>
+
 
 
 
