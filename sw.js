@@ -1,5 +1,5 @@
-// Версия v80 - Full CSS and Indicator Restoration
-const CACHE_NAME = 'orelpoker-v80-css-restore';
+// Версия v81 - Final CSS Restoration
+const CACHE_NAME = 'orelpoker-v81-final-css-restore';
 const ASSETS = [
     './',
     './index.html',
