@@ -12,6 +12,9 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap" rel="stylesheet">
     <style>
+        /* Глобальный сброс */
+        * { box-sizing: border-box; }
+
         :root {
             --paper-bg: #f4e4bc;
             --paper-texture: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.4 0"/></filter><rect width="100%" height="100%" filter="url(%23noise)" opacity="0.1"/></svg>');
@@ -32,20 +35,50 @@
             font-family: 'Special Elite', 'Courier New', monospace;
             background-color: #2a1b0f;
             background-image: linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.1));
-            padding: 20px 10px;
+            padding: 0;
             color: var(--ink-color);
             margin: 0;
             overscroll-behavior: none;
+            min-height: 100vh;
+        }
+
+        /* --- MAIN CONTENT (ИСПРАВЛЕНО) --- */
+        .main-content {
+            /* Отступ слева ровно на ширину меню */
+            margin-left: var(--sidebar-width); 
+            /* Ширина = 100% экрана минус ширина меню */
+            width: calc(100% - var(--sidebar-width));
+            min-height: 100vh;
+            padding: 20px;
+            background-image: var(--paper-texture);
+            background-color: var(--paper-bg);
             padding-bottom: 60px;
+            position: relative; /* Чтобы контент был в потоке */
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: #1a1008;
+            border-right: 4px solid var(--accent-brown);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            z-index: 2000;
+            transition: transform 0.3s ease;
         }
 
         /* --- CHAT STYLES --- */
         .chat-wrapper {
             display: flex;
             flex-direction: column;
-            height: calc(100vh - 100px); /* Высота экрана минус отступы */
+            height: calc(100vh - 100px);
         }
-
         .chat-messages {
             flex: 1;
             overflow-y: auto;
@@ -58,7 +91,6 @@
             flex-direction: column;
             gap: 10px;
         }
-
         .message-bubble {
             max-width: 80%;
             padding: 8px 12px;
@@ -68,7 +100,6 @@
             font-size: 1em;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
         }
-
         .message-sender {
             font-size: 0.75em;
             font-weight: bold;
@@ -76,8 +107,6 @@
             display: block;
             font-family: 'Rye', cursive;
         }
-
-        /* Мои сообщения (справа, зеленые) */
         .my-message {
             align-self: flex-end;
             background-color: #e8f5e9;
@@ -85,8 +114,6 @@
             border-bottom-right-radius: 0;
         }
         .my-message .message-sender { color: var(--accent-green); text-align: right; }
-
-        /* Чужие сообщения (слева, бежевые) */
         .other-message {
             align-self: flex-start;
             background-color: #fff8e1;
@@ -94,36 +121,21 @@
             border-bottom-left-radius: 0;
         }
         .other-message .message-sender { color: var(--accent-brown); }
-
-        .chat-input-bar {
-            display: flex;
-            gap: 10px;
-        }
-        
+        .chat-input-bar { display: flex; gap: 10px; }
         .chat-input {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid var(--accent-brown);
-            border-radius: 4px;
-            font-family: 'Special Elite', monospace;
-            background: #fff;
+            flex: 1; padding: 10px; border: 2px solid var(--accent-brown);
+            border-radius: 4px; font-family: 'Special Elite', monospace; background: #fff;
         }
-        
         .btn-send {
-            background-color: var(--accent-brown);
-            color: var(--accent-gold);
-            border: none;
-            padding: 0 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: 'Rye', cursive;
+            background-color: var(--accent-brown); color: var(--accent-gold);
+            border: none; padding: 0 20px; border-radius: 4px; cursor: pointer; font-family: 'Rye', cursive;
         }
 
-        /* --- COMMON UI --- */
+        /* --- LOGIN OVERLAY --- */
         #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2a1b0f; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .login-card { background-image: var(--paper-texture); background-color: var(--paper-bg); padding: 30px; border: 4px solid var(--accent-brown); border-radius: 8px; text-align: center; width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         .login-card h2 { font-family: 'Rye', cursive; color: var(--accent-brown); margin-bottom: 20px; border-bottom: 2px double var(--accent-brown); }
-        .login-input { width: 100%; padding: 10px; margin-bottom: 15px; border: 2px solid var(--accent-brown); background: rgba(255,255,255,0.5); font-family: 'Special Elite', monospace; font-size: 1.1em; box-sizing: border-box; }
+        .login-input { width: 100%; padding: 10px; margin-bottom: 15px; border: 2px solid var(--accent-brown); background: rgba(255,255,255,0.5); font-family: 'Special Elite', monospace; font-size: 1.1em; }
         .login-checkbox { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; font-size: 0.9em; color: var(--accent-brown); }
         .btn-login-action { width: 100%; padding: 12px; margin-bottom: 10px; background: var(--accent-green); color: white; border: 2px solid #1b5e20; font-family: 'Rye', cursive; cursor: pointer; font-size: 1.1em; border-radius: 4px; }
         .btn-register { background: var(--accent-brown); border-color: #5d4037; }
@@ -131,12 +143,13 @@
         .btn-back { background: var(--accent-red); border-color: #b71c1c; }
         .error-msg { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
         .version-tag { position: fixed; bottom: 5px; right: 10px; font-size: 0.7em; color: #5a3a22; font-family: 'Special Elite', monospace; z-index: 2000; background: rgba(244, 228, 188, 0.9); padding: 2px 6px; border-radius: 4px; border: 1px solid #8b4513; pointer-events: none; opacity: 0.8; }
-        .btn-extreme-reset { margin-top: auto; background-color: #500000; color: #ffcccc; border: 2px solid #ff0000; padding: 12px; font-family: 'Special Elite', monospace; font-weight: bold; font-size: 0.9em; cursor: pointer; width: 100%; box-sizing: border-box; border-radius: 4px; transition: all 0.2s; text-align: center; }
+        .btn-extreme-reset { margin-top: auto; background-color: #500000; color: #ffcccc; border: 2px solid #ff0000; padding: 12px; font-family: 'Special Elite', monospace; font-weight: bold; font-size: 0.9em; cursor: pointer; width: 100%; border-radius: 4px; transition: all 0.2s; text-align: center; }
         .btn-extreme-reset:hover { background-color: #ff0000; color: white; box-shadow: 0 0 15px rgba(255, 0, 0, 0.5); }
+        .btn-logout { margin-top: 10px; background-color: var(--accent-brown); color: var(--accent-gold); border: 1px solid var(--accent-gold); padding: 10px; font-family: 'Rye', cursive; cursor: pointer; width: 100%; border-radius: 4px; text-align: center; }
         .network-badge { position: fixed; top: 15px; right: 15px; padding: 8px 15px; font-family: 'Rye', cursive; font-size: 0.9em; border-radius: 4px; z-index: 1000; box-shadow: 2px 2px 5px rgba(0,0,0,0.7); border: 2px solid #3e2b1f; transition: all 0.3s; text-transform: uppercase; }
         .status-online { background-color: var(--accent-green); color: #fff; border-color: #1b5e20; }
         .status-offline { background-color: #d32f2f; color: #fff; border-color: #b71c1c; animation: pulse 2s infinite; }
-        .container { max-width: 1050px; margin: 0 auto; background-color: var(--paper-bg); background-image: var(--paper-texture), linear-gradient(to right, rgba(139, 69, 19, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(139, 69, 19, 0.1) 1px, transparent 1px); background-size: 100px 100px, 20px 20px, 20px 20px; padding: 20px; border-radius: 2px; box-shadow: 0 0 0 5px #5a3a22 inset, 0 15px 20px rgba(0,0,0,0.5), 0 0 50px rgba(0,0,0,0.3) inset; border: 8px solid #462c1a; border-image: repeating-linear-gradient(45deg, #462c1a, #462c1a 10px, #332013 10px, #332013 20px) 20; margin-top: 60px; }
+        .container { max-width: 1050px; margin: 0 auto; }
         .brand-container { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; border-bottom: 3px double var(--accent-brown); padding-bottom: 15px; flex-wrap: wrap; text-align: center; }
         .header-title { font-family: 'Rye', cursive; text-align: center; color: var(--accent-brown); font-size: 2.2em; margin: 0; text-shadow: 2px 2px 0px var(--paper-bg), 4px 4px 0px rgba(0,0,0,0.2); text-transform: uppercase; letter-spacing: 2px; line-height: 1.2; width: 100%; }
         .header-logo-round { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--accent-brown); object-fit: cover; filter: sepia(0.3) contrast(0.9); box-shadow: 2px 2px 5px rgba(0,0,0,0.3); }
@@ -163,7 +176,6 @@
         .btn-reset-player { background-color: var(--accent-orange); color: white; font-weight: bold; border-radius: 50%; width: 30px; height: 30px; padding: 0; border: 2px solid #bf360c; font-family: sans-serif; cursor: pointer; }
         .btn-reset-player:hover { background-color: #ff6d00; }
 
-        .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-width); background: #1a1008; border-right: 4px solid var(--accent-brown); display: flex; flex-direction: column; padding: 20px; box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 2000; transition: transform 0.3s ease; box-sizing: border-box; }
         .sidebar-logo { text-align: center; margin-bottom: 40px; }
         .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
         .sidebar-title { font-family: 'Rye', cursive; color: var(--accent-gold); font-size: 1.2em; margin-top: 10px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; }
@@ -190,10 +202,12 @@
         .score-cell { font-family: 'Rye', cursive; font-size: 1.8em; color: var(--accent-red); text-align: center; }
         .history-log { font-size: 0.9em; color: #6b523d; font-style: italic; max-width: 250px; overflow-x: auto; white-space: nowrap; padding: 5px; background-color: rgba(139, 69, 19, 0.05); border-radius: 4px; }
         
+        /* ПК ИТОГ */
         tfoot tr { background-color: rgba(139, 69, 19, 0.2); border: 2px solid #8b4513; }
         .total-label { text-align: right; font-family: 'Rye', cursive; font-size: 1.5em; color: var(--accent-brown); padding-right: 20px; }
         .grand-total-cell { font-family: 'Rye', cursive; font-size: 2em; color: var(--accent-brown); text-align: center; font-weight: bold; }
 
+        /* Журнал */
         .journal-list { display: flex; flex-direction: column; gap: 15px; }
         .journal-card { background: rgba(255, 255, 255, 0.6); border: 2px solid var(--accent-brown); padding: 15px; cursor: pointer; transition: 0.2s; }
         .journal-card:hover { background: rgba(255, 255, 255, 0.9); }
@@ -208,7 +222,11 @@
         @media screen and (max-width: 768px) {
             .sidebar { transform: translateX(-100%); width: 260px; }
             .sidebar.open { transform: translateX(0); }
-            .main-content { margin-left: 0; width: 100%; padding-top: 60px; }
+            .main-content { 
+                margin-left: 0; 
+                width: 100%; 
+                padding-top: 60px;
+            }
             .menu-toggle { display: block; }
             .brand-container { flex-direction: column; gap: 10px; }
             .header-title { margin-right: 0; font-size: 1.8em; padding-top: 15px; line-height: 1.4; }
@@ -226,12 +244,32 @@
             td:nth-of-type(5) { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; padding: 0; }
             .btn-reset-player, .btn-delete { width: 28px; height: 28px; font-size: 0.9em; }
             
+            /* --- МОБИЛЬНЫЙ ИТОГ --- */
             tfoot { display: block; margin-top: 20px; }
-            tfoot tr { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #3e2b1f; border: 2px solid #cba135; border-radius: 12px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); width: 100%; box-sizing: border-box; }
+            tfoot tr { 
+                display: flex; 
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: #3e2b1f;
+                border: 2px solid #cba135;
+                border-radius: 12px;
+                padding: 15px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+                width: 100%;
+                box-sizing: border-box;
+            }
             tfoot td { display: block; padding: 0; border: none; width: 100%; }
             tfoot td:nth-child(4), tfoot td:nth-child(5) { display: none; }
             .total-label { display: none; }
-            .grand-total-cell { text-align: center; font-size: 2.8em; color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(203, 161, 53, 0.6); margin-top: 0; }
+            .grand-total-cell { 
+                text-align: center; 
+                font-size: 2.8em; 
+                color: #fff; 
+                font-weight: bold; 
+                text-shadow: 0 0 10px rgba(203, 161, 53, 0.6); 
+                margin-top: 0; 
+            }
         }
     </style>
 </head>
@@ -328,8 +366,7 @@
         <div class="brand-container">
             <h1 class="header-title">Комната общения</h1>
         </div>
-        <div id="chatMessages" class="chat-messages">
-            </div>
+        <div id="chatMessages" class="chat-messages"></div>
         <div class="chat-input-bar">
             <input type="text" id="chatInput" class="chat-input" placeholder="Написать сообщение...">
             <button class="btn-send" onclick="sendMessage()">➤</button>
@@ -345,7 +382,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v67.0 (Chat)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v68.0 (Desktop Fix)</div>
 </div>
 
 <script>
@@ -363,7 +400,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=67').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=68').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -398,24 +435,19 @@
     const playersRef = ref(db, 'players');
     const journalRef = ref(db, 'journal');
     const usersRef = ref(db, 'users');
-    const chatRef = ref(db, 'chat'); // Ссылка на чат
+    const chatRef = ref(db, 'chat');
     const connectedRef = ref(db, ".info/connected");
     const onlineUsersRef = ref(db, "online_users");
     let currentConnectionRef = null;
     let onlineNicknames = new Set();
 
-    // --- CHAT LOGIC ---
     window.sendMessage = function() {
         const input = document.getElementById('chatInput');
         const text = input.value.trim();
         if (!text) return;
-
-        // Get current user display name
         const nameEl = document.getElementById('menuDisplayName');
         const senderName = nameEl ? nameEl.innerText : "Гость";
-        // Get current login to identify 'my' messages
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || {};
-
         push(chatRef, {
             sender: senderName,
             senderLogin: sessionUser.nick || "anon",
@@ -426,34 +458,23 @@
         input.focus();
     }
 
-    // Listen for chat messages
     onValue(chatRef, (snapshot) => {
         const container = document.getElementById('chatMessages');
         container.innerHTML = '';
         const data = snapshot.val();
         if (!data) return;
-
         const messages = Object.values(data).sort((a, b) => a.timestamp - b.timestamp);
-        
-        // Get current user login
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || {};
         const myLogin = sessionUser.nick;
-
         messages.forEach(msg => {
             const bubble = document.createElement('div');
             const isMine = (msg.senderLogin === myLogin);
-            
             bubble.className = `message-bubble ${isMine ? 'my-message' : 'other-message'}`;
             bubble.innerHTML = `<span class="message-sender">${msg.sender}</span>${msg.text}`;
-            
             container.appendChild(bubble);
         });
-        
-        // Scroll to bottom
         container.scrollTop = container.scrollHeight;
     });
-
-    // --- EXISTING LOGIC ---
 
     window.refreshTable = async function() {
         const pass = prompt("Для обновления введите код доступа:");
@@ -701,7 +722,7 @@
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
-        localStorage.setItem('poker_data_v67', JSON.stringify(data));
+        localStorage.setItem('poker_data_v68', JSON.stringify(data));
         renderTable(data);
     });
 
