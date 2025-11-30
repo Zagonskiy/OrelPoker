@@ -1,5 +1,5 @@
-// Версия v78 - Fix Menu Logic & Layout
-const CACHE_NAME = 'orelpoker-v78-menu-layout-fix';
+// Версия v79 - Fix Giant Login Logo
+const CACHE_NAME = 'orelpoker-v79-logo-fix';
 const ASSETS = [
     './',
     './index.html',
