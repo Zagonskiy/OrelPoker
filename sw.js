@@ -1,5 +1,5 @@
-// Версия v69 - Remove Body Padding (Fix Black Strip)
-const CACHE_NAME = 'orelpoker-v69-layout-fix';
+// Версия v70 - Enter Key Support
+const CACHE_NAME = 'orelpoker-v70-enter-keys';
 const ASSETS = [
     './',
     './index.html',
