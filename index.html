@@ -678,28 +678,36 @@
         container.scrollTop = container.scrollHeight;
     });
 
-    // --- BLACKLIST LOGIC ---
+    // --- BLACKLIST SYSTEM (ИСПРАВЛЕНО) ---
     window.banPlayer = async function(id, login) {
-        if (!login) {
+        // Если это Гость (нет логина), просто удаляем
+        if (!login || login === "undefined") {
             if(confirm("Удалить гостя безвозвратно?")) remove(ref(db, 'players/' + id));
             return;
         }
         
-        if (!confirm(`Переместить игрока ${login} в ЧЁРНЫЙ СПИСОК?`)) return;
+        if (!confirm(`ВНИМАНИЕ: Игрок ${login} будет перемещен в ЧЁРНЫЙ СПИСОК и удален со стола.\nПродолжить?`)) return;
 
         try {
-            // 1. Ставим метку бана в профиль
+            // 1. Сначала пишем бан в базу
             await update(ref(db, 'users/' + login), { 
                 isBanned: true,
-                saved_history: null // Стираем историю (чтобы вернулся без баланса)
+                saved_history: null // Очищаем историю очков
             });
             
-            // 2. Удаляем со стола
+            // 2. Только если запись прошла успешно, удаляем со стола
             await remove(ref(db, 'players/' + id));
             
-            alert("Игрок отправлен в чёрный список.");
+            alert(`Игрок ${login} забанен!`);
+            
+            // Если мы сами себя забанили (тест), выкидываем
+            const mySession = JSON.parse(sessionStorage.getItem('op_session_user'));
+            if (mySession && mySession.nick === login) {
+                location.reload();
+            }
+
         } catch (e) {
-            alert("Ошибка: " + e.message);
+            alert("ОШИБКА БАНА: " + e.message);
         }
     }
 
@@ -710,11 +718,15 @@
             return;
         }
 
-        if(!confirm(`Разбанить игрока ${login}?`)) return;
+        if(!confirm(`Разбанить игрока ${login}? Он вернется за стол без фишек.`)) return;
 
         try {
+            // Снимаем метку
             await update(ref(db, 'users/' + login), { isBanned: null });
-            await syncUsersToTable(); // Сразу пытаемся вернуть его за стол
+            // Возвращаем за стол
+            await syncUsersToTable(); 
+            // Обновляем список ЧС на экране
+            renderBlacklist(); 
             alert("Игрок разбанен!");
         } catch(e) {
             alert("Ошибка: " + e);
@@ -723,40 +735,44 @@
 
     window.renderBlacklist = async function() {
         const listDiv = document.getElementById('blacklistContainer');
-        listDiv.innerHTML = 'Загрузка...';
+        listDiv.innerHTML = '<div style="text-align:center;">Загрузка...</div>';
         
-        const usersSnap = await get(usersRef);
-        const users = usersSnap.val() || {};
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || { role: 'player' };
-        
-        listDiv.innerHTML = '';
-        let count = 0;
+        try {
+            const usersSnap = await get(usersRef);
+            const users = usersSnap.val() || {};
+            const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || { role: 'player' };
+            
+            listDiv.innerHTML = '';
+            let count = 0;
 
-        for (let login in users) {
-            if (users[login].isBanned === true) {
-                count++;
-                const card = document.createElement('div');
-                card.className = 'blacklist-card';
-                
-                let actionHtml = '';
-                if (sessionUser.role === 'admin') {
-                    actionHtml = `<button class="btn-unban" onclick="unbanPlayer('${login}')">Разбанить 🔓</button>`;
-                } else {
-                    actionHtml = `<span style="font-size:0.8em; opacity:0.7;">🔒 Только Админ</span>`;
+            for (let login in users) {
+                if (users[login].isBanned === true) {
+                    count++;
+                    const card = document.createElement('div');
+                    card.className = 'blacklist-card';
+                    
+                    let actionHtml = '';
+                    if (sessionUser.role === 'admin') {
+                        actionHtml = `<button class="btn-unban" onclick="unbanPlayer('${login}')">Разбанить 🔓</button>`;
+                    } else {
+                        actionHtml = `<span style="font-size:0.8em; opacity:0.7;">🔒 Только Админ</span>`;
+                    }
+
+                    card.innerHTML = `
+                        <div>
+                            <div style="font-weight:bold; font-size:1.2em; color:red;">${users[login].displayName || login}</div>
+                            <div style="font-size:0.8em;">@${login}</div>
+                        </div>
+                        ${actionHtml}
+                    `;
+                    listDiv.appendChild(card);
                 }
-
-                card.innerHTML = `
-                    <div>
-                        <div style="font-weight:bold; font-size:1.2em;">${users[login].displayName || login}</div>
-                        <div style="font-size:0.8em;">@${login}</div>
-                    </div>
-                    ${actionHtml}
-                `;
-                listDiv.appendChild(card);
             }
-        }
 
-        if (count === 0) listDiv.innerHTML = '<div style="text-align:center; padding:20px;">Чёрный список пуст</div>';
+            if (count === 0) listDiv.innerHTML = '<div style="text-align:center; padding:20px;">Чёрный список пуст</div>';
+        } catch (e) {
+            listDiv.innerHTML = 'Ошибка загрузки: ' + e.message;
+        }
     }
 
 
@@ -780,21 +796,23 @@
             for(let login in users) {
                 const userData = users[login];
                 
-                // Игнорируем забаненных (они не должны быть за столом)
+                // ВАЖНО: Игнорируем забаненных
                 if (userData.isBanned === true) continue;
 
                 if(!existingLogins.has(login)) {
                     const dispName = userData.displayName || login;
                     const newKey = push(ref(db, 'players')).key;
                     
-                    // Если есть история - восстанавливаем, иначе 0 (пустой баланс)
-                    // Т.к. при бане мы стираем saved_history, разбаненный вернется с 0 или start_bonus
-                    // Здесь ставим просто пустую историю или дефолт
-                    
+                    // Если есть сохраненная история - берем её, иначе 0
+                    let historyToRestore = { 'start': 0 }; 
+                    if (userData.saved_history) {
+                        historyToRestore = userData.saved_history;
+                    }
+
                     updates['players/' + newKey] = { 
                         name: dispName, 
                         login: login, 
-                        history: { 'start': 0 } // Возвращается "голым"
+                        history: historyToRestore 
                     };
                     hasUpdates = true;
                 }
@@ -859,9 +877,9 @@
                     role: 'player' 
                 }).then(() => {
                     const newPlayerRef = push(ref(db, 'players'));
-                    return set(newPlayerRef, { name: nick, login: nick, history: { 'start': 0 } });
+                    return set(newPlayerRef, { name: nick, login: nick, history: { 'start_bonus': 1000 } });
                 }).then(() => {
-                    alert("Аккаунт создан!");
+                    alert("Аккаунт создан! Входите.");
                     switchAuthView('login');
                     document.getElementById('loginNick').value = nick;
                     document.getElementById('loginPass').value = pass;
@@ -879,13 +897,14 @@
     }
 
     async function checkLogin(nick, pass, isAuto, remember = false) {
+        // Локальная проверка
         const tryLocalLogin = () => {
             const knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
             if (knownUsers[nick] && knownUsers[nick] === pass) {
                 const cachedUser = JSON.parse(localStorage.getItem('op_user') || '{}');
-                // Если закэширован как забаненный, блокируем
+                // Если в кэше есть метка бана - блокируем
                 if (cachedUser.isBanned) {
-                    document.getElementById('banned-overlay').classList.remove('hidden');
+                    showBannedOverlay();
                     return true;
                 }
                 const savedRole = cachedUser.role || 'player'; 
@@ -904,22 +923,25 @@
             const snapshot = await get(child(ref(db), `users/${nick}`));
             if (snapshot.exists()) {
                 const userData = snapshot.val();
-                if(userData.pass === pass) {
-                    
-                    // ПРОВЕРКА НА БАН
-                    if (userData.isBanned === true) {
-                        document.getElementById('banned-overlay').classList.remove('hidden');
-                        document.getElementById('login-overlay').style.display = 'none';
-                        return;
-                    }
+                
+                // 1. Сначала проверяем БАН (даже если пароль не ввели, бан важнее)
+                if (userData.isBanned === true) {
+                    // Сохраняем в кэш, что этот ник в бане
+                    let cached = { nick: nick, isBanned: true };
+                    localStorage.setItem('op_user', JSON.stringify(cached));
+                    showBannedOverlay();
+                    return;
+                }
 
+                // 2. Потом пароль
+                if(userData.pass === pass) {
                     let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
                     knownUsers[nick] = pass;
                     localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
                     
                     const dispName = userData.displayName || nick;
                     const dbRole = userData.role || 'player';
-                    performLogin(nick, pass, remember || isAuto, dispName, dbRole, userData.isBanned);
+                    performLogin(nick, pass, remember || isAuto, dispName, dbRole, false);
                 } else {
                     if(!isAuto) document.getElementById('loginError').innerText = "Неверный пароль";
                     if(isAuto) { localStorage.removeItem('op_user'); sessionStorage.removeItem('op_session_user'); }
@@ -932,9 +954,16 @@
         }
     }
 
+    function showBannedOverlay() {
+        document.getElementById('login-overlay').style.display = 'none';
+        const banScreen = document.getElementById('banned-overlay');
+        banScreen.classList.remove('hidden');
+        banScreen.style.display = 'flex'; // Принудительно показываем
+    }
+
     function performLogin(nick, pass, remember, displayName, loadedRole, isBanned) {
         if (isBanned) {
-            document.getElementById('banned-overlay').classList.remove('hidden');
+            showBannedOverlay();
             return;
         }
 
@@ -945,7 +974,7 @@
         let role = loadedRole || 'player';
         if (nick === 'Zagonskiy') role = 'admin';
         
-        const userObj = { nick, pass, displayName: finalName, role: role, isBanned: isBanned };
+        const userObj = { nick, pass, displayName: finalName, role: role, isBanned: false };
         sessionStorage.setItem('op_session_user', JSON.stringify(userObj));
         if(remember) localStorage.setItem('op_user', JSON.stringify(userObj));
         
@@ -962,12 +991,11 @@
 
             // Если прилетело, что забанен - сразу выкидываем оверлей
             if (uData.isBanned === true) {
-                document.getElementById('banned-overlay').classList.remove('hidden');
-                let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-                if(sessionUser) {
-                    sessionUser.isBanned = true;
-                    sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
-                }
+                showBannedOverlay();
+                // Обновляем кэш
+                let cur = JSON.parse(localStorage.getItem('op_user') || '{}');
+                cur.isBanned = true;
+                localStorage.setItem('op_user', JSON.stringify(cur));
                 return;
             }
 
@@ -1172,22 +1200,22 @@
         cellHistory.className = 'history-log';
         cellHistory.innerText = historyArray.length > 0 ? historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ') : 'Пусто';
 
-        // 5. УДАЛЕНИЕ / БАН
+        // 5. БАН / СБРОС (ИСПРАВЛЕНО)
         const cellDelete = newRow.insertCell(4);
         const wrapper = document.createElement('div');
         wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
         
         if (myRole === 'admin' || myRole === 'trusted') {
-             // Кнопка сброса только для админа
              if (myRole === 'admin') {
                  wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
              }
              
-             // Кнопка БАНА вместо удаления
+             // Кнопка БАНА
              const btnBan = document.createElement('button');
              btnBan.innerText = '⛔';
              btnBan.className = 'btn-ban';
              btnBan.title = 'В Чёрный Список';
+             // ВАЖНО: передаем player.login, даже если он undefined
              btnBan.onclick = () => banPlayer(id, player.login);
              wrapper.appendChild(btnBan);
         }
@@ -1358,6 +1386,7 @@
     
 </body>
 </html>
+
 
 
 
