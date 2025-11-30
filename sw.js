@@ -1,5 +1,5 @@
-// Версия v64 - Fix Online Status after Rename
-const CACHE_NAME = 'orelpoker-v64-status-fix';
+// Версия v66 - Fix Mobile Footer Label
+const CACHE_NAME = 'orelpoker-v66-fix-label';
 const ASSETS = [
     './',
     './index.html',
