@@ -1,5 +1,5 @@
-// Версия v65 - Beautiful Total Bank Design
-const CACHE_NAME = 'orelpoker-v65-luxury-bank';
+// Версия v66 - Fix Desktop Layout Overlap
+const CACHE_NAME = 'orelpoker-v66-layout-fix';
 const ASSETS = [
     './',
     './index.html',
