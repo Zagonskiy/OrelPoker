@@ -1,5 +1,5 @@
-// Версия v66 - Fix Desktop Layout Overlap
-const CACHE_NAME = 'orelpoker-v66-layout-fix';
+// Версия v67 - Chat System Added
+const CACHE_NAME = 'orelpoker-v67-chat';
 const ASSETS = [
     './',
     './index.html',
