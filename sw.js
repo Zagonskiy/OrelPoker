@@ -1,5 +1,5 @@
-// Версия v66 - Fix Mobile Footer Label
-const CACHE_NAME = 'orelpoker-v66-fix-label';
+// Версия v65 - Beautiful Total Bank Design
+const CACHE_NAME = 'orelpoker-v65-luxury-bank';
 const ASSETS = [
     './',
     './index.html',
