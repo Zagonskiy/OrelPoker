@@ -749,12 +749,113 @@
         if (savedData) renderTable(savedData);
     }
 
+    // --- ЛОГИКА ВХОДА (ИСПРАВЛЕННАЯ) ---
+
     window.handleLogin = function() {
         const nick = document.getElementById('loginNick').value.trim();
         const pass = document.getElementById('loginPass').value.trim();
         const remember = document.getElementById('rememberMe').checked;
-        if(!nick || !pass) { document.getElementById('loginError').innerText = "Введите данные"; return; }
+        
+        if(!nick || !pass) { 
+            document.getElementById('loginError').innerText = "Введите данные"; 
+            return; 
+        }
         checkLogin(nick, pass, false, remember);
+    }
+
+    async function checkLogin(nick, pass, isAuto, remember = false) {
+        // 1. Проверка локального кэша (чтобы работало без интернета)
+        const tryLocalLogin = () => {
+            const knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
+            if (knownUsers[nick] && knownUsers[nick] === pass) {
+                const cachedUser = JSON.parse(localStorage.getItem('op_user') || '{}');
+                const dispName = (cachedUser.nick === nick && cachedUser.displayName) ? cachedUser.displayName : nick;
+                performLogin(nick, pass, remember || isAuto, dispName);
+                return true;
+            }
+            return false;
+        };
+
+        if (!navigator.onLine) {
+            if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Нет сети";
+            return;
+        }
+
+        try {
+            // 2. Проверка через Базу Данных
+            const snapshot = await get(child(ref(db), `users/${nick}`));
+            
+            if (snapshot.exists()) {
+                const userData = snapshot.val();
+                if(userData.pass === pass) {
+                    // Сохраняем пароль в кэш
+                    let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
+                    knownUsers[nick] = pass;
+                    localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
+                    
+                    const dispName = userData.displayName || nick;
+                    performLogin(nick, pass, remember || isAuto, dispName);
+                } else {
+                    if(!isAuto) document.getElementById('loginError').innerText = "Неверный пароль";
+                    if(isAuto) { localStorage.removeItem('op_user'); sessionStorage.removeItem('op_session_user'); }
+                }
+            } else {
+                if(!isAuto) document.getElementById('loginError').innerText = "Пользователь не найден";
+            }
+        } catch (error) {
+            if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Ошибка сети";
+        }
+    }
+
+    function performLogin(nick, pass, remember, displayName) {
+        // ГЛАВНОЕ: Скрываем окно входа
+        document.getElementById('login-overlay').style.display = 'none';
+        
+        const finalName = displayName || nick;
+        updateMenuUI(finalName, nick);
+        
+        // ОПРЕДЕЛЕНИЕ РОЛИ
+        let role = 'player'; // По умолчанию
+        
+        // Хардкод для главного админа (Учитывайте регистр букв!)
+        if (nick === 'Zagonskiy') {
+            role = 'admin';
+        } 
+        
+        const userObj = { nick, pass, displayName: finalName, role: role };
+        
+        sessionStorage.setItem('op_session_user', JSON.stringify(userObj));
+        if(remember) localStorage.setItem('op_user', JSON.stringify(userObj));
+        
+        setOnlineStatus(nick);
+        
+        // Загружаем реальную роль с сервера (если это не Zagonskiy)
+        fetchUserRole(nick); 
+        
+        // Применяем интерфейс (скрываем кнопки и т.д.)
+        if (typeof window.applyRoleUI === "function") {
+            window.applyRoleUI();
+        }
+    }
+
+    function fetchUserRole(nick) {
+        if (nick === 'Zagonskiy') return; 
+        
+        get(child(ref(db), `users/${nick}/role`)).then((snap) => {
+            let role = snap.val() || 'player';
+            
+            // Обновляем текущую сессию
+            let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+            if(sessionUser) {
+                sessionUser.role = role;
+                sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
+                
+                // Перерисовываем интерфейс с новыми правами
+                if (typeof window.applyRoleUI === "function") {
+                    window.applyRoleUI();
+                }
+            }
+        });
     }
 
     window.handleRegister = function() {
@@ -777,56 +878,6 @@
                 });
             }
         });
-    }
-    
-    async function checkLogin(nick, pass, isAuto, remember = false) {
-        const tryLocalLogin = () => {
-            const knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
-            if (knownUsers[nick] && knownUsers[nick] === pass) {
-                const cachedUser = JSON.parse(localStorage.getItem('op_user') || '{}');
-                const dispName = (cachedUser.nick === nick && cachedUser.displayName) ? cachedUser.displayName : nick;
-                performLogin(nick, pass, remember || isAuto, dispName);
-                return true;
-            }
-            return false;
-        };
-        if (!navigator.onLine) {
-            if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Нет сети";
-            return;
-        }
-        try {
-            const snapshot = await Promise.race([
-                get(child(ref(db), `users/${nick}`)),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
-            ]);
-            if (snapshot.exists()) {
-                const userData = snapshot.val();
-                if(userData.pass === pass) {
-                    let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
-                    knownUsers[nick] = pass;
-                    localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
-                    const dispName = userData.displayName || nick;
-                    performLogin(nick, pass, remember || isAuto, dispName);
-                } else {
-                    if(!isAuto) document.getElementById('loginError').innerText = "Неверный пароль";
-                    if(isAuto) { localStorage.removeItem('op_user'); sessionStorage.removeItem('op_session_user'); }
-                }
-            } else {
-                if(!isAuto) document.getElementById('loginError').innerText = "Пользователь не найден";
-            }
-        } catch (error) {
-            if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Ошибка сети";
-        }
-    }
-
-    function performLogin(nick, pass, remember, displayName) {
-        document.getElementById('login-overlay').style.display = 'none';
-        const finalName = displayName || nick;
-        updateMenuUI(finalName, nick);
-        const userObj = { nick, pass, displayName: finalName };
-        sessionStorage.setItem('op_session_user', JSON.stringify(userObj));
-        if(remember) localStorage.setItem('op_user', JSON.stringify(userObj));
-        setOnlineStatus(nick);
     }
 
     function updateMenuUI(displayName, loginName) {
@@ -1197,6 +1248,7 @@
 
 </body>
 </html>
+
 
 
 
