@@ -662,12 +662,10 @@
                     const dispName = userData.displayName || login;
                     const newKey = push(ref(db, 'players')).key;
                     
-                    // ГЛАВНОЕ ИЗМЕНЕНИЕ:
-                    // Проверяем, есть ли сохраненная история (saved_history)
-                    let historyToRestore = { 'start_bonus': 1000 }; // По умолчанию
-                    
+                    // БЕЗОПАСНОЕ ВОССТАНОВЛЕНИЕ:
+                    let historyToRestore = { 'start_bonus': 1000 }; 
                     if (userData.saved_history) {
-                        historyToRestore = userData.saved_history; // Восстанавливаем старую
+                        historyToRestore = userData.saved_history; 
                     }
 
                     updates['players/' + newKey] = { 
@@ -681,6 +679,7 @@
             if(hasUpdates) { await update(ref(db), updates); }
         } catch(e) { console.error("Sync error", e); }
     }
+
     window.editNickname = async function() {
         let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         if (!sessionUser) sessionUser = JSON.parse(localStorage.getItem('op_user'));
@@ -717,27 +716,21 @@
         }
     }
 
-    // Новая функция: Сохраняет баланс перед удалением
+    // БЕЗОПАСНОЕ УДАЛЕНИЕ
     window.safeDeletePlayer = async function(id, login) {
         if(!confirm("Убрать игрока со стола? (Баланс сохранится)")) return;
-        
-        // 1. Получаем текущие данные игрока
         const snapshot = await get(ref(db, 'players/' + id));
         const data = snapshot.val();
-        
         if (data && login) {
-            // 2. Если есть история, сохраняем её в профиль пользователя
             if (data.history) {
                 await update(ref(db, 'users/' + login), { saved_history: data.history });
             }
         }
-        
-        // 3. Удаляем со стола
         remove(ref(db, 'players/' + id));
     }
 
     // =========================================================
-    // ЛОГИКА АВТОРИЗАЦИИ (ИСПРАВЛЕННАЯ)
+    // ЛОГИКА АВТОРИЗАЦИИ
     // =========================================================
 
     // 1. РЕГИСТРАЦИЯ
@@ -1061,11 +1054,10 @@
         wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
         
         if (myRole === 'admin') {
-             // Кнопка сброса (обнуляет баланс)
+             // Сброс баланса
              wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
              
-             // Кнопка удаления (теперь БЕЗОПАСНАЯ)
-             // Если у игрока есть логин, используем безопасное удаление, иначе (для гостей) обычное
+             // Безопасное удаление (для зарегистрированных) или обычное
              if (player.login) {
                  wrapper.appendChild(createBtn('✕', 'btn-delete', () => safeDeletePlayer(id, player.login)));
              } else {
@@ -1073,6 +1065,7 @@
              }
         }
         cellDelete.appendChild(wrapper);
+    }
 
     function createBtn(text, cls, onClick) {
         const btn = document.createElement('button');
@@ -1182,27 +1175,20 @@
         });
     });
 
-    // --- УПРАВЛЕНИЕ РОЛЯМИ (НОВОЕ) ---
-    
-    let currentRankLogin = null; // Переменная для хранения, кому меняем роль
+    // --- УПРАВЛЕНИЕ РОЛЯМИ ---
+    let currentRankLogin = null;
 
     window.changeRankDialog = function(login, currentName) {
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         if (!sessionUser || sessionUser.role !== 'admin') return;
-        
         if (login === 'Zagonskiy') { alert("Нельзя менять ранг Создателя!"); return; }
-
-        // Запоминаем, кого редактируем
         currentRankLogin = login;
-
-        // Показываем окно
         document.getElementById('roleTargetName').innerText = currentName;
         document.getElementById('roleModal').classList.remove('role-hidden');
     }
 
     window.setRole = function(newRole) {
         if (!currentRankLogin) return;
-
         update(ref(db, 'users/' + currentRankLogin), { role: newRole })
             .then(() => {
                 alert(`Роль успешно изменена!`);
@@ -1246,6 +1232,7 @@
     
 </body>
 </html>
+
 
 
 
