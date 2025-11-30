@@ -1,5 +1,5 @@
-// Версия v79 - Final View Overlap Fix
-const CACHE_NAME = 'orelpoker-v79-final-overlap-fix';
+// Версия v80 - Full CSS and Indicator Restoration
+const CACHE_NAME = 'orelpoker-v80-css-restore';
 const ASSETS = [
     './',
     './index.html',
