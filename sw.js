@@ -1,5 +1,5 @@
-// Версия v71 - Fix Chat & Status Dot
-const CACHE_NAME = 'orelpoker-v71-fix-chat';
+// Версия v72 - Fix Mobile Menu
+const CACHE_NAME = 'orelpoker-v72-menu-fix';
 const ASSETS = [
     './',
     './index.html',
