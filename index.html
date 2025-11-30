@@ -365,6 +365,15 @@
         /* --- СИСТЕМА РАНГОВ --- */
         .role-hidden { display: none !important; }
 
+        .role-badge {
+            font-size: 1.2em;
+            margin-right: 5px;
+            cursor: help;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+        }
+
+        
+
         /* Участник видит только текст, не видит inputs */
         .view-only-input {
             border: none !important;
@@ -929,6 +938,7 @@
     }
 
     // --- ЛОГИКА АВТОРИЗАЦИИ ---
+    // 1. РЕГИСТРАЦИЯ (С гарантированной выдачей роли Игрок)
     window.handleRegister = function() {
         const nick = document.getElementById('regNick').value.trim();
         const pass = document.getElementById('regPass').value.trim();
@@ -945,12 +955,12 @@
                     pass: pass, 
                     created: Date.now(), 
                     displayName: nick,
-                    role: 'player' 
+                    role: 'player' // <--- ВОТ ЗДЕСЬ ВЫДАЕТСЯ РОЛЬ ПО УМОЛЧАНИЮ
                 }).then(() => {
                     const newPlayerRef = push(ref(db, 'players'));
                     return set(newPlayerRef, { name: nick, login: nick, history: { 'start_bonus': 1000 } });
                 }).then(() => {
-                    alert("Аккаунт создан! +1000 фишек.");
+                    alert("Аккаунт создан! Роль: Игрок.");
                     switchAuthView('login');
                     document.getElementById('loginNick').value = nick;
                     document.getElementById('loginPass').value = pass;
@@ -1193,11 +1203,12 @@
         const newRow = tableBody.insertRow();
         const { total, historyArray } = calculatePlayerStats(player);
 
-        // 1. ИМЯ
+        // 1. ИМЯ И РОЛЬ
         const cellName = newRow.insertCell(0);
         const nameWrapper = document.createElement('div');
         nameWrapper.className = 'name-wrapper';
         
+        // Индикатор онлайн
         const statusDot = document.createElement('div');
         statusDot.className = 'player-status-indicator';
         statusDot.setAttribute('data-player-name', player.name);
@@ -1205,12 +1216,32 @@
         const keyToCheck = player.login || player.name;
         if (onlineNicknames.has(keyToCheck)) statusDot.classList.add('is-online');
 
+        // Значок роли
+        const roleBadge = document.createElement('span');
+        roleBadge.className = 'role-badge';
+        
+        // Если это гость (нет логина)
+        if (!player.login) {
+            roleBadge.innerText = '👽';
+            roleBadge.title = 'Гость';
+        } else {
+            // Если зарегистрирован, загружаем роль
+            roleBadge.innerText = '⏳'; // Временный значок загрузки
+            get(child(ref(db), 'users/' + player.login + '/role')).then((snap) => {
+                const r = snap.val();
+                if (r === 'admin') { roleBadge.innerText = '👑'; roleBadge.title = 'Админ'; }
+                else if (r === 'trusted') { roleBadge.innerText = '🛡️'; roleBadge.title = 'Доверенный'; }
+                else { roleBadge.innerText = '👤'; roleBadge.title = 'Игрок'; }
+            });
+        }
+
         const inputName = document.createElement('input');
         inputName.type = 'text'; 
         inputName.className = 'player-name'; 
         inputName.value = player.name || "";
         inputName.readOnly = true;
         
+        // Если я Админ - могу менять ранг кликом по имени
         if (myRole === 'admin' && player.login) {
             inputName.style.cursor = "pointer";
             inputName.style.textDecoration = "underline";
@@ -1219,12 +1250,12 @@
         }
 
         nameWrapper.appendChild(statusDot); 
+        nameWrapper.appendChild(roleBadge); // Добавляем значок
         nameWrapper.appendChild(inputName); 
         cellName.appendChild(nameWrapper);
 
         // 2. ДЕЙСТВИЯ
         const cellAction = newRow.insertCell(1);
-        
         if (myRole !== 'player') {
             const inputNum = document.createElement('input');
             inputNum.type = 'number'; 
@@ -1259,16 +1290,13 @@
         cellHistory.className = 'history-log';
         cellHistory.innerText = historyArray.length > 0 ? historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ') : 'Пусто';
 
-        // 5. УДАЛЕНИЕ
+        // 5. УДАЛЕНИЕ (Безопасное)
         const cellDelete = newRow.insertCell(4);
         const wrapper = document.createElement('div');
         wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
         
         if (myRole === 'admin') {
-             // Сброс баланса
              wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
-             
-             // Безопасное удаление (для зарегистрированных) или обычное
              if (player.login) {
                  wrapper.appendChild(createBtn('✕', 'btn-delete', () => safeDeletePlayer(id, player.login)));
              } else {
@@ -1443,6 +1471,7 @@
 
 </body>
 </html>
+
 
 
 
