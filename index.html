@@ -12,6 +12,11 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap" rel="stylesheet">
     <style>
+        /* Глобальный сброс для корректных размеров */
+        * {
+            box-sizing: border-box;
+        }
+
         :root {
             --paper-bg: #f4e4bc;
             --paper-texture: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.4 0"/></filter><rect width="100%" height="100%" filter="url(%23noise)" opacity="0.1"/></svg>');
@@ -24,6 +29,7 @@
             --accent-redo: #008b8b;
             --accent-purple: #6a0dad;
             --accent-orange: #e65100;
+            --accent-teal: #009688;
             --sidebar-width: 260px;
         }
 
@@ -31,66 +37,23 @@
             font-family: 'Special Elite', 'Courier New', monospace;
             background-color: #2a1b0f;
             background-image: linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.1));
-            padding: 20px 10px;
+            padding: 0; /* Убрали паддинг у body */
             color: var(--ink-color);
             margin: 0;
             overscroll-behavior: none;
+            min-height: 100vh;
+        }
+
+        /* --- MAIN CONTENT (ИСПРАВЛЕНО ДЛЯ ПК) --- */
+        .main-content {
+            margin-left: var(--sidebar-width); /* Отступ под меню */
+            width: auto; /* Автоматическая ширина (занимает оставшееся место) */
+            min-height: 100vh;
+            padding: 20px;
+            background-image: var(--paper-texture);
+            background-color: var(--paper-bg);
             padding-bottom: 60px;
         }
-
-        /* --- НОВЫЙ ДИЗАЙН ОБЩЕГО БАНКА --- */
-        .grand-total-panel {
-            margin-top: 20px;
-            background: linear-gradient(145deg, #3e2b1f, #2a1b0f);
-            border: 3px solid var(--accent-gold);
-            border-radius: 12px;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.5);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Блик на золотой рамке */
-        .grand-total-panel::before {
-            content: '';
-            position: absolute;
-            top: -50%; left: -50%; width: 200%; height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
-            pointer-events: none;
-        }
-
-        .gt-label {
-            font-family: 'Rye', cursive;
-            font-size: 1.5em;
-            color: var(--accent-gold);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-        }
-
-        .gt-value {
-            font-family: 'Rye', cursive;
-            font-size: 2.5em;
-            color: #fff;
-            font-weight: bold;
-            text-shadow: 0 0 10px rgba(203, 161, 53, 0.5), 3px 3px 0px #000;
-        }
-
-        /* Адаптация для мобильных */
-        @media screen and (max-width: 768px) {
-            .grand-total-panel {
-                flex-direction: column;
-                text-align: center;
-                gap: 5px;
-                padding: 15px;
-            }
-            .gt-label { font-size: 1.2em; }
-            .gt-value { font-size: 3em; line-height: 1; }
-        }
-        /* --------------------------------- */
 
         /* --- LOGIN OVERLAY --- */
         #login-overlay {
@@ -116,7 +79,6 @@
             width: 100%; padding: 10px; margin-bottom: 15px;
             border: 2px solid var(--accent-brown); background: rgba(255,255,255,0.5);
             font-family: 'Special Elite', monospace; font-size: 1.1em;
-            box-sizing: border-box;
         }
         .login-checkbox {
             display: flex; align-items: center; justify-content: center;
@@ -148,7 +110,7 @@
         .btn-extreme-reset {
             margin-top: auto; background-color: #500000; color: #ffcccc; border: 2px solid #ff0000;
             padding: 12px; font-family: 'Special Elite', monospace; font-weight: bold; font-size: 0.9em;
-            cursor: pointer; width: 100%; box-sizing: border-box; border-radius: 4px; transition: all 0.2s; text-align: center;
+            cursor: pointer; width: 100%; border-radius: 4px; transition: all 0.2s; text-align: center;
         }
         .btn-extreme-reset:hover { background-color: #ff0000; color: white; box-shadow: 0 0 15px rgba(255, 0, 0, 0.5); }
 
@@ -167,12 +129,7 @@
         .status-offline { background-color: #d32f2f; color: #fff; border-color: #b71c1c; animation: pulse 2s infinite; }
 
         .container {
-            max-width: 1050px; margin: 0 auto; background-color: var(--paper-bg);
-            background-image: var(--paper-texture), linear-gradient(to right, rgba(139, 69, 19, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(139, 69, 19, 0.1) 1px, transparent 1px);
-            background-size: 100px 100px, 20px 20px, 20px 20px; padding: 20px; border-radius: 2px;
-            box-shadow: 0 0 0 5px #5a3a22 inset, 0 15px 20px rgba(0,0,0,0.5), 0 0 50px rgba(0,0,0,0.3) inset;
-            border: 8px solid #462c1a; border-image: repeating-linear-gradient(45deg, #462c1a, #462c1a 10px, #332013 10px, #332013 20px) 20;
-            margin-top: 60px;
+            max-width: 1050px; margin: 0 auto;
         }
 
         .brand-container { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; border-bottom: 3px double var(--accent-brown); padding-bottom: 15px; flex-wrap: wrap; text-align: center; }
@@ -190,6 +147,8 @@
         .btn-download { background-color: var(--accent-brown); color: var(--accent-gold); border-color: #5c300e; }
         .btn-newday { background-color: var(--accent-purple); color: #fff; border-color: #4b0082; }
         .btn-newday:hover { background-color: #5a0a94; }
+        .btn-refresh { background-color: var(--accent-teal); color: white; border-color: #00796b; }
+        .btn-refresh:hover { background-color: #00796b; }
         .btn-calc, .btn-undo, .btn-redo { width: 40px; height: 40px; padding: 0; font-family: 'Special Elite', monospace; font-weight: bold; font-size: 1.5em; border-radius: 50%; border: 2px solid #3e2b1f; display: inline-flex; align-items: center; justify-content: center; margin: 0 2px; }
         .btn-calc { background-color: #6b523d; color: var(--accent-gold); }
         .btn-undo { background-color: var(--accent-undo); color: #3e2b1f; font-size: 1.2em; }
@@ -199,7 +158,8 @@
         .btn-reset-player { background-color: var(--accent-orange); color: white; font-weight: bold; border-radius: 50%; width: 30px; height: 30px; padding: 0; border: 2px solid #bf360c; font-family: sans-serif; cursor: pointer; }
         .btn-reset-player:hover { background-color: #ff6d00; }
 
-        .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-width); background: #1a1008; border-right: 4px solid var(--accent-brown); display: flex; flex-direction: column; padding: 20px; box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 2000; transition: transform 0.3s ease; box-sizing: border-box; }
+        /* --- SIDEBAR --- */
+        .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-width); background: #1a1008; border-right: 4px solid var(--accent-brown); display: flex; flex-direction: column; padding: 20px; box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 2000; transition: transform 0.3s ease; }
         .sidebar-logo { text-align: center; margin-bottom: 40px; }
         .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
         .sidebar-title { font-family: 'Rye', cursive; color: var(--accent-gold); font-size: 1.2em; margin-top: 10px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; }
@@ -229,6 +189,11 @@
         .score-cell { font-family: 'Rye', cursive; font-size: 1.8em; color: var(--accent-red); text-align: center; }
         .history-log { font-size: 0.9em; color: #6b523d; font-style: italic; max-width: 250px; overflow-x: auto; white-space: nowrap; padding: 5px; background-color: rgba(139, 69, 19, 0.05); border-radius: 4px; }
         
+        /* ПК ИТОГ (Стандартный) */
+        tfoot tr { background-color: rgba(139, 69, 19, 0.2); border: 2px solid #8b4513; }
+        .total-label { text-align: right; font-family: 'Rye', cursive; font-size: 1.5em; color: var(--accent-brown); padding-right: 20px; }
+        .grand-total-cell { font-family: 'Rye', cursive; font-size: 2em; color: var(--accent-brown); text-align: center; font-weight: bold; }
+
         .journal-list { display: flex; flex-direction: column; gap: 15px; }
         .journal-card { background: rgba(255, 255, 255, 0.6); border: 2px solid var(--accent-brown); padding: 15px; cursor: pointer; transition: 0.2s; }
         .journal-card:hover { background: rgba(255, 255, 255, 0.9); }
@@ -260,6 +225,33 @@
             td:nth-of-type(4) { font-size: 0.8em; color: #666; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 4px; max-width: 100%; }
             td:nth-of-type(5) { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; padding: 0; }
             .btn-reset-player, .btn-delete { width: 28px; height: 28px; font-size: 0.9em; }
+            
+            /* --- МОБИЛЬНЫЙ ДИЗАЙН "ОБЩИЙ БАНК" --- */
+            tfoot { display: block; margin-top: 20px; }
+            tfoot tr { 
+                display: flex; 
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: #3e2b1f;
+                border: 2px solid #cba135;
+                border-radius: 12px;
+                padding: 15px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+                width: 100%;
+                box-sizing: border-box;
+            }
+            tfoot td { display: block; padding: 0; border: none; width: 100%; }
+            tfoot td:nth-child(4), tfoot td:nth-child(5) { display: none; }
+            .total-label { display: none; }
+            .grand-total-cell { 
+                text-align: center; 
+                font-size: 2.8em; 
+                color: #fff; 
+                font-weight: bold; 
+                text-shadow: 0 0 10px rgba(203, 161, 53, 0.6); 
+                margin-top: 0; 
+            }
         }
     </style>
 </head>
@@ -281,7 +273,6 @@
         <button class="btn-register-link" onclick="switchAuthView('register')">Нет аккаунта? Регистрация</button>
         <div id="loginError" class="error-msg"></div>
     </div>
-
     <div id="register-view-card" class="login-card hidden">
         <h2>РЕГИСТРАЦИЯ</h2>
         <input type="text" id="regNick" class="login-input" placeholder="Придумайте Ник">
@@ -327,6 +318,7 @@
         </div>
         <div class="controls">
             <button class="btn-add" onclick="createNewPlayer()">+ Игрок</button>
+            <button class="btn-refresh" onclick="refreshTable()">🔄 Обновить</button>
             <button class="btn-newday" onclick="startNewDay()">🌅 Новый день</button>
             <button class="btn-journal-add" onclick="addToJournal()">💾 В Журнал</button>
         </div>
@@ -341,15 +333,15 @@
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="2" class="total-label">ОБЩИЙ БАНК:</td>
+                    <td id="grandTotal" class="grand-total-cell">0</td>
+                    <td colspan="2"></td>
+                </tr>
+            </tfoot>
         </table>
-        
-        <div class="grand-total-panel">
-            <div class="gt-label">ОБЩИЙ БАНК</div>
-            <div id="grandTotal" class="gt-value">0</div>
-        </div>
-
     </div>
-
     <div id="view-journal" class="hidden">
         <div class="brand-container">
             <h1 class="header-title">Архив Журнала</h1>
@@ -358,8 +350,7 @@
             <div style="text-align:center;">Загрузка архива...</div>
         </div>
     </div>
-
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v65.0 (Luxury Bank)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v66.0 (Desktop Fix)</div>
 </div>
 
 <script>
@@ -377,7 +368,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=65').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=66').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -412,53 +403,15 @@
     const playersRef = ref(db, 'players');
     const journalRef = ref(db, 'journal');
     const usersRef = ref(db, 'users');
-    
     const connectedRef = ref(db, ".info/connected");
     const onlineUsersRef = ref(db, "online_users");
     let currentConnectionRef = null;
     let onlineNicknames = new Set();
 
-    function setOnlineStatus(nickname) {
-        const myUserRef = ref(db, `online_users/${nickname}`);
-        currentConnectionRef = push(myUserRef);
-        onDisconnect(currentConnectionRef).remove();
-        set(currentConnectionRef, true);
-    }
-
-    onValue(connectedRef, (snap) => {
-        const dotMobile = document.getElementById('mobileStatusDot');
-        const dotDesktop = document.getElementById('desktopStatusDot');
-        const statusEl = document.getElementById('networkStatus');
-        if(statusEl) statusEl.style.display = 'none';
-
-        if (snap.val() === true) {
-            dotMobile.classList.add('online'); dotDesktop.classList.add('online');
-            const savedUser = localStorage.getItem('op_user');
-            // ...
-        } else {
-            dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
-        }
-    });
-
-    onValue(onlineUsersRef, (snap) => {
-        const countDisplay = document.getElementById('onlineCounter');
-        onlineNicknames.clear();
-        if (snap.exists()) {
-            const data = snap.val();
-            Object.keys(data).forEach(n => onlineNicknames.add(n));
-            countDisplay.innerText = `👁️ Онлайн: ${onlineNicknames.size}`;
-        } else { countDisplay.innerText = `👁️ Онлайн: 0`; }
-        updateTableStatusDots();
-    });
-
-    function updateTableStatusDots() {
-        document.querySelectorAll('.player-status-indicator').forEach(dot => {
-            const name = dot.getAttribute('data-player-name');
-            const login = dot.getAttribute('data-player-login');
-            const keyToCheck = login || name;
-            if (onlineNicknames.has(keyToCheck)) dot.classList.add('is-online');
-            else dot.classList.remove('is-online');
-        });
+    window.refreshTable = async function() {
+        const pass = prompt("Для обновления введите код доступа:");
+        if (pass !== "108020") { if(pass !== null) alert("Ошибка доступа"); return; }
+        try { await syncUsersToTable(); alert("Таблица синхронизирована!"); } catch(e) { alert("Ошибка: " + e.message); }
     }
 
     async function syncUsersToTable(currentDisplayName) {
@@ -467,10 +420,16 @@
             const playersSnap = await get(playersRef);
             const users = usersSnap.val() || {};
             const players = playersSnap.val() || {};
+
             const existingLogins = new Set();
-            for(let id in players) { const pLogin = players[id].login || players[id].name; existingLogins.add(pLogin); }
+            for(let id in players) {
+                 const pLogin = players[id].login || players[id].name;
+                 existingLogins.add(pLogin);
+            }
+
             const updates = {};
             let hasUpdates = false;
+
             for(let login in users) {
                 if(!existingLogins.has(login)) {
                     const userData = users[login];
@@ -481,7 +440,31 @@
                 }
             }
             if(hasUpdates) { await update(ref(db), updates); }
-        } catch(e) {}
+        } catch(e) { console.error("Sync error", e); }
+    }
+
+    window.editNickname = async function() {
+        let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (!sessionUser) sessionUser = JSON.parse(localStorage.getItem('op_user'));
+        if (!sessionUser) return;
+        const oldDisplayName = sessionUser.displayName || sessionUser.nick;
+        const newName = prompt("Новое имя:", oldDisplayName);
+        if(!newName || newName.trim() === "") return;
+        const trimmedName = newName.trim();
+        try {
+            await update(ref(db, 'users/' + sessionUser.nick), { displayName: trimmedName });
+            sessionUser.displayName = trimmedName;
+            sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
+            if(localStorage.getItem('op_user')) localStorage.setItem('op_user', JSON.stringify(sessionUser));
+            updateMenuUI(trimmedName, sessionUser.nick);
+            const playersSnap = await get(playersRef);
+            playersSnap.forEach(child => {
+                const p = child.val();
+                if (p.login === sessionUser.nick || p.name === oldDisplayName) {
+                     update(ref(db, 'players/' + child.key), { name: trimmedName, login: sessionUser.nick });
+                }
+            });
+        } catch(e) { alert("Error: " + e.message); }
     }
 
     window.switchAuthView = function(view) {
@@ -497,9 +480,6 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-        const localData = localStorage.getItem('poker_data_v65'); 
-        if (localData) renderTable(JSON.parse(localData));
-        
         const savedUser = localStorage.getItem('op_user');
         if(savedUser) {
             const user = JSON.parse(savedUser);
@@ -637,34 +617,50 @@
         }
     }
 
-    window.editNickname = async function() {
-        let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        if (!sessionUser) sessionUser = JSON.parse(localStorage.getItem('op_user'));
-        if (!sessionUser) return;
-        const oldDisplayName = sessionUser.displayName || sessionUser.nick;
-        const newName = prompt("Новое имя:", oldDisplayName);
-        if(!newName || newName.trim() === "") return;
-        const trimmedName = newName.trim();
-        try {
-            await update(ref(db, 'users/' + sessionUser.nick), { displayName: trimmedName });
-            sessionUser.displayName = trimmedName;
-            sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
-            if(localStorage.getItem('op_user')) localStorage.setItem('op_user', JSON.stringify(sessionUser));
-            updateMenuUI(trimmedName, sessionUser.nick);
-            const playersSnap = await get(playersRef);
-            playersSnap.forEach(child => {
-                const p = child.val();
-                if (p.login === sessionUser.nick || p.name === oldDisplayName) {
-                     update(ref(db, 'players/' + child.key), { name: trimmedName, login: sessionUser.nick });
-                }
-            });
-        } catch(e) { alert("Error: " + e.message); }
+    function setOnlineStatus(nickname) {
+        const myUserRef = ref(db, `online_users/${nickname}`);
+        currentConnectionRef = push(myUserRef);
+        onDisconnect(currentConnectionRef).remove();
+        set(currentConnectionRef, true);
+    }
+
+    onValue(connectedRef, (snap) => {
+        const dotMobile = document.getElementById('mobileStatusDot');
+        const dotDesktop = document.getElementById('desktopStatusDot');
+        const statusEl = document.getElementById('networkStatus');
+        if(statusEl) statusEl.style.display = 'none';
+        if (snap.val() === true) {
+            dotMobile.classList.add('online'); dotDesktop.classList.add('online');
+        } else {
+            dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
+        }
+    });
+
+    onValue(onlineUsersRef, (snap) => {
+        const countDisplay = document.getElementById('onlineCounter');
+        onlineNicknames.clear();
+        if (snap.exists()) {
+            const data = snap.val();
+            Object.keys(data).forEach(n => onlineNicknames.add(n));
+            countDisplay.innerText = `👁️ Онлайн: ${onlineNicknames.size}`;
+        } else { countDisplay.innerText = `👁️ Онлайн: 0`; }
+        updateTableStatusDots();
+    });
+
+    function updateTableStatusDots() {
+        document.querySelectorAll('.player-status-indicator').forEach(dot => {
+            const name = dot.getAttribute('data-player-name');
+            const login = dot.getAttribute('data-player-login');
+            const keyToCheck = login || name;
+            if (onlineNicknames.has(keyToCheck)) dot.classList.add('is-online');
+            else dot.classList.remove('is-online');
+        });
     }
 
     onValue(playersRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
-        localStorage.setItem('poker_data_v65', JSON.stringify(data));
+        localStorage.setItem('poker_data_v66', JSON.stringify(data));
         renderTable(data);
     });
 
@@ -799,6 +795,7 @@
     window.toggleSidebar = function() { document.getElementById('sidebar').classList.toggle('open'); }
     window.showView = function(viewName) { document.getElementById('sidebar').classList.remove('open'); if (viewName === 'game') { document.getElementById('view-game').classList.remove('hidden'); document.getElementById('view-journal').classList.add('hidden'); document.querySelectorAll('.nav-btn')[0].classList.add('active'); document.querySelectorAll('.nav-btn')[1].classList.remove('active'); } else { document.getElementById('view-game').classList.add('hidden'); document.getElementById('view-journal').classList.remove('hidden'); document.querySelectorAll('.nav-btn')[0].classList.remove('active'); document.querySelectorAll('.nav-btn')[1].classList.add('active'); } }
     window.downloadCSV = function() { const rows = document.querySelectorAll('#scoreTable tbody tr'); if (rows.length === 0) { alert("Пусто!"); return; } const selectedDate = document.getElementById('gameDate').value; let formattedDate = selectedDate; if(selectedDate) { const parts = selectedDate.split('-'); formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`; } let csvContent = `Дата выписки:;${formattedDate}\n\n`; csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n"; rows.forEach(row => { let name = row.querySelector('.player-name').value.trim(); if (!name) name = "Без имени"; let total = row.querySelector('.score-cell').innerText; let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); csvContent += `"${name}";${total};${opsString}\n`; }); let grandTotal = document.getElementById('grandTotal').innerText; csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`; const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `Выписка за ${formattedDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+    window.deleteUserAccount = function(nickname) { const pass = prompt(`Удалить аккаунт "${nickname}"? (Код 108020):`); if (pass !== "108020") { alert("Ошибка доступа"); return; } remove(ref(db, 'users/' + nickname)).then(() => { alert(`Аккаунт ${nickname} удален.`); }).catch((error) => { alert("Ошибка: " + error.message); }); }
 </script>
 
 </body>
