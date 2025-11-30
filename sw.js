@@ -1,5 +1,5 @@
-// Версия v70 - Enter Key Support
-const CACHE_NAME = 'orelpoker-v70-enter-keys';
+// Версия v71 - Fix Chat & Status Dot
+const CACHE_NAME = 'orelpoker-v71-fix-chat';
 const ASSETS = [
     './',
     './index.html',
