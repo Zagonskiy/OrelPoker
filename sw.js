@@ -1,5 +1,5 @@
-// Версия v75 - Chat Edit & Delete
-const CACHE_NAME = 'orelpoker-v75-chat-edit';
+// Версия v76 - Fix View Switching (Overlap)
+const CACHE_NAME = 'orelpoker-v76-view-fix';
 const ASSETS = [
     './',
     './index.html',
