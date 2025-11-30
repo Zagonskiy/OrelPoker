@@ -1,5 +1,5 @@
-// Версия v82 - Restore Version Tag
-const CACHE_NAME = 'orelpoker-v82-version-restore';
+// Версия v74 - Restore User Info & Status Dot
+const CACHE_NAME = 'orelpoker-v74-status-restore';
 const ASSETS = [
     './',
     './index.html',
