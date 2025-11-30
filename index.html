@@ -266,6 +266,13 @@
         .chat-messages { flex: 1; overflow-y: auto; padding: 10px; background: rgba(255, 255, 255, 0.3); border: 2px solid var(--accent-brown); border-radius: 8px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; }
         .message-bubble { max-width: 80%; padding: 8px 12px; border-radius: 12px; position: relative; font-family: 'Special Elite', monospace; font-size: 1em; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); }
         .message-sender { font-size: 0.75em; font-weight: bold; margin-bottom: 2px; display: block; font-family: 'Rye', cursive; }
+        .msg-time {
+            font-size: 0.8em;
+            opacity: 0.6;
+            margin-left: 8px;
+            font-weight: normal;
+            float: right; /* Время будет справа */
+        }
         .my-message { align-self: flex-end; background-color: #e8f5e9; border: 1px solid var(--accent-green); border-bottom-right-radius: 0; }
         .my-message .message-sender { color: var(--accent-green); text-align: right; }
         .other-message { align-self: flex-start; background-color: #fff8e1; border: 1px solid var(--accent-brown); border-bottom-left-radius: 0; }
@@ -656,8 +663,15 @@
         messages.forEach(msg => {
             const bubble = document.createElement('div');
             const isMine = (msg.senderLogin === myLogin);
+            
+            // Форматируем время (ЧЧ:ММ)
+            const date = new Date(msg.timestamp);
+            const timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
             bubble.className = `message-bubble ${isMine ? 'my-message' : 'other-message'}`;
-            bubble.innerHTML = `<span class="message-sender">${msg.sender}</span>${msg.text}`;
+            
+            // Добавляем время внутрь заголовка сообщения
+            bubble.innerHTML = `<span class="message-sender">${msg.sender} <span class="msg-time">${timeStr}</span></span>${msg.text}`;
             container.appendChild(bubble);
         });
         container.scrollTop = container.scrollHeight;
@@ -1283,3 +1297,4 @@
 
 </body>
 </html>
+
