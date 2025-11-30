@@ -329,6 +329,17 @@
             .close-menu-btn { display: block; }
             tfoot { display: none; } /* Скрываем старый футер если остался */
         }
+        /* --- СИСТЕМА РАНГОВ --- */
+        .role-hidden { display: none !important; }
+
+        /* Участник видит только текст, не видит inputs */
+        .view-only-input {
+            border: none !important;
+            background: transparent !important;
+            pointer-events: none; /* Запрет клика */
+            color: var(--ink-color) !important;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -636,7 +647,49 @@
         const sessionUser = sessionStorage.getItem('op_session_user');
         if(sessionUser) {
             const user = JSON.parse(sessionUser);
-            performLogin(user.nick, user.pass, false, user.displayName);
+            function performLogin(nick, pass, remember, displayName) {
+        document.getElementById('login-overlay').style.display = 'none';
+        const finalName = displayName || nick;
+        updateMenuUI(finalName, nick);
+        
+        // --- ЛОГИКА РАНГОВ ---
+        let role = 'player'; // По умолчанию участник
+        
+        // 1. Главный админ (хардкод)
+        if (nick === 'Zagonskiy') {
+            role = 'admin';
+        } 
+        // 2. Проверяем сохраненную роль в локальном хранилище (если есть)
+        // В идеале роль должна приходить из Firebase, мы добавим это в listener ниже
+        
+        const userObj = { nick, pass, displayName: finalName, role: role };
+        
+        sessionStorage.setItem('op_session_user', JSON.stringify(userObj));
+        if(remember) localStorage.setItem('op_user', JSON.stringify(userObj));
+        
+        setOnlineStatus(nick);
+        
+        // Запускаем проверку роли из базы данных
+        fetchUserRole(nick); 
+        applyRoleUI(); // Применяем интерфейс
+    }
+
+    // Добавьте эту новую функцию сразу ПОСЛЕ performLogin
+    function fetchUserRole(nick) {
+        if (nick === 'Zagonskiy') return; // Главного не трогаем
+        
+        get(child(ref(db), `users/${nick}/role`)).then((snap) => {
+            let role = snap.val() || 'player';
+            
+            // Обновляем сессию
+            let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+            if(sessionUser) {
+                sessionUser.role = role;
+                sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
+                applyRoleUI(); // Перерисовываем интерфейс
+            }
+        });
+    }
             verifySessionInBackground(user.nick, user.pass);
         }
         if(navigator.onLine) syncUsersToTable();
@@ -667,6 +720,33 @@
                 }
             } else { alert("Аккаунт не найден."); logout(); }
         } catch (e) { }
+    }
+
+    window.applyRoleUI = function() {
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        const role = sessionUser ? sessionUser.role : 'player';
+
+        // 1. Глобальные кнопки управления (Сброс, Новый день, +Игрок)
+        const controlsDiv = document.querySelector('.controls');
+        const extremeResetBtn = document.querySelector('.btn-extreme-reset');
+        
+        if (role === 'player') {
+            // Игрок не видит панель управления вообще
+            if(controlsDiv) controlsDiv.classList.add('role-hidden');
+            if(extremeResetBtn) extremeResetBtn.classList.add('role-hidden');
+        } else if (role === 'trusted') {
+            // Доверенный видит панель, но не видит "Ядерный сброс" в меню
+            if(controlsDiv) controlsDiv.classList.remove('role-hidden');
+            if(extremeResetBtn) extremeResetBtn.classList.add('role-hidden');
+        } else {
+            // Админ видит всё
+            if(controlsDiv) controlsDiv.classList.remove('role-hidden');
+            if(extremeResetBtn) extremeResetBtn.classList.remove('role-hidden');
+        }
+
+        // Перерисовываем таблицу, чтобы скрыть +/- в строках
+        const savedData = JSON.parse(localStorage.getItem('poker_data_v74'));
+        if (savedData) renderTable(savedData);
     }
 
     window.handleLogin = function() {
@@ -841,36 +921,94 @@
     }
 
     function renderPlayerRow(id, player) {
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || { role: 'player' };
+        const myRole = sessionUser.role;
+
         const tableBody = document.getElementById('tableBody');
         const newRow = tableBody.insertRow();
         const { total, historyArray } = calculatePlayerStats(player);
 
+        // 1. ИМЯ (Если Админ - можно кликнуть для смены ранга)
         const cellName = newRow.insertCell(0);
         const nameWrapper = document.createElement('div');
         nameWrapper.className = 'name-wrapper';
+        
+        // Индикатор статуса
         const statusDot = document.createElement('div');
         statusDot.className = 'player-status-indicator';
         statusDot.setAttribute('data-player-name', player.name);
         if(player.login) statusDot.setAttribute('data-player-login', player.login);
         const keyToCheck = player.login || player.name;
         if (onlineNicknames.has(keyToCheck)) statusDot.classList.add('is-online');
-        
-        const inputName = document.createElement('input');
-        inputName.type = 'text'; inputName.className = 'player-name'; inputName.value = player.name || "";
-        inputName.readOnly = true;
 
-        nameWrapper.appendChild(statusDot); nameWrapper.appendChild(inputName); cellName.appendChild(nameWrapper);
-        const cellAction = newRow.insertCell(1);
-        const inputNum = document.createElement('input');
-        inputNum.type = 'number'; inputNum.className = 'input-val'; inputNum.placeholder = '0';
+        const inputName = document.createElement('input');
+        inputName.type = 'text'; 
+        inputName.className = 'player-name'; 
+        inputName.value = player.name || "";
+        inputName.readOnly = true;
         
-        // Listener for ENTER
-        inputNum.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                handleScore(id, inputNum, 1);
-            }
-        });
+        // ФИШКА: Админ может менять ранги кликом по имени
+        if (myRole === 'admin' && player.login) {
+            inputName.style.cursor = "pointer";
+            inputName.style.textDecoration = "underline";
+            inputName.title = "Нажми, чтобы изменить ранг";
+            inputName.onclick = () => changeRankDialog(player.login, player.name);
+        }
+
+        nameWrapper.appendChild(statusDot); 
+        nameWrapper.appendChild(inputName); 
+        cellName.appendChild(nameWrapper);
+
+        // 2. ДЕЙСТВИЯ (Скрываем для Player)
+        const cellAction = newRow.insertCell(1);
+        
+        if (myRole !== 'player') {
+            const inputNum = document.createElement('input');
+            inputNum.type = 'number'; 
+            inputNum.className = 'input-val'; 
+            inputNum.placeholder = '0';
+            
+            inputNum.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleScore(id, inputNum, 1);
+                }
+            });
+
+            cellAction.append(
+                inputNum, 
+                createBtn('+', 'btn-calc', () => handleScore(id, inputNum, 1)),
+                createBtn('-', 'btn-calc', () => handleScore(id, inputNum, -1)),
+                createBtn('↩', 'btn-undo', () => undoLast(id)),
+                createBtn('↪', 'btn-redo', () => redoLast(id))
+            );
+        } else {
+            cellAction.innerText = "—"; // Игроки видят прочерк
+        }
+
+        // 3. ИТОГ
+        const cellTotal = newRow.insertCell(2);
+        cellTotal.className = 'score-cell';
+        cellTotal.innerText = total;
+
+        // 4. ИСТОРИЯ
+        const cellHistory = newRow.insertCell(3);
+        cellHistory.className = 'history-log';
+        cellHistory.innerText = historyArray.length > 0 ? historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ') : 'Пусто';
+
+        // 5. УДАЛЕНИЕ (Только Админ)
+        const cellDelete = newRow.insertCell(4);
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
+        
+        // Кнопка сброса игрока (Только Админ)
+        if (myRole === 'admin') {
+             wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
+             wrapper.appendChild(createBtn('✕', 'btn-delete', () => { if(confirm("Удалить игрока?")) remove(ref(db, 'players/' + id)); }));
+        }
+        
+        cellDelete.appendChild(wrapper);
+    }
 
         cellAction.append(
             inputNum, 
@@ -945,9 +1083,85 @@
     window.extremeReset = async () => { if (prompt("ПОЛНЫЙ СБРОС (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { updates['players/' + child.key + '/history'] = null; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); } };
     window.startNewDay = async () => { if (prompt("НОВЫЙ ДЕНЬ (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { const { total } = calculatePlayerStats(child.val()); const key1 = push(ref(db)).key; const key2 = push(ref(db)).key; const newHistory = {}; newHistory[key1] = total; newHistory[key2] = 500; updates['players/' + child.key + '/history'] = newHistory; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); alert("День начат! +500"); } };
     window.addToJournal=async function(){if(!confirm("Сохранить итоги в Журнал?"))return;const dv=document.getElementById('gameDate').value;if(!dv){alert("Ошибка даты!");return;}const[y,m,d]=dv.split('-');const fd=`${d}.${m}.${y}`;const s=await get(playersRef);const dt=s.val();if(!dt)return;let gt=0;const sp=[];for(let i in dt){const p=dt[i];const{total,historyArray}=calculatePlayerStats(p);gt+=total;sp.push({name:p.name||"Без имени",total:total,history:historyArray.join(' ')})}push(journalRef,{date:fd+' '+new Date().toLocaleTimeString().slice(0,5),timestamp:Date.now(),grandTotal:gt,players:sp});alert("Сохранено за "+fd+"!");};document.addEventListener("DOMContentLoaded",()=>{const el=document.getElementById('gameDate');if(el){const t=new Date();el.value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`}});
-    window.deleteJournalEntry = function(id) { const pass = prompt("Удалить запись (Код)?"); if (pass === "108020") { remove(ref(db, 'journal/' + id)); } else if (pass !== null) { alert("Ошибка"); } }
-    onValue(journalRef, (snapshot) => { const listDiv = document.getElementById('journalList'); listDiv.innerHTML = ''; const data = snapshot.val(); if (!data) { listDiv.innerHTML = '<div style="text-align:center;">Пусто</div>'; return; } const entries = Object.entries(data).sort((a, b) => b[1].timestamp - a[1].timestamp); entries.forEach(([id, entry]) => { const card = document.createElement('div'); card.className = 'journal-card'; const header = document.createElement('div'); header.className = 'journal-header'; header.innerHTML = `<div style="display:flex; align-items:center;"><span>📅 ${entry.date}</span><button class="btn-journal-delete" onclick="event.stopPropagation(); deleteJournalEntry('${id}')">🗑️</button></div><span class="journal-total">Банк: ${entry.grandTotal}</span>`; const details = document.createElement('div'); details.className = 'journal-details'; let detailsHtml = `<div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px; display:flex; justify-content:space-between;"><span>Игрок</span><span>Итог</span></div>`; if (entry.players) { entry.players.forEach(p => { detailsHtml += `<div class="detail-row"><span style="font-weight:bold;">${p.name}</span><span style="color:${p.total >= 0 ? 'green' : 'red'}">${p.total}</span></div><div style="font-size:0.8em; color:#666; margin-bottom:5px;">${p.history}</div>`; }); } details.innerHTML = detailsHtml; card.appendChild(header); card.appendChild(details); card.onclick = () => card.classList.toggle('open'); listDiv.appendChild(card); }); });
-    
+    window.deleteJournalEntry = function(id) { 
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        // Разрешаем если Админ ИЛИ Доверенный
+        if (sessionUser.role === 'admin' || sessionUser.role === 'trusted') {
+             if(confirm("Удалить запись?")) remove(ref(db, 'journal/' + id));
+        } else {
+             alert("Нет прав!");
+        }
+    }
+    // ОТРИСОВКА ЖУРНАЛА (с проверкой прав на удаление)
+    onValue(journalRef, (snapshot) => {
+        const listDiv = document.getElementById('journalList');
+        listDiv.innerHTML = '';
+        const data = snapshot.val();
+        
+        // 1. Проверяем роль текущего пользователя
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || { role: 'player' };
+        const canDelete = (sessionUser.role === 'admin' || sessionUser.role === 'trusted');
+
+        if (!data) {
+            listDiv.innerHTML = '<div style="text-align:center;">Пусто</div>';
+            return;
+        }
+
+        // Сортировка записей (новые сверху)
+        const entries = Object.entries(data).sort((a, b) => b[1].timestamp - a[1].timestamp);
+
+        entries.forEach(([id, entry]) => {
+            const card = document.createElement('div');
+            card.className = 'journal-card';
+
+            const header = document.createElement('div');
+            header.className = 'journal-header';
+
+            // 2. Формируем кнопку удаления ТОЛЬКО если есть права
+            let deleteBtnHtml = '';
+            if (canDelete) {
+                deleteBtnHtml = `<button class="btn-journal-delete" onclick="event.stopPropagation(); deleteJournalEntry('${id}')">🗑️</button>`;
+            }
+
+            // Вставляем кнопку (или пустоту) в заголовок
+            header.innerHTML = `<div style="display:flex; align-items:center;"><span>📅 ${entry.date}</span>${deleteBtnHtml}</div><span class="journal-total">Банк: ${entry.grandTotal}</span>`;
+
+            const details = document.createElement('div');
+            details.className = 'journal-details';
+            
+            let detailsHtml = `<div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px; display:flex; justify-content:space-between;"><span>Игрок</span><span>Итог</span></div>`;
+            
+            if (entry.players) {
+                entry.players.forEach(p => {
+                    detailsHtml += `<div class="detail-row"><span style="font-weight:bold;">${p.name}</span><span style="color:${p.total >= 0 ? 'green' : 'red'}">${p.total}</span></div><div style="font-size:0.8em; color:#666; margin-bottom:5px;">${p.history}</div>`;
+                });
+            }
+            
+            details.innerHTML = detailsHtml;
+            card.appendChild(header);
+            card.appendChild(details);
+            
+            card.onclick = () => card.classList.toggle('open');
+            listDiv.appendChild(card);
+        });
+    });
+
+    window.changeRankDialog = function(login, currentName) {
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (!sessionUser || sessionUser.role !== 'admin') return;
+        
+        if (login === 'Zagonskiy') { alert("Нельзя менять ранг Создателя!"); return; }
+
+        const newRole = prompt(`Назначить роль для ${currentName} (${login}):\nВведите: admin, trusted или player`, "player");
+        
+        if (newRole === 'admin' || newRole === 'trusted' || newRole === 'player') {
+            update(ref(db, 'users/' + login), { role: newRole })
+                .then(() => alert(`Роль ${newRole} назначена!`))
+                .catch(e => alert("Ошибка: " + e));
+        } else if (newRole !== null) {
+            alert("Некорректная роль! Только: admin, trusted, player");
+        }
+    }
     // --- UI CONTROLLERS ---
     window.toggleSidebar = function() {
         document.getElementById('sidebar').classList.toggle('open');
@@ -983,6 +1197,7 @@
 
 </body>
 </html>
+
 
 
 
