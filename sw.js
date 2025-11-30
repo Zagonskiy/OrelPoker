@@ -1,5 +1,5 @@
-// Версия v82 - Restore Header & Counter Styles
-const CACHE_NAME = 'orelpoker-v82-header-restore';
+// Версия v82 - Restore Version Tag
+const CACHE_NAME = 'orelpoker-v82-version-restore';
 const ASSETS = [
     './',
     './index.html',
