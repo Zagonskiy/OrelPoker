@@ -364,6 +364,52 @@
             border-color: #ffb300 !important;
             box-shadow: 0 0 5px rgba(255, 179, 0, 0.5);
         }
+
+/* Стиль даты и времени */
+        .msg-meta {
+            font-size: 0.7em;
+            color: #6b523d;
+            opacity: 0.7;
+            float: right;
+            margin-left: 10px;
+            margin-top: 2px;
+        }
+    
+    /* Блок кнопок (редактировать/удалить) */
+        .msg-actions {
+            display: inline-flex;
+            gap: 5px;
+            margin-left: 8px;
+            opacity: 0.5;
+            transition: 0.2s;
+        }
+        .message-bubble:hover .msg-actions { opacity: 1; }
+
+        .msg-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            padding: 0;
+            color: inherit;
+        }
+        .msg-btn:hover { transform: scale(1.2); color: #000; }
+
+    /* Режим редактирования (подсветка поля ввода) */
+        .editing-mode {
+            background-color: #fff3e0 !important; /* Светло-оранжевый фон */
+            border-color: #ff9800 !important;      /* Оранжевая рамка */
+            box-shadow: 0 0 8px rgba(255, 152, 0, 0.5) !important;
+        }
+    
+    /* Метка (ред.) */
+        .edited-label {
+            font-size: 0.7em;
+            font-style: italic;
+            color: #888;
+            margin-left: 4px;
+        }
+        
         .btn-msg-action:hover { opacity: 1; transform: scale(1.2); }
         .my-message { align-self: flex-end; background-color: #e8f5e9; border: 1px solid var(--accent-green); border-bottom-right-radius: 0; }
         .my-message .message-sender { color: var(--accent-green); text-align: right; }
@@ -603,8 +649,8 @@
         </div>
         <div id="chatMessages" class="chat-messages"></div>
         <div class="chat-input-bar">
+            <button id="btnCancelEdit" class="btn-delete hidden" style="border-radius: 4px; margin-right:5px; width:40px;" onclick="cancelEditMode()" title="Отменить редактирование">✕</button>
             <input type="text" id="chatInput" class="chat-input" placeholder="Написать сообщение...">
-            <button id="btnCancelEdit" class="btn-delete hidden" style="border-radius: 4px; margin-right:5px;" onclick="cancelEditMode()">✕</button>
             <button id="btnSendChat" class="btn-send" onclick="sendMessage()">➤</button>
         </div>
     </div>
@@ -754,40 +800,173 @@
         if(navigator.onLine) syncUsersToTable();
     });
 
-    // --- ЧАТ ---
+    // --- ЧАТ (С РЕДАКТИРОВАНИЕМ И ДАТОЙ) ---
+    
+    let editingMsgId = null; // Хранит ID сообщения, которое сейчас правим
+    let isChatLoadedOnce = false; // Для счетчика уведомлений
+
     window.sendMessage = function() {
         const input = document.getElementById('chatInput');
         const text = input.value.trim();
         if (!text) return;
+
         const nameEl = document.getElementById('menuDisplayName');
         const senderName = nameEl ? nameEl.innerText : "Гость";
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || {};
-        push(chatRef, {
-            sender: senderName,
-            senderLogin: sessionUser.nick || "anon",
-            text: text,
-            timestamp: Date.now()
-        });
+        const userLogin = sessionUser.nick || "anon";
+
+        // Если мы в режиме РЕДАКТИРОВАНИЯ
+        if (editingMsgId) {
+            update(ref(db, 'chat/' + editingMsgId), {
+                text: text,
+                isEdited: true
+            }).then(() => {
+                cancelEditMode(); // Выходим из режима
+            }).catch(e => alert("Ошибка: " + e));
+        } 
+        // Если отправляем НОВОЕ
+        else {
+            push(chatRef, {
+                sender: senderName,
+                senderLogin: userLogin,
+                text: text,
+                timestamp: Date.now()
+            });
+        }
+        
         input.value = '';
         input.focus();
     }
+
+    // Запуск редактирования (клик по карандашу)
+    window.startEditMessage = function(key, oldText, timestamp) {
+        // Проверка на 24 часа (86400000 мс)
+        if (Date.now() - timestamp > 86400000) {
+            alert("Прошло больше 24 часов. Редактировать нельзя.");
+            return;
+        }
+
+        const input = document.getElementById('chatInput');
+        const btnSend = document.getElementById('btnSendChat');
+        const btnCancel = document.getElementById('btnCancelEdit');
+
+        // Входим в режим
+        editingMsgId = key;
+        input.value = oldText; // Вставляем старый текст
+        input.focus();
+        input.classList.add('editing-mode'); // Подсветка
+        
+        btnSend.innerText = "💾"; // Меняем значок на дискету
+        btnCancel.classList.remove('hidden'); // Показываем крестик
+    }
+
+    // Отмена редактирования
+    window.cancelEditMode = function() {
+        const input = document.getElementById('chatInput');
+        const btnSend = document.getElementById('btnSendChat');
+        const btnCancel = document.getElementById('btnCancelEdit');
+
+        editingMsgId = null;
+        input.value = '';
+        input.classList.remove('editing-mode');
+        
+        btnSend.innerText = "➤";
+        btnCancel.classList.add('hidden');
+    }
+
+    // Удаление сообщения
+    window.deleteChatMessage = function(key, timestamp) {
+        if (Date.now() - timestamp > 86400000) {
+            alert("Прошло больше 24 часов. Удалить нельзя.");
+            return;
+        }
+        if (confirm("Удалить сообщение?")) {
+            remove(ref(db, 'chat/' + key));
+            // Если удалили то, что редактировали - сброс
+            if (editingMsgId === key) cancelEditMode();
+        }
+    }
     
+    // Отрисовка чата
     onValue(chatRef, (snapshot) => {
         const container = document.getElementById('chatMessages');
         container.innerHTML = '';
-        const data = snapshot.val();
-        if (!data) return;
-        const messages = Object.values(data).sort((a, b) => a.timestamp - b.timestamp);
+        
+        if (!snapshot.exists()) {
+            isChatLoadedOnce = true;
+            return;
+        }
+
+        // Превращаем объект в массив, чтобы сортировать и иметь ключи (ID)
+        const messages = [];
+        snapshot.forEach(child => {
+            messages.push({ key: child.key, ...child.val() });
+        });
+        // Сортировка: старые сверху, новые снизу
+        messages.sort((a, b) => a.timestamp - b.timestamp);
+
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || {};
         const myLogin = sessionUser.nick;
+        const now = Date.now();
+        const oneDay = 24 * 60 * 60 * 1000;
+
         messages.forEach(msg => {
             const bubble = document.createElement('div');
             const isMine = (msg.senderLogin === myLogin);
+            
+            // Форматирование даты
+            const d = new Date(msg.timestamp);
+            // Если сегодня - только время, если давно - дата и время
+            const dateStr = d.toLocaleDateString() === new Date().toLocaleDateString() 
+                ? d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                : d.toLocaleString([], {day: 'numeric', month:'numeric', hour: '2-digit', minute:'2-digit'});
+
             bubble.className = `message-bubble ${isMine ? 'my-message' : 'other-message'}`;
-            bubble.innerHTML = `<span class="message-sender">${msg.sender}</span>${msg.text}`;
+            
+            // Кнопки действий (только для своих и свежих сообщений)
+            let actionsHtml = '';
+            if (isMine && (now - msg.timestamp < oneDay)) {
+                // Экранируем кавычки, чтобы не сломать HTML
+                const safeText = msg.text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                actionsHtml = `
+                <span class="msg-actions">
+                    <button class="msg-btn" onclick="startEditMessage('${msg.key}', '${safeText}', ${msg.timestamp})">✏️</button>
+                    <button class="msg-btn" onclick="deleteChatMessage('${msg.key}', ${msg.timestamp})">🗑</button>
+                </span>`;
+            }
+
+            // Метка "ред."
+            const editedMark = msg.isEdited ? `<span class="edited-label">(ред.)</span>` : '';
+
+            // Собираем HTML
+            bubble.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                    <span class="message-sender">${msg.sender}</span>
+                    <span class="msg-meta">${dateStr}</span>
+                </div>
+                <div>${msg.text} ${editedMark} ${actionsHtml}</div>
+            `;
+            
             container.appendChild(bubble);
         });
         container.scrollTop = container.scrollHeight;
+
+        // Счетчик уведомлений (если мы не в чате)
+        if (isChatLoadedOnce) {
+            const chatView = document.getElementById('view-chat');
+            if (chatView && chatView.classList.contains('hidden')) {
+                const badge = document.getElementById('chatBadge');
+                if (badge) {
+                    const lastMsg = messages[messages.length - 1];
+                    if (lastMsg && lastMsg.senderLogin !== myLogin) {
+                         let current = parseInt(badge.innerText) || 0;
+                         badge.innerText = current + 1;
+                         badge.classList.add('visible');
+                    }
+                }
+            }
+        }
+        isChatLoadedOnce = true;
     });
 
     // --- ЛОКАЛЬНЫЕ ЗАМЕТКИ ---
@@ -1507,6 +1686,7 @@
 
 </body>
 </html>
+
 
 
 
