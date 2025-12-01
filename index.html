@@ -146,6 +146,43 @@
         }
         .nav-btn:hover, .nav-btn.active { background: var(--accent-brown); color: var(--accent-gold); border-color: var(--accent-gold); }
 
+        /* Кнопка перевода в заголовке чата */
+        .btn-money-transfer {
+            background-color: var(--accent-green);
+            color: white;
+            border: 1px solid #1b5e20;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-family: 'Rye', cursive;
+            cursor: pointer;
+            margin-right: auto; /* Сдвигает её влево, а кнопку "Назад" вправо */
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-money-transfer:hover { background-color: #388e3c; }
+
+        /* Модальное окно перевода */
+        #transferModal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 4000;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .transfer-card {
+            background: var(--paper-bg);
+            border: 4px double var(--accent-brown);
+            padding: 20px;
+            text-align: center;
+            width: 280px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+        }
+        .balance-display {
+            font-size: 1.5em; color: var(--accent-green); font-weight: bold;
+            margin: 10px 0; font-family: 'Special Elite', monospace;
+        }
+
         /* СЧЁТЧИК СООБЩЕНИЙ */
         .notification-badge {
             background-color: #ff0000;
@@ -897,8 +934,9 @@
 
         <div id="chatConversationPanel" class="hidden" style="display:flex; flex-direction:column; height:100%;">
             <div id="privateChatHeader" class="chat-header-private">
-                <span id="privateChatTitle">Чат</span>
-                <button class="btn-back-general" onclick="showChatList()">⬅ К Списку</button>
+                <button class="btn-back-general" onclick="showChatList()">⬅</button>
+                <button id="btnTransfer" class="btn-money-transfer hidden" onclick="openTransferModal()">💸 Перевод</button>
+                <span id="privateChatTitle" style="flex:1; text-align:right;">Чат</span>
             </div>
 
             <div id="chatMessages" class="chat-messages"></div>
@@ -907,6 +945,16 @@
                 <button id="btnCancelEdit" class="btn-delete hidden" style="border-radius: 4px; margin-right:5px; width:40px;" onclick="cancelEditMode()" title="Отменить">✕</button>
                 <input type="text" id="chatInput" class="chat-input" placeholder="Написать сообщение...">
                 <button id="btnSendChat" class="btn-send" onclick="sendMessage()">➤</button>
+            </div>
+        </div>
+        <div id="transferModal" class="hidden">
+            <div class="transfer-card">
+                <h3 style="margin-top:0; color:#8b4513;">ПЕРЕВОД СРЕДСТВ</h3>
+                <p>Ваш баланс:</p>
+                <div id="myCurrentBalance" class="balance-display">0</div>
+                <input type="number" id="transferAmount" class="login-input" placeholder="Сумма" style="text-align:center;">
+                <button class="btn-login-action" onclick="confirmTransfer()">ОТПРАВИТЬ</button>
+                <button class="btn-cancel-role" onclick="document.getElementById('transferModal').classList.add('hidden')">Отмена</button>
             </div>
         </div>
     </div>
@@ -1062,6 +1110,7 @@
     // =========================================================
     
     let currentChatId = null;
+    let currentChatPartner = null; // Логин того, с кем переписываемся
     let chatListener = null;
     let editingMsgId = null;
 
@@ -1127,36 +1176,31 @@
         
         const titleEl = document.getElementById('privateChatTitle');
         const container = document.getElementById('chatMessages');
-        
+        const btnTransfer = document.getElementById('btnTransfer');
+
         container.innerHTML = '<div style="text-align:center; padding:20px;">Загрузка сообщений...</div>';
-        titleEl.innerText = title || "Чат";
+        
+        // Логика определения партнера для перевода
+        if (chatId === 'general') {
+            currentChatPartner = null;
+            btnTransfer.classList.add('hidden'); // В общем чате нельзя переводить (кому?)
+            titleEl.innerText = "Общий чат";
+        } else {
+            // Извлекаем имя собеседника из title (мы передавали "@Nick") или парсим ID
+            // Проще всего: title уже содержит "@Nick"
+            titleEl.innerText = title;
+            currentChatPartner = title.replace('@', ''); // Убираем собачку
+            btnTransfer.classList.remove('hidden'); // Показываем кнопку
+        }
 
         const path = chatId === 'general' ? 'chat' : `private_chats/${chatId}`;
         const targetRef = ref(db, path);
 
         onValue(targetRef, (snapshot) => {
             if (currentChatId === chatId) {
-                renderChatMessages(snapshot); // ВОТ ЭТА ФУНКЦИЯ ДОЛЖНА БЫТЬ ОПРЕДЕЛЕНА
+                renderChatMessages(snapshot);
             }
         });
-    }
-
-    window.openGeneralChat = function() {
-        showView('chat'); 
-        loadChat('general', 'Общий чат'); 
-    }
-
-    window.openPrivateChat = function(targetLogin) {
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        if (!sessionUser) return;
-        const myLogin = sessionUser.nick;
-        if (targetLogin === myLogin) { alert("Нельзя писать самому себе!"); return; }
-
-        const participants = [myLogin, targetLogin].sort();
-        const chatId = participants.join('_');
-        
-        showView('chat'); 
-        loadChat(chatId, `@${targetLogin}`);
     }
 
     // 3. ОТПРАВКА СООБЩЕНИЯ (ВОССТАНОВЛЕНО)
@@ -2018,8 +2062,102 @@
     }
 
     window.downloadCSV = function() { const rows = document.querySelectorAll('#scoreTable tbody tr'); if (rows.length === 0) { alert("Пусто!"); return; } const selectedDate = document.getElementById('gameDate').value; let formattedDate = selectedDate; if(selectedDate) { const parts = selectedDate.split('-'); formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`; } let csvContent = `Дата выписки:;${formattedDate}\n\n`; csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n"; rows.forEach(row => { let name = row.querySelector('.player-name').value.trim(); if (!name) name = "Без имени"; let total = row.querySelector('.score-cell').innerText; let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); csvContent += `"${name}";${total};${opsString}\n`; }); let grandTotal = document.getElementById('grandTotal').innerText; csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`; const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `Выписка за ${formattedDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+    // --- СИСТЕМА ПЕРЕВОДОВ ---
+    
+    // 1. Открыть окно
+    window.openTransferModal = async function() {
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (!sessionUser) return;
+        
+        // Ищем баланс отправителя
+        const myId = await findPlayerIdByLogin(sessionUser.nick);
+        
+        if (!myId) {
+            alert("Вы не сидите за столом! Сначала создайте игрока.");
+            return;
+        }
+        
+        // Получаем актуальный баланс
+        const snap = await get(ref(db, 'players/' + myId));
+        const player = snap.val();
+        const { total } = calculatePlayerStats(player);
+        
+        document.getElementById('myCurrentBalance').innerText = total;
+        document.getElementById('transferAmount').value = '';
+        document.getElementById('transferModal').classList.remove('hidden');
+    }
+
+    // 2. Подтвердить перевод
+    window.confirmTransfer = async function() {
+        const amount = parseFloat(document.getElementById('transferAmount').value);
+        if (isNaN(amount) || amount <= 0) { alert("Некорректная сумма"); return; }
+        
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        const myLogin = sessionUser.nick;
+        const targetLogin = currentChatPartner;
+
+        if (!targetLogin) return;
+
+        // 1. Находим ID обоих игроков
+        const myId = await findPlayerIdByLogin(myLogin);
+        const targetId = await findPlayerIdByLogin(targetLogin);
+
+        if (!myId) { alert("Ошибка: Вы не за столом."); return; }
+        if (!targetId) { alert("Ошибка: Получатель не за столом."); return; }
+
+        // 2. Проверяем баланс (ещё раз для надежности)
+        const snap = await get(ref(db, 'players/' + myId));
+        const { total } = calculatePlayerStats(snap.val());
+
+        if (total < amount) {
+            alert("Недостаточно средств!");
+            return;
+        }
+
+        if (!confirm(`Перевести ${amount} игроку @${targetLogin}?`)) return;
+
+        // 3. Выполняем транзакцию
+        const updates = {};
+        // Снимаем у меня
+        const pushKey1 = push(ref(db, 'players/' + myId + '/history')).key;
+        updates['players/' + myId + '/history/' + pushKey1] = -amount;
+        
+        // Добавляем ему
+        const pushKey2 = push(ref(db, 'players/' + targetId + '/history')).key;
+        updates['players/' + targetId + '/history/' + pushKey2] = amount;
+
+        await update(ref(db), updates);
+
+        // 4. Пишем в чат автоматически
+        const path = `private_chats/${currentChatId}`;
+        push(ref(db, path), {
+            sender: "Система",
+            senderLogin: "system",
+            text: `💸 ПЕРЕВОД: ${sessionUser.displayName} отправил ${amount} монет.`,
+            timestamp: Date.now()
+        });
+
+        document.getElementById('transferModal').classList.add('hidden');
+        alert("Перевод выполнен!");
+    }
+
+    // Вспомогательная: Найти ID игрока в таблице по логину
+    async function findPlayerIdByLogin(loginTarget) {
+        const snap = await get(playersRef);
+        const data = snap.val();
+        if (!data) return null;
+        
+        for (let id in data) {
+            // Проверяем поле login или поле name (для старых записей)
+            if (data[id].login === loginTarget || data[id].name === loginTarget) {
+                return id;
+            }
+        }
+        return null;
+    }
 </script>
 
 </body>
 </html>
+
 
