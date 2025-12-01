@@ -872,37 +872,6 @@
     </div>
 </div>
 
-<script>
-    window.forceUpdate = async function() {
-        if (!confirm("Обновить приложение?")) return;
-        if ('serviceWorker' in navigator) {
-            const registrations = await navigator.serviceWorker.getRegistrations();
-            for (let registration of registrations) { await registration.unregister(); }
-        }
-        caches.keys().then(async function(names) {
-            await Promise.all(names.map(name => caches.delete(name)));
-            window.location.reload(true);
-        });
-    }
-
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=74').then(reg => {
-                reg.update();
-                reg.onupdatefound = () => {
-                    const newWorker = reg.installing;
-                    newWorker.onstatechange = () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            window.location.reload();
-                        }
-                    };
-                };
-            });
-            navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
-        });
-    }
-</script>
-
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, onValue, push, set, remove, update, get, query, limitToLast, orderByKey, runTransaction, onDisconnect, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -995,21 +964,14 @@
     // НОВАЯ СИСТЕМА ЧАТОВ (ОБЩИЙ + ЛИЧКА)
     // =========================================================
     
-    let currentChatId = 'general'; // 'general' или 'private_nick1_nick2'
-    let chatListener = null;       // Ссылка на слушатель базы (чтобы отключать)
+    let currentChatId = 'general';
+    let chatListener = null;
     let editingMsgId = null;
+    let isChatLoadedOnce = false;
     
-    // 1. ЗАПУСК ЧАТА (Смена комнаты)
     window.loadChat = function(chatId, title) {
-        // Отключаем старый слушатель, если был
-        if (chatListener) {
-            // Firebase сам не дает простого off, поэтому просто очищаем контейнер
-            // В идеале нужно сохранять ref и делать off(), но для простоты перерисуем
-        }
-        
         currentChatId = chatId;
         
-        // UI изменения
         const header = document.getElementById('privateChatHeader');
         const titleEl = document.getElementById('privateChatTitle');
         const container = document.getElementById('chatMessages');
@@ -1023,17 +985,13 @@
             titleEl.innerText = title || "Личный чат";
         }
 
-        // Определяем путь в базе
-        // Если общий - путь 'chat', если личный - 'private_chats/chatId'
         const path = chatId === 'general' ? 'chat' : `private_chats/${chatId}`;
         const targetRef = ref(db, path);
 
-        // Вешаем слушатель
         onValue(targetRef, (snapshot) => {
             renderChatMessages(snapshot);
         });
         
-        // Переключаем вид
         showView('chat');
     }
 
@@ -1048,15 +1006,12 @@
 
         if (targetLogin === myLogin) { alert("Нельзя писать самому себе!"); return; }
 
-        // Создаем уникальный ID чата (сортируем ники по алфавиту, чтобы у обоих был один ID)
-        // Пример: admin и guest -> admin_guest
         const participants = [myLogin, targetLogin].sort();
         const chatId = participants.join('_');
         
         loadChat(chatId, `Личка с @${targetLogin}`);
     }
 
-    // 2. ОТПРАВКА СООБЩЕНИЯ
     window.sendMessage = function() {
         const input = document.getElementById('chatInput');
         const text = input.value.trim();
@@ -1067,7 +1022,6 @@
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || {};
         const userLogin = sessionUser.nick || "anon";
 
-        // Определяем куда писать
         const path = currentChatId === 'general' ? 'chat' : `private_chats/${currentChatId}`;
 
         if (editingMsgId) {
@@ -1087,12 +1041,12 @@
         input.focus();
     }
 
-    // 3. ОТРИСОВКА СООБЩЕНИЙ
     function renderChatMessages(snapshot) {
         const container = document.getElementById('chatMessages');
         container.innerHTML = '';
         
         if (!snapshot.exists()) {
+            isChatLoadedOnce = true;
             container.innerHTML = '<div style="text-align:center; opacity:0.5; margin-top:20px;">Здесь пока пусто...</div>';
             return;
         }
@@ -1141,9 +1095,25 @@
             container.appendChild(bubble);
         });
         container.scrollTop = container.scrollHeight;
+
+        // Счетчик уведомлений
+        if (isChatLoadedOnce) {
+            const chatView = document.getElementById('view-chat');
+            if (chatView && chatView.classList.contains('hidden')) {
+                const badge = document.getElementById('chatBadge');
+                if (badge) {
+                    const lastMsg = messages[messages.length - 1];
+                    if (lastMsg && lastMsg.senderLogin !== myLogin) {
+                         let current = parseInt(badge.innerText) || 0;
+                         badge.innerText = current + 1;
+                         badge.classList.add('visible');
+                    }
+                }
+            }
+        }
+        isChatLoadedOnce = true;
     }
 
-    // Вспомогательные функции чата
     window.startEditMessage = function(key, oldText, timestamp) {
         if (Date.now() - timestamp > 86400000) { alert("Время вышло."); return; }
         const input = document.getElementById('chatInput');
@@ -1174,13 +1144,13 @@
     }
 
     // =========================================================
-    // ОБНОВЛЕННАЯ ТАБЛИЦА (С кнопкой ЛС)
+    // ТАБЛИЦА ИГРОКОВ (СТАТУС, ЗАМЕТКИ, ИКОНКИ)
     // =========================================================
 
     function renderPlayerRow(id, player) {
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || { role: 'player' };
         const myRole = sessionUser.role;
-        const myLogin = sessionUser.nick; // Для проверки "не я ли это"
+        const myLogin = sessionUser.nick;
 
         const tableBody = document.getElementById('tableBody');
         const newRow = tableBody.insertRow();
@@ -1194,9 +1164,10 @@
         const statusDot = document.createElement('div');
         statusDot.className = 'player-status-indicator';
         if(player.login) statusDot.setAttribute('data-player-login', player.login);
+        const keyToCheck = player.login || player.name;
+        if (onlineNicknames.has(keyToCheck)) statusDot.classList.add('is-online');
         
-        // --- КНОПКА ЛИЧКИ (НОВОЕ) ---
-        // Если игрок зарегистрирован (есть логин) и это не я сам
+        // КНОПКА ЛИЧКИ
         if (player.login && player.login !== myLogin) {
             const btnDM = document.createElement('span');
             btnDM.innerText = '✉️';
@@ -1226,7 +1197,6 @@
         inputName.value = player.name || "";
         inputName.readOnly = true;
         
-        // КЛИКИ (Смена ранга/имени)
         if (myRole === 'admin' && player.login) {
             inputName.style.cursor = "pointer";
             inputName.style.textDecoration = "underline";
@@ -1267,566 +1237,18 @@
             cellName.appendChild(noteDiv);
         }
 
-        // 2. СТАТУС
-        const cellStatus = newRow.insertCell(1);
-        cellStatus.className = 'status-cell';
-        let statusText = "Дворник";
-        let statusClass = "st-dvornik";
-        if (total >= 50000) { statusText = "Читак ебаный"; statusClass = "st-cheat"; }
-        else if (total >= 10000) { statusText = "Донатер"; statusClass = "st-donate"; }
-        else if (total >= 5000) { statusText = "Богач"; statusClass = "st-rich"; }
-        else if (total >= 2000) { statusText = "Средняк"; statusClass = "st-mid"; }
-        else if (total >= 1000) { statusText = "Новобранец"; statusClass = "st-novo"; }
-        cellStatus.innerText = statusText;
-        cellStatus.classList.add(statusClass);
-
-        // 3. ДЕЙСТВИЯ
-        const cellAction = newRow.insertCell(2);
-        if (myRole !== 'player') {
-            const inputNum = document.createElement('input');
-            inputNum.type = 'number'; 
-            inputNum.className = 'input-val'; 
-            inputNum.placeholder = '0';
-            inputNum.addEventListener('keypress', function(event) {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    handleScore(id, inputNum, 1);
-                }
-            });
-            cellAction.append(
-                inputNum, 
-                createBtn('+', 'btn-calc', () => handleScore(id, inputNum, 1)),
-                createBtn('-', 'btn-calc', () => handleScore(id, inputNum, -1)),
-                createBtn('↩', 'btn-undo', () => undoLast(id)),
-                createBtn('↪', 'btn-redo', () => redoLast(id))
-            );
-        } else {
-            cellAction.innerText = "—";
-        }
-
-        // 4. ИТОГ
-        const cellTotal = newRow.insertCell(3);
-        cellTotal.className = 'score-cell';
-        cellTotal.innerText = total;
-
-        // 5. ИСТОРИЯ
-        const cellHistory = newRow.insertCell(4);
-        cellHistory.className = 'history-log';
-        cellHistory.innerText = historyArray.length > 0 ? historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ') : 'Пусто';
-
-        // 6. УДАЛЕНИЕ
-        const cellDelete = newRow.insertCell(5);
-        const wrapper = document.createElement('div');
-        wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
-        
-        if (myRole === 'admin') {
-             wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
-             if (player.login) {
-                 wrapper.appendChild(createBtn('✕', 'btn-delete', () => safeDeletePlayer(id, player.login)));
-             } else {
-                 wrapper.appendChild(createBtn('✕', 'btn-delete', () => { if(confirm("Удалить гостя навсегда?")) remove(ref(db, 'players/' + id)); }));
-             }
-        }
-        cellDelete.appendChild(wrapper);
-    }
-
-    // --- ЛОКАЛЬНЫЕ ЗАМЕТКИ ---
-    window.setLocalNote = function(key) {
-        // Загружаем текущие заметки
-        const notes = JSON.parse(localStorage.getItem('op_local_notes') || '{}');
-        const current = notes[key] || "";
-        
-        const newNote = prompt("Заметка об игроке (видна только вам):", current);
-        
-        if (newNote === null) return; // Отмена
-        
-        if (newNote.trim() === "") {
-            delete notes[key]; // Если пусто — удаляем
-        } else {
-            notes[key] = newNote.trim(); // Сохраняем
-        }
-        
-        localStorage.setItem('op_local_notes', JSON.stringify(notes));
-        
-        // Обновляем таблицу
-        const savedData = JSON.parse(localStorage.getItem('poker_data_v74'));
-        renderTable(savedData);
-    }
-
-    // --- ТАБЛИЦА ---
-    window.refreshTable = async function() {
-        const pass = prompt("Для обновления введите код доступа:");
-        if (pass !== "108020") { if(pass !== null) alert("Ошибка доступа"); return; }
-        try { await syncUsersToTable(); alert("Таблица синхронизирована!"); } catch(e) { alert("Ошибка: " + e.message); }
-    }
-
-    async function syncUsersToTable(currentDisplayName) {
-        try {
-            const usersSnap = await get(usersRef);
-            const playersSnap = await get(playersRef);
-            const users = usersSnap.val() || {};
-            const players = playersSnap.val() || {};
-            
-            const existingLogins = new Set();
-            for(let id in players) { 
-                const pLogin = players[id].login || players[id].name; 
-                existingLogins.add(pLogin); 
-            }
-            
-            const updates = {};
-            let hasUpdates = false;
-            
-            for(let login in users) {
-                if(!existingLogins.has(login)) {
-                    const userData = users[login];
-                    const dispName = userData.displayName || login;
-                    const newKey = push(ref(db, 'players')).key;
-                    
-                    // Восстановление истории при возврате
-                    let historyToRestore = { 'start_bonus': 1000 }; 
-                    if (userData.saved_history) {
-                        historyToRestore = userData.saved_history; 
-                    }
-
-                    updates['players/' + newKey] = { 
-                        name: dispName, 
-                        login: login, 
-                        history: historyToRestore 
-                    };
-                    hasUpdates = true;
-                }
-            }
-            if(hasUpdates) { await update(ref(db), updates); }
-        } catch(e) { console.error("Sync error", e); }
-    }
-
-    window.editNickname = async function() {
-        let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        if (!sessionUser) sessionUser = JSON.parse(localStorage.getItem('op_user'));
-        if (!sessionUser) return;
-        const oldDisplayName = sessionUser.displayName || sessionUser.nick;
-        const newName = prompt("Новое имя:", oldDisplayName);
-        if(!newName || newName.trim() === "") return;
-        const trimmedName = newName.trim();
-        try {
-            await update(ref(db, 'users/' + sessionUser.nick), { displayName: trimmedName });
-            sessionUser.displayName = trimmedName;
-            sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
-            if(localStorage.getItem('op_user')) {
-                let local = JSON.parse(localStorage.getItem('op_user'));
-                local.displayName = trimmedName;
-                localStorage.setItem('op_user', JSON.stringify(local));
-            }
-            updateMenuUI(trimmedName, sessionUser.nick);
-            const playersSnap = await get(playersRef);
-            playersSnap.forEach(child => {
-                const p = child.val();
-                if (p.login === sessionUser.nick || p.name === oldDisplayName) {
-                      update(ref(db, 'players/' + child.key), { name: trimmedName, login: sessionUser.nick });
-                }
-            });
-        } catch(e) { alert("Error: " + e.message); }
-    }
-
-    window.switchAuthView = function(view) {
-        document.getElementById('loginError').innerText = "";
-        document.getElementById('regError').innerText = "";
-        if(view === 'register') {
-            document.getElementById('login-view-card').classList.add('hidden');
-            document.getElementById('register-view-card').classList.remove('hidden');
-        } else {
-            document.getElementById('register-view-card').classList.add('hidden');
-            document.getElementById('login-view-card').classList.remove('hidden');
-        }
-    }
-
-    // БЕЗОПАСНОЕ УДАЛЕНИЕ
-    window.safeDeletePlayer = async function(id, login) {
-        if(!confirm("Убрать игрока со стола? (Баланс сохранится)")) return;
-        const snapshot = await get(ref(db, 'players/' + id));
-        const data = snapshot.val();
-        if (data && login) {
-            if (data.history) {
-                await update(ref(db, 'users/' + login), { saved_history: data.history });
-            }
-        }
-        remove(ref(db, 'players/' + id));
-    }
-
-    // =========================================================
-    // АВТОРИЗАЦИЯ
-    // =========================================================
-
-    // 1. РЕГИСТРАЦИЯ
-    window.handleRegister = function() {
-        const nick = document.getElementById('regNick').value.trim();
-        const pass = document.getElementById('regPass').value.trim();
-        const passRepeat = document.getElementById('regPassRepeat').value.trim();
-
-        if(!nick || !pass) { document.getElementById('regError').innerText = "Заполните все поля"; return; }
-        if(pass !== passRepeat) { document.getElementById('regError').innerText = "Пароли не совпадают!"; return; }
-
-        get(child(ref(db), `users/${nick}`)).then((snapshot) => {
-            if (snapshot.exists()) { 
-                document.getElementById('regError').innerText = "Ник занят!"; 
-            } else {
-                set(ref(db, 'users/' + nick), { 
-                    pass: pass, 
-                    created: Date.now(), 
-                    displayName: nick,
-                    role: 'player' 
-                }).then(() => {
-                    const newPlayerRef = push(ref(db, 'players'));
-                    return set(newPlayerRef, { name: nick, login: nick, history: { 'start_bonus': 1000 } });
-                }).then(() => {
-                    alert("Аккаунт создан! Входите.");
-                    switchAuthView('login');
-                    document.getElementById('loginNick').value = nick;
-                    document.getElementById('loginPass').value = pass;
-                });
-            }
-        });
-    }
-
-    // 2. ВХОД
-    window.handleLogin = function() {
-        const nick = document.getElementById('loginNick').value.trim();
-        const pass = document.getElementById('loginPass').value.trim();
-        const remember = document.getElementById('rememberMe').checked;
-        
-        if(!nick || !pass) { 
-            document.getElementById('loginError').innerText = "Введите данные"; 
-            return; 
-        }
-        checkLogin(nick, pass, false, remember);
-    }
-
-    async function checkLogin(nick, pass, isAuto, remember = false) {
-        // Офлайн-вход через кэш
-        const tryLocalLogin = () => {
-            const knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
-            if (knownUsers[nick] && knownUsers[nick] === pass) {
-                const cachedUser = JSON.parse(localStorage.getItem('op_user') || '{}');
-                // Если кэш пользователя совпадает с введенным ником
-                if (cachedUser.nick === nick) {
-                    const savedRole = cachedUser.role || 'player'; 
-                    // Важно: берем имя из кэша ИЛИ используем ник
-                    const name = cachedUser.displayName || nick;
-                    performLogin(nick, pass, remember || isAuto, name, savedRole);
-                    return true;
-                }
-            }
-            return false;
-        };
-
-        if (!navigator.onLine) {
-            if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Нет сети";
-            return;
-        }
-
-        try {
-            const snapshot = await get(child(ref(db), `users/${nick}`));
-            if (snapshot.exists()) {
-                const userData = snapshot.val();
-                if(userData.pass === pass) {
-                    // Сохраняем пароль в известные
-                    let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
-                    knownUsers[nick] = pass;
-                    localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
-                    
-                    const dispName = userData.displayName || nick;
-                    const dbRole = userData.role || 'player';
-                    
-                    // Обновляем полный кэш пользователя
-                    const userObj = { nick, pass, displayName: dispName, role: dbRole };
-                    localStorage.setItem('op_user', JSON.stringify(userObj));
-
-                    performLogin(nick, pass, remember || isAuto, dispName, dbRole);
-                } else {
-                    if(!isAuto) document.getElementById('loginError').innerText = "Неверный пароль";
-                    if(isAuto) { localStorage.removeItem('op_user'); sessionStorage.removeItem('op_session_user'); }
-                }
-            } else {
-                if(!isAuto) document.getElementById('loginError').innerText = "Пользователь не найден";
-            }
-        } catch (error) {
-            if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Ошибка сети";
-        }
-    }
-
-    function performLogin(nick, pass, remember, displayName, loadedRole) {
-        document.getElementById('login-overlay').style.display = 'none';
-        
-        // Гарантируем, что имя не пустое
-        const finalName = displayName || nick;
-        
-        // Обновляем UI СРАЗУ
-        updateMenuUI(finalName, nick);
-        
-        let role = loadedRole || 'player';
-        if (nick === 'Zagonskiy') {
-            role = 'admin';
-        } 
-        
-        const userObj = { nick, pass, displayName: finalName, role: role };
-        
-        sessionStorage.setItem('op_session_user', JSON.stringify(userObj));
-        if(remember) localStorage.setItem('op_user', JSON.stringify(userObj));
-        
-        setOnlineStatus(nick);
-        fetchUserRole(nick); 
-        applyRoleUI();
-    }
-
-    function fetchUserRole(nick) {
-        if (nick === 'Zagonskiy') return; 
-        
-        get(child(ref(db), `users/${nick}/role`)).then((snap) => {
-            let role = snap.val() || 'player';
-            let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-            if(sessionUser) {
-                if (sessionUser.role !== role) {
-                    sessionUser.role = role;
-                    sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
-                    applyRoleUI();
-                }
-            }
-        });
-    }
-
-    // --- ИНТЕРФЕЙС И КНОПКИ ---
-    window.applyRoleUI = function() {
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        const role = sessionUser ? sessionUser.role : 'player';
-
-        const controlsDiv = document.querySelector('.controls');
-        // Удаляем старую кнопку восстановления, чтобы не дублировать
-        const oldRestore = document.getElementById('btnRestore');
-        if(oldRestore) oldRestore.remove();
-
-        const extremeResetBtn = document.querySelector('.btn-extreme-reset');
-        
-        if (role === 'player') {
-            if(controlsDiv) controlsDiv.classList.add('role-hidden');
-            if(extremeResetBtn) extremeResetBtn.classList.add('role-hidden');
-        } else {
-            // Если Админ или Доверенный - показываем управление
-            if(controlsDiv) {
-                controlsDiv.classList.remove('role-hidden');
-                
-                // Добавляем кнопку Восстановления
-                if (!document.getElementById('btnRestore')) {
-                    const btnRestore = document.createElement('button');
-                    btnRestore.id = 'btnRestore';
-                    btnRestore.className = 'btn-refresh';
-                    btnRestore.innerText = '♻️ Восстановить';
-                    btnRestore.onclick = window.restorePlayers;
-                    
-                    const btnAdd = document.querySelector('.btn-add');
-                    if(btnAdd && btnAdd.parentNode) btnAdd.parentNode.insertBefore(btnRestore, btnAdd.nextSibling);
-                }
-            }
-            
-            if (role === 'admin') {
-                if(extremeResetBtn) extremeResetBtn.classList.remove('role-hidden');
-            } else {
-                if(extremeResetBtn) extremeResetBtn.classList.add('role-hidden');
-            }
-        }
-
-        const savedData = JSON.parse(localStorage.getItem('poker_data_v74'));
-        if (savedData) renderTable(savedData);
-    }
-
-    // Умное восстановление
-    window.restorePlayers = async function() {
-        if(!confirm("Вернуть всех зарегистрированных игроков за стол?")) return;
-        await syncUsersToTable();
-        alert("Список синхронизирован!");
-    }
-
-    window.logout = function() {
-        if(confirm("Выйти?")) {
-            if (currentConnectionRef) remove(currentConnectionRef);
-            localStorage.removeItem('op_user');
-            sessionStorage.removeItem('op_session_user');
-            location.reload();
-        }
-    }
-
-    function setOnlineStatus(nickname) {
-        const myUserRef = ref(db, `online_users/${nickname}`);
-        currentConnectionRef = push(myUserRef);
-        onDisconnect(currentConnectionRef).remove();
-        set(currentConnectionRef, true);
-    }
-
-    onValue(connectedRef, (snap) => {
-        const dotMobile = document.getElementById('mobileStatusDot');
-        const dotDesktop = document.getElementById('desktopStatusDot');
-        const statusEl = document.getElementById('networkStatus');
-        if(statusEl) statusEl.style.display = 'none';
-        if (snap.val() === true) {
-            dotMobile.classList.add('online'); dotDesktop.classList.add('online');
-        } else {
-            dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
-        }
-    });
-
-    onValue(onlineUsersRef, (snap) => {
-        const countDisplay = document.getElementById('onlineCounter');
-        onlineNicknames.clear();
-        if (snap.exists()) {
-            const data = snap.val();
-            Object.keys(data).forEach(n => onlineNicknames.add(n));
-            countDisplay.innerText = `👁️ Онлайн: ${onlineNicknames.size}`;
-        } else { countDisplay.innerText = `👁️ Онлайн: 0`; }
-        updateTableStatusDots();
-    });
-
-    function updateTableStatusDots() {
-        document.querySelectorAll('.player-status-indicator').forEach(dot => {
-            const name = dot.getAttribute('data-player-name');
-            const login = dot.getAttribute('data-player-login');
-            const keyToCheck = login || name;
-            if (onlineNicknames.has(keyToCheck)) dot.classList.add('is-online');
-            else dot.classList.remove('is-online');
-        });
-    }
-
-    onValue(playersRef, (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
-        localStorage.setItem('poker_data_v74', JSON.stringify(data));
-        renderTable(data);
-    });
-
-    function renderTable(data) {
-        if (document.activeElement.tagName === 'INPUT') return; 
-        const tableBody = document.getElementById('tableBody');
-        tableBody.innerHTML = '';
-        for (let id in data) { renderPlayerRow(id, data[id]); }
-        recalculateGrandTotal();
-        updateTableStatusDots();
-    }
-
-    function recalculateGrandTotal() {
-        const scoreCells = document.querySelectorAll('.score-cell');
-        let totalSum = 0;
-        scoreCells.forEach(cell => totalSum += parseFloat(cell.innerText || 0));
-        document.getElementById('grandTotal').innerText = totalSum;
-    }
-
-    function calculatePlayerStats(player) {
-        let historyArray = [];
-        let total = 0;
-        if (player.history) {
-            if (typeof player.history === 'object' && !Array.isArray(player.history)) {
-                historyArray = Object.values(player.history);
-            } else if (Array.isArray(player.history)) {
-                historyArray = player.history;
-            }
-        }
-        historyArray.forEach(val => total += val);
-        return { total, historyArray };
-    }
-
-    function renderPlayerRow(id, player) {
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || { role: 'player' };
-        const myRole = sessionUser.role;
-
-        const tableBody = document.getElementById('tableBody');
-        const newRow = tableBody.insertRow();
-        const { total, historyArray } = calculatePlayerStats(player);
-
-        // 1. ИМЯ
-        const cellName = newRow.insertCell(0);
-        const nameWrapper = document.createElement('div');
-        nameWrapper.className = 'name-wrapper';
-        
-        const statusDot = document.createElement('div');
-        statusDot.className = 'player-status-indicator';
-        statusDot.setAttribute('data-player-name', player.name);
-        if(player.login) statusDot.setAttribute('data-player-login', player.login);
-        const keyToCheck = player.login || player.name;
-        if (onlineNicknames.has(keyToCheck)) statusDot.classList.add('is-online');
-
-        const roleBadge = document.createElement('span');
-        roleBadge.className = 'role-badge';
-        if (!player.login) { roleBadge.innerText = '👽'; roleBadge.title = 'Гость'; } 
-        else if (player.login === 'Zagonskiy') { roleBadge.innerText = '👑'; roleBadge.title = 'Создатель'; }
-        else {
-            roleBadge.innerText = '⏳';
-            get(child(ref(db), 'users/' + player.login + '/role')).then((snap) => {
-                const r = snap.val();
-                if (r === 'admin') { roleBadge.innerText = '👑'; roleBadge.title = 'Админ'; }
-                else if (r === 'trusted') { roleBadge.innerText = '🛡️'; roleBadge.title = 'Доверенный'; }
-                else { roleBadge.innerText = '👤'; roleBadge.title = 'Игрок'; }
-            });
-        }
-
-        const inputName = document.createElement('input');
-        inputName.type = 'text'; 
-        inputName.className = 'player-name'; 
-        inputName.value = player.name || "";
-        inputName.readOnly = true;
-        
-        if (myRole === 'admin' && player.login) {
-            inputName.style.cursor = "pointer";
-            inputName.style.textDecoration = "underline";
-            inputName.onclick = () => changeRankDialog(player.login, player.name);
-        }
-        else if ((myRole === 'admin' || myRole === 'trusted') && !player.login) {
-            inputName.style.cursor = "pointer";
-            inputName.style.borderBottom = "1px dashed var(--accent-brown)";
-            inputName.onclick = () => {
-                const newName = prompt("Переименовать гостя:", player.name);
-                if (newName && newName.trim() !== "") update(ref(db, 'players/' + id), { name: newName.trim() });
-            };
-        }
-
-        nameWrapper.appendChild(statusDot); 
-        nameWrapper.appendChild(roleBadge);
-        nameWrapper.appendChild(inputName); 
-
-        // Заметки
-        const uniqueKey = player.login || player.name; 
-        const localNotes = JSON.parse(localStorage.getItem('op_local_notes') || '{}');
-        const noteText = localNotes[uniqueKey];
-
-        if (myRole === 'admin') {
-            const btnNote = document.createElement('span');
-            btnNote.innerText = '📝';
-            btnNote.className = 'btn-local-note';
-            if(noteText) btnNote.classList.add('has-note');
-            btnNote.onclick = () => setLocalNote(uniqueKey);
-            nameWrapper.appendChild(btnNote);
-        }
-
-        cellName.appendChild(nameWrapper);
-        if (noteText && myRole === 'admin') {
-            const noteDiv = document.createElement('div');
-            noteDiv.className = 'player-note-text';
-            noteDiv.innerText = noteText;
-            cellName.appendChild(noteDiv);
-        }
-
         // 2. СТАТУС (НОВАЯ КОЛОНКА)
         const cellStatus = newRow.insertCell(1);
         cellStatus.className = 'status-cell';
-        
         let statusText = "Дворник";
         let statusClass = "st-dvornik";
-
         if (total >= 50000) { statusText = "Читак ебаный"; statusClass = "st-cheat"; }
         else if (total >= 10000) { statusText = "Донатер"; statusClass = "st-donate"; }
         else if (total >= 5000) { statusText = "Богач"; statusClass = "st-rich"; }
         else if (total >= 2000) { statusText = "Средняк"; statusClass = "st-mid"; }
         else if (total >= 1000) { statusText = "Новобранец"; statusClass = "st-novo"; }
-        
         cellStatus.innerText = statusText;
         cellStatus.classList.add(statusClass);
-
 
         // 3. ДЕЙСТВИЯ
         const cellAction = newRow.insertCell(2);
@@ -1835,14 +1257,12 @@
             inputNum.type = 'number'; 
             inputNum.className = 'input-val'; 
             inputNum.placeholder = '0';
-            
             inputNum.addEventListener('keypress', function(event) {
                 if (event.key === 'Enter') {
                     event.preventDefault();
                     handleScore(id, inputNum, 1);
                 }
             });
-
             cellAction.append(
                 inputNum, 
                 createBtn('+', 'btn-calc', () => handleScore(id, inputNum, 1)),
@@ -1879,6 +1299,7 @@
         }
         cellDelete.appendChild(wrapper);
     }
+
     function createBtn(text, cls, onClick) {
         const btn = document.createElement('button');
         btn.innerText = text; btn.className = cls; btn.onclick = onClick;
@@ -1928,22 +1349,15 @@
 
     window.createNewPlayer = function() {
         let guestName = prompt("Введите имя гостя:", "Гость");
-        // Если нажали "Отмена", ничего не создаем
         if (guestName === null) return;
-        
-        // Если оставили пустым, называем "Гость"
         if (guestName.trim() === "") guestName = "Гость";
-        
-        push(playersRef, { 
-            name: guestName.trim(), 
-            history: {} 
-        });
+        push(playersRef, { name: guestName.trim(), history: {} });
     }
+    
     window.resetPlayer = (id) => { if (prompt("Сбросить игрока (Код)?") === "108020") update(ref(db, 'players/' + id), { history: null, redoStack: null }); else alert("Ошибка"); };
     window.extremeReset = async () => { if (prompt("ПОЛНЫЙ СБРОС (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { updates['players/' + child.key + '/history'] = null; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); } };
     window.startNewDay = async () => { if (prompt("НОВЫЙ ДЕНЬ (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { const { total } = calculatePlayerStats(child.val()); const key1 = push(ref(db)).key; const key2 = push(ref(db)).key; const newHistory = {}; newHistory[key1] = total; newHistory[key2] = 500; updates['players/' + child.key + '/history'] = newHistory; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); alert("День начат! +500"); } };
     
-    // ЖУРНАЛ
     window.addToJournal=async function(){if(!confirm("Сохранить итоги в Журнал?"))return;const dv=document.getElementById('gameDate').value;if(!dv){alert("Ошибка даты!");return;}const[y,m,d]=dv.split('-');const fd=`${d}.${m}.${y}`;const s=await get(playersRef);const dt=s.val();if(!dt)return;let gt=0;const sp=[];for(let i in dt){const p=dt[i];const{total,historyArray}=calculatePlayerStats(p);gt+=total;sp.push({name:p.name||"Без имени",total:total,history:historyArray.join(' ')})}push(journalRef,{date:fd+' '+new Date().toLocaleTimeString().slice(0,5),timestamp:Date.now(),grandTotal:gt,players:sp});alert("Сохранено за "+fd+"!");};
 
     window.deleteJournalEntry = function(id) { 
@@ -1999,6 +1413,18 @@
         });
     });
 
+    // --- ЛОКАЛЬНЫЕ ЗАМЕТКИ ---
+    window.setLocalNote = function(key) {
+        const notes = JSON.parse(localStorage.getItem('op_local_notes') || '{}');
+        const current = notes[key] || "";
+        const newNote = prompt("Заметка об игроке (видна только вам):", current);
+        if (newNote === null) return;
+        if (newNote.trim() === "") { delete notes[key]; } else { notes[key] = newNote.trim(); }
+        localStorage.setItem('op_local_notes', JSON.stringify(notes));
+        const savedData = JSON.parse(localStorage.getItem('poker_data_v74'));
+        renderTable(savedData);
+    }
+
     // --- УПРАВЛЕНИЕ РОЛЯМИ ---
     let currentRankLogin = null;
 
@@ -2043,6 +1469,14 @@
         } else if (viewName === 'chat') {
             document.getElementById('view-chat').classList.remove('hidden');
             document.getElementById('btn-nav-chat').classList.add('active');
+            
+            // Сброс счетчика
+            const badge = document.getElementById('chatBadge');
+            if(badge) {
+                badge.innerText = '0';
+                badge.classList.remove('visible');
+            }
+
             const container = document.getElementById('chatMessages');
             setTimeout(() => container.scrollTop = container.scrollHeight, 100);
         } else if (viewName === 'journal') {
@@ -2053,9 +1487,9 @@
 
     window.downloadCSV = function() { const rows = document.querySelectorAll('#scoreTable tbody tr'); if (rows.length === 0) { alert("Пусто!"); return; } const selectedDate = document.getElementById('gameDate').value; let formattedDate = selectedDate; if(selectedDate) { const parts = selectedDate.split('-'); formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`; } let csvContent = `Дата выписки:;${formattedDate}\n\n`; csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n"; rows.forEach(row => { let name = row.querySelector('.player-name').value.trim(); if (!name) name = "Без имени"; let total = row.querySelector('.score-cell').innerText; let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); csvContent += `"${name}";${total};${opsString}\n`; }); let grandTotal = document.getElementById('grandTotal').innerText; csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`; const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `Выписка за ${formattedDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
 </script>
-
 </body>
 </html>
+
 
 
 
