@@ -164,11 +164,21 @@
         .btn-money-transfer:hover { background-color: #388e3c; }
 
         /* Модальное окно перевода */
+        /* Модальное окно перевода */
         #transferModal {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed; /* Лучше fixed, чтобы не уезжало при скролле */
+            top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 4000;
-            display: flex; justify-content: center; align-items: center;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
         }
+        
+        /* Это правило жестко скроет окно, если есть класс hidden */
+        #transferModal.hidden {
+            display: none !important;
+        }
+
         .transfer-card {
             background: var(--paper-bg);
             border: 4px double var(--accent-brown);
@@ -2159,5 +2169,6 @@
 
 </body>
 </html>
+
 
 
