@@ -1409,7 +1409,19 @@
         });
     }
 
-    window.createNewPlayer = () => push(playersRef, { name: "Новый игрок", history: {} });
+    window.createNewPlayer = function() {
+        let guestName = prompt("Введите имя гостя:", "Гость");
+        // Если нажали "Отмена", ничего не создаем
+        if (guestName === null) return;
+        
+        // Если оставили пустым, называем "Гость"
+        if (guestName.trim() === "") guestName = "Гость";
+        
+        push(playersRef, { 
+            name: guestName.trim(), 
+            history: {} 
+        });
+    }
     window.resetPlayer = (id) => { if (prompt("Сбросить игрока (Код)?") === "108020") update(ref(db, 'players/' + id), { history: null, redoStack: null }); else alert("Ошибка"); };
     window.extremeReset = async () => { if (prompt("ПОЛНЫЙ СБРОС (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { updates['players/' + child.key + '/history'] = null; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); } };
     window.startNewDay = async () => { if (prompt("НОВЫЙ ДЕНЬ (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { const { total } = calculatePlayerStats(child.val()); const key1 = push(ref(db)).key; const key2 = push(ref(db)).key; const newHistory = {}; newHistory[key1] = total; newHistory[key2] = 500; updates['players/' + child.key + '/history'] = newHistory; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); alert("День начат! +500"); } };
@@ -1549,6 +1561,7 @@
 
 </body>
 </html>
+
 
 
 
