@@ -190,23 +190,6 @@
             position: relative;
         }
 
-        .btn-local-alias {
-            cursor: pointer;
-            font-size: 1em;
-            margin-right: 5px;
-            opacity: 0.4;
-            transition: 0.2s;
-        }
-        .btn-local-alias:hover {
-            opacity: 1;
-            transform: scale(1.2);
-        }
-    /* Стиль поля, если у него есть псевдоним */
-        .has-alias {
-            color: var(--accent-purple) !important; 
-            font-style: italic;
-        }
-
         /* --- HEADER & BRAND --- */
         .brand-container {
             display: flex; align-items: center; justify-content: center;
@@ -309,6 +292,37 @@
         input[type="number"] { width: 70px; margin-right: 5px; text-align: center; border: 2px solid var(--accent-brown); background-color: #f9f3e3; }
         .score-cell { font-family: 'Rye', cursive; font-size: 1.8em; color: var(--accent-red); text-align: center; }
         .history-log { font-size: 0.9em; color: #6b523d; font-style: italic; max-width: 250px; overflow-x: auto; white-space: nowrap; padding: 5px; background-color: rgba(139, 69, 19, 0.05); border-radius: 4px; }
+
+        /* Кнопка заметки */
+        .btn-local-note {
+            cursor: pointer;
+            font-size: 1.2em;
+            margin-left: 5px;
+            opacity: 0.3;
+            transition: 0.2s;
+        }
+        .btn-local-note:hover { opacity: 1; transform: scale(1.1); }
+    
+    /* Если заметка есть - кнопка яркая */
+        .btn-local-note.has-note {
+            opacity: 1;
+            text-shadow: 0 0 5px gold;
+        }
+
+    /* Текст заметки под именем */
+        .player-note-text {
+            font-family: 'Courier New', monospace;
+            font-size: 0.75em;
+            color: #b71c1c; /* Темно-красный */
+            font-weight: bold;
+            display: block;
+            margin-top: 2px;
+            margin-left: 20px; /* Отступ чтобы было красиво */
+            font-style: italic;
+            width: 100%;
+            word-wrap: break-word;
+        }
+
         
         /* CHAT */
         .chat-wrapper { display: flex; flex-direction: column; height: calc(100vh - 100px); }
@@ -776,23 +790,23 @@
         container.scrollTop = container.scrollHeight;
     });
 
-    // --- ЛОКАЛЬНЫЕ ПСЕВДОНИМЫ ---
-    window.setLocalAlias = function(key) {
-        // Загружаем текущие псевдонимы
-        const aliases = JSON.parse(localStorage.getItem('op_local_aliases') || '{}');
-        const current = aliases[key] || "";
+    // --- ЛОКАЛЬНЫЕ ЗАМЕТКИ ---
+    window.setLocalNote = function(key) {
+        // Загружаем текущие заметки
+        const notes = JSON.parse(localStorage.getItem('op_local_notes') || '{}');
+        const current = notes[key] || "";
         
-        const newAlias = prompt("Локальный псевдоним (виден только вам):", current);
+        const newNote = prompt("Заметка об игроке (видна только вам):", current);
         
-        if (newAlias === null) return; // Отмена
+        if (newNote === null) return; // Отмена
         
-        if (newAlias.trim() === "") {
-            delete aliases[key]; // Если пусто — удаляем псевдоним
+        if (newNote.trim() === "") {
+            delete notes[key]; // Если пусто — удаляем
         } else {
-            aliases[key] = newAlias.trim(); // Сохраняем
+            notes[key] = newNote.trim(); // Сохраняем
         }
         
-        localStorage.setItem('op_local_aliases', JSON.stringify(aliases));
+        localStorage.setItem('op_local_notes', JSON.stringify(notes));
         
         // Обновляем таблицу
         const savedData = JSON.parse(localStorage.getItem('poker_data_v74'));
@@ -1185,8 +1199,10 @@
         const newRow = tableBody.insertRow();
         const { total, historyArray } = calculatePlayerStats(player);
 
-        // 1. ИМЯ, РОЛЬ И ЛОКАЛЬНЫЙ НИК
+        // 1. ИМЯ, РОЛЬ И ЗАМЕТКИ
         const cellName = newRow.insertCell(0);
+        
+        // Основной контейнер для строки имени
         const nameWrapper = document.createElement('div');
         nameWrapper.className = 'name-wrapper';
         
@@ -1200,15 +1216,8 @@
         // Значок роли
         const roleBadge = document.createElement('span');
         roleBadge.className = 'role-badge';
-        
-        if (!player.login) {
-            roleBadge.innerText = '👽';
-            roleBadge.title = 'Гость';
-        } 
-        else if (player.login === 'Zagonskiy') {
-            roleBadge.innerText = '👑';
-            roleBadge.title = 'Создатель';
-        }
+        if (!player.login) { roleBadge.innerText = '👽'; roleBadge.title = 'Гость'; } 
+        else if (player.login === 'Zagonskiy') { roleBadge.innerText = '👑'; roleBadge.title = 'Создатель'; }
         else {
             roleBadge.innerText = '⏳';
             get(child(ref(db), 'users/' + player.login + '/role')).then((snap) => {
@@ -1219,26 +1228,13 @@
             });
         }
 
-        // --- ЛОГИКА ЛОКАЛЬНОГО ИМЕНИ ---
-        const uniqueKey = player.login || player.name; // Ключ для хранения
-        const localAliases = JSON.parse(localStorage.getItem('op_local_aliases') || '{}');
-        const localName = localAliases[uniqueKey];
-
         const inputName = document.createElement('input');
         inputName.type = 'text'; 
         inputName.className = 'player-name'; 
+        inputName.value = player.name || "";
         inputName.readOnly = true;
-
-        // Если есть псевдоним - показываем его
-        if (localName) {
-            inputName.value = localName + "*"; // Звездочка покажет, что это псевдоним
-            inputName.classList.add('has-alias');
-            inputName.title = `Настоящее имя: ${player.name}`;
-        } else {
-            inputName.value = player.name || "";
-        }
         
-        // КЛИКИ ПО ИМЕНИ (Смена ранга или переименование гостя)
+        // КЛИКИ (Смена ранга или переименование гостя)
         if (myRole === 'admin' && player.login) {
             inputName.style.cursor = "pointer";
             inputName.style.textDecoration = "underline";
@@ -1248,28 +1244,40 @@
             inputName.style.cursor = "pointer";
             inputName.style.borderBottom = "1px dashed var(--accent-brown)";
             inputName.onclick = () => {
-                const newName = prompt("Переименовать гостя глобально:", player.name);
-                if (newName && newName.trim() !== "") {
-                    update(ref(db, 'players/' + id), { name: newName.trim() });
-                }
+                const newName = prompt("Переименовать гостя:", player.name);
+                if (newName && newName.trim() !== "") update(ref(db, 'players/' + id), { name: newName.trim() });
             };
         }
 
         nameWrapper.appendChild(statusDot); 
         nameWrapper.appendChild(roleBadge);
+        nameWrapper.appendChild(inputName); 
 
-        // КНОПКА ЛОКАЛЬНОГО ПСЕВДОНИМА (Только для Админа)
+        // --- ЛОГИКА ЗАМЕТОК ---
+        const uniqueKey = player.login || player.name; 
+        const localNotes = JSON.parse(localStorage.getItem('op_local_notes') || '{}');
+        const noteText = localNotes[uniqueKey];
+
+        // Кнопка заметки (только для Админа)
         if (myRole === 'admin') {
-            const btnAlias = document.createElement('span');
-            btnAlias.innerText = '🏷️';
-            btnAlias.className = 'btn-local-alias';
-            btnAlias.title = 'Дать локальный псевдоним (виден только вам)';
-            btnAlias.onclick = () => setLocalAlias(uniqueKey);
-            nameWrapper.appendChild(btnAlias);
+            const btnNote = document.createElement('span');
+            btnNote.innerText = '📝';
+            btnNote.className = 'btn-local-note';
+            if(noteText) btnNote.classList.add('has-note'); // Подсвечиваем если есть заметка
+            btnNote.title = 'Добавить заметку (локально)';
+            btnNote.onclick = () => setLocalNote(uniqueKey);
+            nameWrapper.appendChild(btnNote);
         }
 
-        nameWrapper.appendChild(inputName); 
         cellName.appendChild(nameWrapper);
+
+        // Если есть текст заметки — выводим его под именем
+        if (noteText && myRole === 'admin') {
+            const noteDiv = document.createElement('div');
+            noteDiv.className = 'player-note-text';
+            noteDiv.innerText = noteText;
+            cellName.appendChild(noteDiv);
+        }
 
         // 2. ДЕЙСТВИЯ
         const cellAction = newRow.insertCell(1);
@@ -1322,7 +1330,6 @@
         }
         cellDelete.appendChild(wrapper);
     }
-
     function createBtn(text, cls, onClick) {
         const btn = document.createElement('button');
         btn.innerText = text; btn.className = cls; btn.onclick = onClick;
@@ -1500,6 +1507,7 @@
 
 </body>
 </html>
+
 
 
 
