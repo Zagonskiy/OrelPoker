@@ -171,6 +171,71 @@
             100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
         }
 
+        /* --- СПИСОК ЧАТОВ (LOBBY) --- */
+        .chat-list-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chat-list-item {
+            background: rgba(255, 255, 255, 0.6);
+            border: 2px solid var(--accent-brown);
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .chat-list-item:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateX(5px);
+        }
+
+        .chat-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--accent-brown);
+            color: var(--accent-gold);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2em;
+            margin-right: 15px;
+            border: 2px solid var(--accent-gold);
+            font-family: 'Rye', cursive;
+        }
+
+        .chat-info {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .chat-name {
+            font-family: 'Rye', cursive;
+            color: var(--accent-brown);
+            font-size: 1.1em;
+        }
+
+        .chat-preview {
+            font-size: 0.8em;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+        
+        /* Скрываем панель переписки по умолчанию */
+        .chat-conversation-panel.hidden {
+            display: none;
+        }
+
         /* КНОПКА СБРОСА */
         .btn-extreme-reset {
             margin-top: auto; background-color: #500000; color: #ffcccc; border: 2px solid #ff0000;
@@ -815,17 +880,31 @@
             <h1 class="header-title">Комната общения</h1>
         </div>
         
-        <div id="privateChatHeader" class="chat-header-private hidden">
-            <span id="privateChatTitle">Личка с ...</span>
-            <button class="btn-back-general" onclick="openGeneralChat()">⬅ В Общий</button>
+        <div id="chatListPanel" class="chat-list-panel">
+            <div onclick="loadChat('general', 'Общий чат')" class="chat-list-item">
+                <div class="chat-avatar">#</div>
+                <div class="chat-info">
+                    <span class="chat-name">📢 ОБЩИЙ ЧАТ</span>
+                    <span class="chat-preview">Нажмите, чтобы войти...</span>
+                </div>
+            </div>
+            <div id="privateChatsList">
+                </div>
         </div>
 
-        <div id="chatMessages" class="chat-messages"></div>
-        
-        <div class="chat-input-bar">
-            <button id="btnCancelEdit" class="btn-delete hidden" style="border-radius: 4px; margin-right:5px; width:40px;" onclick="cancelEditMode()" title="Отменить">✕</button>
-            <input type="text" id="chatInput" class="chat-input" placeholder="Написать сообщение...">
-            <button id="btnSendChat" class="btn-send" onclick="sendMessage()">➤</button>
+        <div id="chatConversationPanel" class="hidden" style="display:flex; flex-direction:column; height:100%;">
+            <div id="privateChatHeader" class="chat-header-private">
+                <span id="privateChatTitle">Чат</span>
+                <button class="btn-back-general" onclick="showChatList()">⬅ К Списку</button>
+            </div>
+
+            <div id="chatMessages" class="chat-messages"></div>
+            
+            <div class="chat-input-bar">
+                <button id="btnCancelEdit" class="btn-delete hidden" style="border-radius: 4px; margin-right:5px; width:40px;" onclick="cancelEditMode()" title="Отменить">✕</button>
+                <input type="text" id="chatInput" class="chat-input" placeholder="Написать сообщение...">
+                <button id="btnSendChat" class="btn-send" onclick="sendMessage()">➤</button>
+            </div>
         </div>
     </div>
 
@@ -976,185 +1055,121 @@
     });
 
     // =========================================================
-    // НОВАЯ СИСТЕМА ЧАТОВ (ОБЩИЙ + ЛИЧКА)
+    // НОВАЯ СИСТЕМА ЧАТОВ (СПИСОК + ЛИЧКА)
     // =========================================================
     
-    let currentChatId = 'general'; // 'general' или 'private_nick1_nick2'
-    let chatListener = null;       // Ссылка на слушатель базы (чтобы отключать)
+    let currentChatId = null;
+    let chatListener = null;
     let editingMsgId = null;
-    
-    // 1. ЗАПУСК ЧАТА (Смена комнаты)
-    window.loadChat = function(chatId, title) {
-        // Отключаем старый слушатель, если был
-        if (chatListener) {
-            // Firebase сам не дает простого off, поэтому просто очищаем контейнер
-            // В идеале нужно сохранять ref и делать off(), но для простоты перерисуем
-        }
+
+    // 1. ПОКАЗАТЬ СПИСОК ЧАТОВ (ГЛАВНАЯ СТРАНИЦА ЧАТА)
+    window.showChatList = function() {
+        document.getElementById('chatListPanel').classList.remove('hidden');
+        document.getElementById('chatConversationPanel').classList.add('hidden');
+        currentChatId = null;
         
+        // Отключаем слушатель сообщений, если был
+        if (chatListener) { /* Firebase off не делаем для простоты, просто меняем view */ }
+        
+        renderPrivateChatsList();
+    }
+
+    // Рендер списка личных чатов
+    function renderPrivateChatsList() {
+        const listContainer = document.getElementById('privateChatsList');
+        listContainer.innerHTML = '<div style="text-align:center; font-size:0.8em; opacity:0.5;">Загрузка чатов...</div>';
+        
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (!sessionUser) return;
+        const myLogin = sessionUser.nick;
+
+        // Получаем все приватные чаты
+        get(ref(db, 'private_chats')).then((snapshot) => {
+            listContainer.innerHTML = ''; // Очищаем
+            
+            if (!snapshot.exists()) {
+                listContainer.innerHTML = '<div style="text-align:center; padding:10px;">Личных переписок пока нет</div>';
+                return;
+            }
+
+            let foundCount = 0;
+            snapshot.forEach((child) => {
+                const chatKey = child.key; // Например: "admin_guest"
+                
+                // Проверяем, есть ли мой ник в ключе чата (разбиваем по '_')
+                const participants = chatKey.split('_');
+                if (participants.includes(myLogin)) {
+                    foundCount++;
+                    
+                    // Определяем имя собеседника
+                    const otherLogin = participants[0] === myLogin ? participants[1] : participants[0];
+                    
+                    // Создаем кнопку чата
+                    const item = document.createElement('div');
+                    item.className = 'chat-list-item';
+                    item.onclick = () => loadChat(chatKey, '@' + otherLogin);
+                    
+                    item.innerHTML = `
+                        <div class="chat-avatar" style="background-color:#fff8e1; color:#e65100;">👤</div>
+                        <div class="chat-info">
+                            <span class="chat-name">@${otherLogin}</span>
+                            <span class="chat-preview">Личная переписка</span>
+                        </div>
+                    `;
+                    listContainer.appendChild(item);
+                }
+            });
+
+            if (foundCount === 0) {
+                listContainer.innerHTML = '<div style="text-align:center; padding:10px;">Личных переписок пока нет</div>';
+            }
+        });
+    }
+    
+    // 2. ЗАГРУЗКА КОНКРЕТНОГО ЧАТА
+    window.loadChat = function(chatId, title) {
         currentChatId = chatId;
         
-        // UI изменения
-        const header = document.getElementById('privateChatHeader');
+        // Переключаем UI
+        document.getElementById('chatListPanel').classList.add('hidden');
+        document.getElementById('chatConversationPanel').classList.remove('hidden'); // Показываем flex container
+        
         const titleEl = document.getElementById('privateChatTitle');
         const container = document.getElementById('chatMessages');
         
-        container.innerHTML = '<div style="text-align:center; padding:20px;">Загрузка чата...</div>';
+        container.innerHTML = '<div style="text-align:center; padding:20px;">Загрузка сообщений...</div>';
+        titleEl.innerText = title || "Чат";
 
-        if (chatId === 'general') {
-            header.classList.add('hidden');
-        } else {
-            header.classList.remove('hidden');
-            titleEl.innerText = title || "Личный чат";
-        }
-
-        // Определяем путь в базе
-        // Если общий - путь 'chat', если личный - 'private_chats/chatId'
+        // Путь к сообщениям
         const path = chatId === 'general' ? 'chat' : `private_chats/${chatId}`;
         const targetRef = ref(db, path);
 
-        // Вешаем слушатель
+        // Слушаем сообщения
         onValue(targetRef, (snapshot) => {
-            renderChatMessages(snapshot);
+            // Проверка: рендерим только если мы всё еще в этом чате
+            if (currentChatId === chatId) {
+                renderChatMessages(snapshot);
+            }
         });
-        
-        // Переключаем вид
-        showView('chat');
     }
 
+    // Сохраняем старые функции открытия чата для совместимости с кнопками в таблице
     window.openGeneralChat = function() {
-        loadChat('general');
+        showView('chat'); // Переходим на вью чата
+        loadChat('general', 'Общий чат'); // Сразу грузим общий
     }
 
     window.openPrivateChat = function(targetLogin) {
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         if (!sessionUser) return;
         const myLogin = sessionUser.nick;
-
         if (targetLogin === myLogin) { alert("Нельзя писать самому себе!"); return; }
 
-        // Создаем уникальный ID чата (сортируем ники по алфавиту, чтобы у обоих был один ID)
-        // Пример: admin и guest -> admin_guest
         const participants = [myLogin, targetLogin].sort();
         const chatId = participants.join('_');
         
-        loadChat(chatId, `Личка с @${targetLogin}`);
-    }
-
-    // 2. ОТПРАВКА СООБЩЕНИЯ
-    window.sendMessage = function() {
-        const input = document.getElementById('chatInput');
-        const text = input.value.trim();
-        if (!text) return;
-
-        const nameEl = document.getElementById('menuDisplayName');
-        const senderName = nameEl ? nameEl.innerText : "Гость";
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || {};
-        const userLogin = sessionUser.nick || "anon";
-
-        // Определяем куда писать
-        const path = currentChatId === 'general' ? 'chat' : `private_chats/${currentChatId}`;
-
-        if (editingMsgId) {
-            update(ref(db, `${path}/${editingMsgId}`), {
-                text: text,
-                isEdited: true
-            }).then(() => cancelEditMode());
-        } else {
-            push(ref(db, path), {
-                sender: senderName,
-                senderLogin: userLogin,
-                text: text,
-                timestamp: Date.now()
-            });
-        }
-        input.value = '';
-        input.focus();
-    }
-
-    // 3. ОТРИСОВКА СООБЩЕНИЙ
-    function renderChatMessages(snapshot) {
-        const container = document.getElementById('chatMessages');
-        container.innerHTML = '';
-        
-        if (!snapshot.exists()) {
-            container.innerHTML = '<div style="text-align:center; opacity:0.5; margin-top:20px;">Здесь пока пусто...</div>';
-            return;
-        }
-
-        const messages = [];
-        snapshot.forEach(child => {
-            messages.push({ key: child.key, ...child.val() });
-        });
-        messages.sort((a, b) => a.timestamp - b.timestamp);
-
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || {};
-        const myLogin = sessionUser.nick;
-        const now = Date.now();
-        const oneDay = 24 * 60 * 60 * 1000;
-
-        messages.forEach(msg => {
-            const bubble = document.createElement('div');
-            const isMine = (msg.senderLogin === myLogin);
-            
-            const d = new Date(msg.timestamp);
-            const dateStr = d.toLocaleDateString() === new Date().toLocaleDateString() 
-                ? d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-                : d.toLocaleString([], {day: 'numeric', month:'numeric', hour: '2-digit', minute:'2-digit'});
-
-            bubble.className = `message-bubble ${isMine ? 'my-message' : 'other-message'}`;
-            
-            let actionsHtml = '';
-            if (isMine && (now - msg.timestamp < oneDay)) {
-                const safeText = msg.text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                actionsHtml = `
-                <span class="msg-actions">
-                    <button class="msg-btn" onclick="startEditMessage('${msg.key}', '${safeText}', ${msg.timestamp})">✏️</button>
-                    <button class="msg-btn" onclick="deleteChatMessage('${msg.key}', ${msg.timestamp})">🗑</button>
-                </span>`;
-            }
-
-            const editedMark = msg.isEdited ? `<span class="edited-label">(ред.)</span>` : '';
-
-            bubble.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:baseline;">
-                    <span class="message-sender">${msg.sender}</span>
-                    <span class="msg-meta">${dateStr}</span>
-                </div>
-                <div>${msg.text} ${editedMark} ${actionsHtml}</div>
-            `;
-            container.appendChild(bubble);
-        });
-        container.scrollTop = container.scrollHeight;
-    }
-
-    // Вспомогательные функции чата
-    window.startEditMessage = function(key, oldText, timestamp) {
-        if (Date.now() - timestamp > 86400000) { alert("Время вышло."); return; }
-        const input = document.getElementById('chatInput');
-        editingMsgId = key;
-        input.value = oldText;
-        input.focus();
-        input.classList.add('editing-mode');
-        document.getElementById('btnSendChat').innerText = "💾";
-        document.getElementById('btnCancelEdit').classList.remove('hidden');
-    }
-
-    window.cancelEditMode = function() {
-        const input = document.getElementById('chatInput');
-        editingMsgId = null;
-        input.value = '';
-        input.classList.remove('editing-mode');
-        document.getElementById('btnSendChat').innerText = "➤";
-        document.getElementById('btnCancelEdit').classList.add('hidden');
-    }
-
-    window.deleteChatMessage = function(key, timestamp) {
-        if (Date.now() - timestamp > 86400000) { alert("Время вышло."); return; }
-        if (confirm("Удалить?")) {
-            const path = currentChatId === 'general' ? 'chat' : `private_chats/${currentChatId}`;
-            remove(ref(db, `${path}/${key}`));
-            if (editingMsgId === key) cancelEditMode();
-        }
+        showView('chat'); // Переходим во вью чата
+        loadChat(chatId, `@${targetLogin}`); // Открываем конкретный чат
     }
 
     // =========================================================
@@ -1879,8 +1894,14 @@
         } else if (viewName === 'chat') {
             document.getElementById('view-chat').classList.remove('hidden');
             document.getElementById('btn-nav-chat').classList.add('active');
-            const container = document.getElementById('chatMessages');
-            setTimeout(() => container.scrollTop = container.scrollHeight, 100);
+            
+            // Если чат не выбран, показываем список. Если выбран - остаемся в переписке.
+            if (!currentChatId) {
+                showChatList();
+            } else {
+                 const container = document.getElementById('chatMessages');
+                 setTimeout(() => container.scrollTop = container.scrollHeight, 100);
+            }
         } else if (viewName === 'journal') {
             document.getElementById('view-journal').classList.remove('hidden');
             document.getElementById('btn-nav-journal').classList.add('active');
@@ -1892,3 +1913,4 @@
 
 </body>
 </html>
+
