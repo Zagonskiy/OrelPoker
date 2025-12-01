@@ -480,35 +480,125 @@
         .player-status-indicator { width: 10px; height: 10px; border-radius: 50%; background-color: #d32f2f; border: 1px solid rgba(0,0,0,0.3); margin-right: 8px; box-shadow: 0 0 2px rgba(0,0,0,0.5); transition: all 0.3s ease; flex-shrink: 0; }
         .player-status-indicator.is-online { background-color: #00e676; box-shadow: 0 0 6px #00e676; border-color: #1b5e20; }
 
-        /* MOBILE */
+        /* MOBILE (ИСПРАВЛЕНО ПОД НОВЫЕ КОЛОНКИ) */
         @media screen and (max-width: 768px) {
             .sidebar { transform: translateX(-100%); width: 260px; }
             .sidebar.open { transform: translateX(0); }
             .main-content { margin-left: 0; width: 100%; padding-top: 60px; }
-            .menu-toggle {display: flex; align-items: center; justify-content: center; gap: 6px; line-height: 1; padding: 0; margin-top: -3px; }
+            .menu-toggle { display: flex; align-items: center; justify-content: center; gap: 6px; line-height: 1; padding: 0; margin-top: -3px; }
             .brand-container { flex-direction: column; gap: 10px; }
             .header-title { margin-right: 0; font-size: 1.8em; padding-top: 15px; line-height: 1.4; }
             
+            /* Скрываем шапку таблицы */
             thead { display: none; }
-            table, tbody, tr, td { display: block; }
-            tbody tr { background: rgba(255, 255, 255, 0.6); border: 2px solid var(--accent-brown); border-radius: 8px; margin-bottom: 20px; padding: 10px; position: relative; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); }
-            td { padding: 5px 0; border: none; text-align: center; }
-            td:nth-of-type(1) { text-align: left; padding-right: 70px; border-bottom: 2px solid rgba(139, 69, 19, 0.2); margin-bottom: 10px; }
-            td:nth-of-type(1) input { font-weight: bold; font-size: 1.3em; color: var(--accent-brown); border-bottom: none; }
-            td:nth-of-type(2) { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 5px; margin: 5px 0; }
-            td:nth-of-type(2) input { width: 60px; }
-            td:nth-of-type(3) { margin: 5px 0; font-size: 2.2em; font-weight: bold; color: var(--accent-red); }
-            td:nth-of-type(3)::before { content: "Баланс"; display: block; font-size: 0.4em; color: #8b4513; text-transform: uppercase; letter-spacing: 2px; margin-bottom: -5px; }
-            td:nth-of-type(4) { font-size: 0.8em; color: #666; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 4px; max-width: 100%; }
-            td:nth-of-type(5) { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; padding: 0; }
-            .btn-reset-player, .btn-delete { width: 28px; height: 28px; font-size: 0.9em; }
             
-            .grand-total-panel { flex-direction: column; text-align: center; gap: 5px; padding: 15px; width: 100%; box-sizing: border-box; }
+            /* Превращаем строки в карточки */
+            table, tbody, tr, td { display: block; }
+            
+            tbody tr { 
+                background: rgba(255, 255, 255, 0.6); 
+                border: 2px solid var(--accent-brown); 
+                border-radius: 8px; 
+                margin-bottom: 25px; 
+                padding: 15px; 
+                position: relative; 
+                box-shadow: 3px 3px 8px rgba(0,0,0,0.2); 
+            }
+            
+            td { padding: 5px 0; border: none; text-align: center; }
+
+            /* 1. ИМЯ (Слева сверху) */
+            td:nth-of-type(1) { 
+                text-align: left; 
+                padding-right: 50px; /* Место под кнопку удаления */
+                margin-bottom: 5px;
+            }
+            td:nth-of-type(1) input { 
+                font-weight: bold; 
+                font-size: 1.4em; 
+                color: var(--accent-brown); 
+                border-bottom: none; 
+                width: 100%;
+            }
+
+            /* 2. СТАТУС (Под именем) */
+            td:nth-of-type(2) {
+                text-align: left;
+                padding-bottom: 10px;
+                border-bottom: 2px dashed rgba(139, 69, 19, 0.2);
+                margin-bottom: 15px;
+                font-size: 1.1em;
+            }
+
+            /* 3. ДЕЙСТВИЯ (Кнопки) */
+            td:nth-of-type(3) { 
+                display: flex; 
+                justify-content: center; 
+                align-items: center; 
+                flex-wrap: wrap; 
+                gap: 8px; 
+                margin-bottom: 15px; 
+            }
+            td:nth-of-type(3) input { width: 70px; font-size: 1.2em; }
+
+            /* 4. ИТОГ (Баланс - Крупно) */
+            td:nth-of-type(4) { 
+                margin: 10px 0; 
+                font-size: 2.5em; 
+                font-weight: bold; 
+                color: var(--accent-red); 
+                line-height: 1;
+            }
+            td:nth-of-type(4)::before { 
+                content: "ТЕКУЩИЙ БАЛАНС"; 
+                display: block; 
+                font-size: 0.3em; 
+                color: #8b4513; 
+                text-transform: uppercase; 
+                letter-spacing: 2px; 
+                margin-bottom: 5px;
+            }
+
+            /* 5. ИСТОРИЯ (Серый блок внизу) */
+            td:nth-of-type(5) { 
+                font-size: 0.85em; 
+                color: #555; 
+                background: rgba(255,255,255,0.5); 
+                padding: 8px; 
+                border-radius: 4px; 
+                min-height: 30px;
+            }
+
+            /* 6. УДАЛЕНИЕ/БАН (Абсолютно в правом верхнем углу) */
+            td:nth-of-type(6) { 
+                position: absolute; 
+                top: 15px; 
+                right: 10px; 
+                display: flex; 
+                gap: 5px; 
+                padding: 0; 
+            }
+            
+            .btn-reset-player, .btn-delete, .btn-ban { 
+                width: 34px; 
+                height: 34px; 
+                font-size: 1em; 
+            }
+            
+            /* Поправляем панель итога для мобилок */
+            .grand-total-panel { 
+                flex-direction: column; 
+                text-align: center; 
+                gap: 5px; 
+                padding: 15px; 
+                width: 100%; 
+                box-sizing: border-box; 
+            }
             .gt-label { font-size: 1.2em; }
             .gt-value { font-size: 3em; line-height: 1; }
             
             .close-menu-btn { display: block; }
-            tfoot { display: none; } /* Скрываем старый футер если остался */
+            tfoot { display: none; }
         }
         /* --- СИСТЕМА РАНГОВ --- */
         .role-hidden { display: none !important; }
@@ -1734,6 +1824,7 @@
 
 </body>
 </html>
+
 
 
 
