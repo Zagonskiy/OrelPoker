@@ -128,6 +128,13 @@
         }
         .edit-icon:hover { opacity: 1; transform: scale(1.1); }
 
+        .role-badge {
+            font-size: 1.2em;
+            margin-right: 5px;
+            cursor: help;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+        }
+
         /* НАВИГАЦИЯ */
         .nav-btn {
             background: transparent; border: 1px solid var(--accent-brown); color: #d4c5a3;
@@ -1138,11 +1145,12 @@
         const newRow = tableBody.insertRow();
         const { total, historyArray } = calculatePlayerStats(player);
 
-        // 1. ИМЯ
+        // 1. ИМЯ И ЗНАЧОК РОЛИ
         const cellName = newRow.insertCell(0);
         const nameWrapper = document.createElement('div');
         nameWrapper.className = 'name-wrapper';
         
+        // Индикатор онлайн
         const statusDot = document.createElement('div');
         statusDot.className = 'player-status-indicator';
         statusDot.setAttribute('data-player-name', player.name);
@@ -1150,20 +1158,55 @@
         const keyToCheck = player.login || player.name;
         if (onlineNicknames.has(keyToCheck)) statusDot.classList.add('is-online');
 
+        // --- ЛОГИКА ЗНАЧКОВ ---
+        const roleBadge = document.createElement('span');
+        roleBadge.className = 'role-badge';
+        
+        if (!player.login) {
+            roleBadge.innerText = '👽';
+            roleBadge.title = 'Гость';
+        } 
+        else if (player.login === 'Zagonskiy') {
+            roleBadge.innerText = '👑';
+            roleBadge.title = 'Создатель';
+        }
+        else {
+            roleBadge.innerText = '⏳'; // Загрузка...
+            get(child(ref(db), 'users/' + player.login + '/role')).then((snap) => {
+                const r = snap.val();
+                if (r === 'admin') { roleBadge.innerText = '👑'; roleBadge.title = 'Админ'; }
+                else if (r === 'trusted') { roleBadge.innerText = '🛡️'; roleBadge.title = 'Доверенный'; }
+                else { roleBadge.innerText = '👤'; roleBadge.title = 'Игрок'; }
+            });
+        }
+
         const inputName = document.createElement('input');
         inputName.type = 'text'; 
         inputName.className = 'player-name'; 
         inputName.value = player.name || "";
         inputName.readOnly = true;
         
+        // --- ЛОГИКА КЛИКОВ (Смена ранга или имени гостя) ---
         if (myRole === 'admin' && player.login) {
             inputName.style.cursor = "pointer";
             inputName.style.textDecoration = "underline";
             inputName.title = "Нажми, чтобы изменить ранг";
             inputName.onclick = () => changeRankDialog(player.login, player.name);
         }
+        else if ((myRole === 'admin' || myRole === 'trusted') && !player.login) {
+            inputName.style.cursor = "pointer";
+            inputName.style.borderBottom = "1px dashed var(--accent-brown)";
+            inputName.title = "Нажми, чтобы переименовать гостя";
+            inputName.onclick = () => {
+                const newName = prompt("Переименовать гостя:", player.name);
+                if (newName && newName.trim() !== "") {
+                    update(ref(db, 'players/' + id), { name: newName.trim() });
+                }
+            };
+        }
 
         nameWrapper.appendChild(statusDot); 
+        nameWrapper.appendChild(roleBadge); // Вставляем значок
         nameWrapper.appendChild(inputName); 
         cellName.appendChild(nameWrapper);
 
@@ -1210,14 +1253,12 @@
         wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
         
         if (myRole === 'admin') {
-             // Сброс баланса
              wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
              
-             // Безопасное удаление (для зарегистрированных) или обычное
              if (player.login) {
                  wrapper.appendChild(createBtn('✕', 'btn-delete', () => safeDeletePlayer(id, player.login)));
              } else {
-                 wrapper.appendChild(createBtn('✕', 'btn-delete', () => { if(confirm("Удалить гостя?")) remove(ref(db, 'players/' + id)); }));
+                 wrapper.appendChild(createBtn('✕', 'btn-delete', () => { if(confirm("Удалить гостя навсегда?")) remove(ref(db, 'players/' + id)); }));
              }
         }
         cellDelete.appendChild(wrapper);
@@ -1400,6 +1441,7 @@
 
 </body>
 </html>
+
 
 
 
