@@ -190,6 +190,23 @@
             position: relative;
         }
 
+        .btn-local-alias {
+            cursor: pointer;
+            font-size: 1em;
+            margin-right: 5px;
+            opacity: 0.4;
+            transition: 0.2s;
+        }
+        .btn-local-alias:hover {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+    /* Стиль поля, если у него есть псевдоним */
+        .has-alias {
+            color: var(--accent-purple) !important; 
+            font-style: italic;
+        }
+
         /* --- HEADER & BRAND --- */
         .brand-container {
             display: flex; align-items: center; justify-content: center;
@@ -759,6 +776,29 @@
         container.scrollTop = container.scrollHeight;
     });
 
+    // --- ЛОКАЛЬНЫЕ ПСЕВДОНИМЫ ---
+    window.setLocalAlias = function(key) {
+        // Загружаем текущие псевдонимы
+        const aliases = JSON.parse(localStorage.getItem('op_local_aliases') || '{}');
+        const current = aliases[key] || "";
+        
+        const newAlias = prompt("Локальный псевдоним (виден только вам):", current);
+        
+        if (newAlias === null) return; // Отмена
+        
+        if (newAlias.trim() === "") {
+            delete aliases[key]; // Если пусто — удаляем псевдоним
+        } else {
+            aliases[key] = newAlias.trim(); // Сохраняем
+        }
+        
+        localStorage.setItem('op_local_aliases', JSON.stringify(aliases));
+        
+        // Обновляем таблицу
+        const savedData = JSON.parse(localStorage.getItem('poker_data_v74'));
+        renderTable(savedData);
+    }
+
     // --- ТАБЛИЦА ---
     window.refreshTable = async function() {
         const pass = prompt("Для обновления введите код доступа:");
@@ -1145,12 +1185,11 @@
         const newRow = tableBody.insertRow();
         const { total, historyArray } = calculatePlayerStats(player);
 
-        // 1. ИМЯ И ЗНАЧОК РОЛИ
+        // 1. ИМЯ, РОЛЬ И ЛОКАЛЬНЫЙ НИК
         const cellName = newRow.insertCell(0);
         const nameWrapper = document.createElement('div');
         nameWrapper.className = 'name-wrapper';
         
-        // Индикатор онлайн
         const statusDot = document.createElement('div');
         statusDot.className = 'player-status-indicator';
         statusDot.setAttribute('data-player-name', player.name);
@@ -1158,7 +1197,7 @@
         const keyToCheck = player.login || player.name;
         if (onlineNicknames.has(keyToCheck)) statusDot.classList.add('is-online');
 
-        // --- ЛОГИКА ЗНАЧКОВ ---
+        // Значок роли
         const roleBadge = document.createElement('span');
         roleBadge.className = 'role-badge';
         
@@ -1171,7 +1210,7 @@
             roleBadge.title = 'Создатель';
         }
         else {
-            roleBadge.innerText = '⏳'; // Загрузка...
+            roleBadge.innerText = '⏳';
             get(child(ref(db), 'users/' + player.login + '/role')).then((snap) => {
                 const r = snap.val();
                 if (r === 'admin') { roleBadge.innerText = '👑'; roleBadge.title = 'Админ'; }
@@ -1180,25 +1219,36 @@
             });
         }
 
+        // --- ЛОГИКА ЛОКАЛЬНОГО ИМЕНИ ---
+        const uniqueKey = player.login || player.name; // Ключ для хранения
+        const localAliases = JSON.parse(localStorage.getItem('op_local_aliases') || '{}');
+        const localName = localAliases[uniqueKey];
+
         const inputName = document.createElement('input');
         inputName.type = 'text'; 
         inputName.className = 'player-name'; 
-        inputName.value = player.name || "";
         inputName.readOnly = true;
+
+        // Если есть псевдоним - показываем его
+        if (localName) {
+            inputName.value = localName + "*"; // Звездочка покажет, что это псевдоним
+            inputName.classList.add('has-alias');
+            inputName.title = `Настоящее имя: ${player.name}`;
+        } else {
+            inputName.value = player.name || "";
+        }
         
-        // --- ЛОГИКА КЛИКОВ (Смена ранга или имени гостя) ---
+        // КЛИКИ ПО ИМЕНИ (Смена ранга или переименование гостя)
         if (myRole === 'admin' && player.login) {
             inputName.style.cursor = "pointer";
             inputName.style.textDecoration = "underline";
-            inputName.title = "Нажми, чтобы изменить ранг";
             inputName.onclick = () => changeRankDialog(player.login, player.name);
         }
         else if ((myRole === 'admin' || myRole === 'trusted') && !player.login) {
             inputName.style.cursor = "pointer";
             inputName.style.borderBottom = "1px dashed var(--accent-brown)";
-            inputName.title = "Нажми, чтобы переименовать гостя";
             inputName.onclick = () => {
-                const newName = prompt("Переименовать гостя:", player.name);
+                const newName = prompt("Переименовать гостя глобально:", player.name);
                 if (newName && newName.trim() !== "") {
                     update(ref(db, 'players/' + id), { name: newName.trim() });
                 }
@@ -1206,13 +1256,23 @@
         }
 
         nameWrapper.appendChild(statusDot); 
-        nameWrapper.appendChild(roleBadge); // Вставляем значок
+        nameWrapper.appendChild(roleBadge);
+
+        // КНОПКА ЛОКАЛЬНОГО ПСЕВДОНИМА (Только для Админа)
+        if (myRole === 'admin') {
+            const btnAlias = document.createElement('span');
+            btnAlias.innerText = '🏷️';
+            btnAlias.className = 'btn-local-alias';
+            btnAlias.title = 'Дать локальный псевдоним (виден только вам)';
+            btnAlias.onclick = () => setLocalAlias(uniqueKey);
+            nameWrapper.appendChild(btnAlias);
+        }
+
         nameWrapper.appendChild(inputName); 
         cellName.appendChild(nameWrapper);
 
         // 2. ДЕЙСТВИЯ
         const cellAction = newRow.insertCell(1);
-        
         if (myRole !== 'player') {
             const inputNum = document.createElement('input');
             inputNum.type = 'number'; 
@@ -1254,7 +1314,6 @@
         
         if (myRole === 'admin') {
              wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
-             
              if (player.login) {
                  wrapper.appendChild(createBtn('✕', 'btn-delete', () => safeDeletePlayer(id, player.login)));
              } else {
@@ -1441,6 +1500,7 @@
 
 </body>
 </html>
+
 
 
 
