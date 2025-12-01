@@ -90,6 +90,8 @@
             z-index: 3001;
         }
 
+        
+
         .sidebar-logo { text-align: center; margin-bottom: 30px; }
         .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
 
@@ -323,6 +325,43 @@
             word-wrap: break-word;
         }
 
+
+        /* --- СТАТУСЫ ИГРОКОВ --- */
+        .status-cell { font-family: 'Special Elite', monospace; font-weight: bold; font-size: 0.9em; text-align: center; }
+    
+        .st-dvornik { color: #7f8c8d; } /* Серый */
+        .st-novo    { color: #2ecc71; } /* Зеленый */
+        .st-mid     { color: #3498db; } /* Синий */
+        .st-rich    { color: #9b59b6; font-weight: 900; } /* Фиолетовый */
+        .st-donate  { color: #f1c40f; text-shadow: 0 0 5px #f1c40f; } /* Золотой */
+        .st-cheat   { color: #ff0000; text-shadow: 2px 2px 0px black; animation: pulse 0.5s infinite; letter-spacing: 1px; } /* Агрессивный красный */
+
+    /* ОБНОВЛЕНИЕ МОБИЛЬНОЙ ВЕРСИИ (так как добавилась колонка) */
+        @media screen and (max-width: 768px) {
+        /* Имя */
+            td:nth-of-type(1) { margin-bottom: 5px; border-bottom: none; padding-bottom: 0; }
+        
+        /* Статус (Новая колонка 2) */
+            td:nth-of-type(2) { 
+                font-size: 1.2em; 
+                padding: 5px 0 15px 0; 
+                border-bottom: 2px solid rgba(139, 69, 19, 0.2); 
+            }
+        
+        /* Действия (Теперь колонка 3) */
+            td:nth-of-type(3) { display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; margin: 5px 0; }
+            td:nth-of-type(3) input { width: 60px; }
+        
+        /* Итог (Теперь колонка 4) */
+            td:nth-of-type(4) { margin: 5px 0; font-size: 2.2em; font-weight: bold; color: var(--accent-red); }
+            td:nth-of-type(4)::before { content: "Баланс"; display: block; font-size: 0.4em; color: #8b4513; text-transform: uppercase; letter-spacing: 2px; }
+        
+        /* История (Теперь колонка 5) */
+            td:nth-of-type(5) { font-size: 0.8em; color: #666; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 4px; max-width: 100%; }
+        
+        /* Удаление (Теперь колонка 6) */
+            td:nth-of-type(6) { position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; padding: 0; }
+        }
         
         /* CHAT */
         .chat-wrapper { display: flex; flex-direction: column; height: calc(100vh - 100px); }
@@ -626,10 +665,10 @@
         <table id="scoreTable">
             <thead>
                 <tr>
-                    <th style="width: 25%;">Имя</th>
-                    <th style="width: 30%;">Действия</th>
+                    <th style="width: 20%;">Имя</th>
+                    <th style="width: 15%;">Статус</th> <th style="width: 25%;">Действия</th>
                     <th style="width: 10%;">Итог</th>
-                    <th style="width: 30%;">История</th>
+                    <th style="width: 25%;">История</th>
                     <th style="width: 5%;"></th>
                 </tr>
             </thead>
@@ -1378,10 +1417,8 @@
         const newRow = tableBody.insertRow();
         const { total, historyArray } = calculatePlayerStats(player);
 
-        // 1. ИМЯ, РОЛЬ И ЗАМЕТКИ
+        // 1. ИМЯ
         const cellName = newRow.insertCell(0);
-        
-        // Основной контейнер для строки имени
         const nameWrapper = document.createElement('div');
         nameWrapper.className = 'name-wrapper';
         
@@ -1392,7 +1429,6 @@
         const keyToCheck = player.login || player.name;
         if (onlineNicknames.has(keyToCheck)) statusDot.classList.add('is-online');
 
-        // Значок роли
         const roleBadge = document.createElement('span');
         roleBadge.className = 'role-badge';
         if (!player.login) { roleBadge.innerText = '👽'; roleBadge.title = 'Гость'; } 
@@ -1413,7 +1449,6 @@
         inputName.value = player.name || "";
         inputName.readOnly = true;
         
-        // КЛИКИ (Смена ранга или переименование гостя)
         if (myRole === 'admin' && player.login) {
             inputName.style.cursor = "pointer";
             inputName.style.textDecoration = "underline";
@@ -1432,25 +1467,21 @@
         nameWrapper.appendChild(roleBadge);
         nameWrapper.appendChild(inputName); 
 
-        // --- ЛОГИКА ЗАМЕТОК ---
+        // Заметки
         const uniqueKey = player.login || player.name; 
         const localNotes = JSON.parse(localStorage.getItem('op_local_notes') || '{}');
         const noteText = localNotes[uniqueKey];
 
-        // Кнопка заметки (только для Админа)
         if (myRole === 'admin') {
             const btnNote = document.createElement('span');
             btnNote.innerText = '📝';
             btnNote.className = 'btn-local-note';
-            if(noteText) btnNote.classList.add('has-note'); // Подсвечиваем если есть заметка
-            btnNote.title = 'Добавить заметку (локально)';
+            if(noteText) btnNote.classList.add('has-note');
             btnNote.onclick = () => setLocalNote(uniqueKey);
             nameWrapper.appendChild(btnNote);
         }
 
         cellName.appendChild(nameWrapper);
-
-        // Если есть текст заметки — выводим его под именем
         if (noteText && myRole === 'admin') {
             const noteDiv = document.createElement('div');
             noteDiv.className = 'player-note-text';
@@ -1458,8 +1489,25 @@
             cellName.appendChild(noteDiv);
         }
 
-        // 2. ДЕЙСТВИЯ
-        const cellAction = newRow.insertCell(1);
+        // 2. СТАТУС (НОВАЯ КОЛОНКА)
+        const cellStatus = newRow.insertCell(1);
+        cellStatus.className = 'status-cell';
+        
+        let statusText = "Дворник";
+        let statusClass = "st-dvornik";
+
+        if (total >= 50000) { statusText = "Читак ебаный"; statusClass = "st-cheat"; }
+        else if (total >= 10000) { statusText = "Донатер"; statusClass = "st-donate"; }
+        else if (total >= 5000) { statusText = "Богач"; statusClass = "st-rich"; }
+        else if (total >= 2000) { statusText = "Средняк"; statusClass = "st-mid"; }
+        else if (total >= 1000) { statusText = "Новобранец"; statusClass = "st-novo"; }
+        
+        cellStatus.innerText = statusText;
+        cellStatus.classList.add(statusClass);
+
+
+        // 3. ДЕЙСТВИЯ
+        const cellAction = newRow.insertCell(2);
         if (myRole !== 'player') {
             const inputNum = document.createElement('input');
             inputNum.type = 'number'; 
@@ -1484,18 +1532,18 @@
             cellAction.innerText = "—";
         }
 
-        // 3. ИТОГ
-        const cellTotal = newRow.insertCell(2);
+        // 4. ИТОГ
+        const cellTotal = newRow.insertCell(3);
         cellTotal.className = 'score-cell';
         cellTotal.innerText = total;
 
-        // 4. ИСТОРИЯ
-        const cellHistory = newRow.insertCell(3);
+        // 5. ИСТОРИЯ
+        const cellHistory = newRow.insertCell(4);
         cellHistory.className = 'history-log';
         cellHistory.innerText = historyArray.length > 0 ? historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ') : 'Пусто';
 
-        // 5. УДАЛЕНИЕ
-        const cellDelete = newRow.insertCell(4);
+        // 6. УДАЛЕНИЕ
+        const cellDelete = newRow.insertCell(5);
         const wrapper = document.createElement('div');
         wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
         
@@ -1686,6 +1734,7 @@
 
 </body>
 </html>
+
 
 
 
