@@ -510,15 +510,35 @@
             /* 1. ИМЯ (Слева сверху) */
             td:nth-of-type(1) { 
                 text-align: left; 
-                padding-right: 50px; /* Место под кнопку удаления */
+                padding-right: 85px; /* Увеличили отступ, чтобы не наезжало на кнопку удаления */
                 margin-bottom: 5px;
+                display: flex;       /* Включаем Flex, чтобы имя и заметка стояли ровно */
+                align-items: center;
+                flex-wrap: wrap;     /* Разрешаем перенос, если заметка длинная */
             }
+            
+            /* Настройка поля ввода имени */
             td:nth-of-type(1) input { 
                 font-weight: bold; 
                 font-size: 1.4em; 
                 color: var(--accent-brown); 
                 border-bottom: none; 
+                /* width: 100%;  <-- УДАЛЕНО, это ломало верстку */
+                flex: 1;         /* <-- ДОБАВЛЕНО: Занимает только свободное место */
+                min-width: 50px; /* Чтобы совсем не сжалось */
+            }
+            
+            /* Поправляем кнопку заметки на телефоне */
+            .btn-local-note {
+                font-size: 1.5em; /* Делаем покрупнее для пальца */
+                padding: 5px;
+            }
+            
+            /* Текст заметки на телефоне переносим на новую строку */
+            .player-note-text {
                 width: 100%;
+                margin-left: 0;
+                margin-top: 5px;
             }
 
             /* 2. СТАТУС (Под именем) */
@@ -1824,6 +1844,7 @@
 
 </body>
 </html>
+
 
 
 
