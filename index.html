@@ -986,8 +986,7 @@
         }
     }
 
-    // --- ЛОГИКА АВТОРИЗАЦИИ ---
-    // 1. РЕГИСТРАЦИЯ (С гарантированной выдачей роли Игрок)
+    // --- AUTH (С РАБОЧИМ ОФЛАЙН ВХОДОМ) ---
     window.handleRegister = function() {
         const nick = document.getElementById('regNick').value.trim();
         const pass = document.getElementById('regPass').value.trim();
@@ -995,6 +994,11 @@
 
         if(!nick || !pass) { document.getElementById('regError').innerText = "Заполните все поля"; return; }
         if(pass !== passRepeat) { document.getElementById('regError').innerText = "Пароли не совпадают!"; return; }
+
+        if (!navigator.onLine) {
+            document.getElementById('regError').innerText = "Регистрация только онлайн!";
+            return;
+        }
 
         get(child(ref(db), `users/${nick}`)).then((snapshot) => {
             if (snapshot.exists()) { 
@@ -1004,12 +1008,12 @@
                     pass: pass, 
                     created: Date.now(), 
                     displayName: nick,
-                    role: 'player' // <--- ВОТ ЗДЕСЬ ВЫДАЕТСЯ РОЛЬ ПО УМОЛЧАНИЮ
+                    role: 'player' 
                 }).then(() => {
                     const newPlayerRef = push(ref(db, 'players'));
                     return set(newPlayerRef, { name: nick, login: nick, history: { 'start_bonus': 1000 } });
                 }).then(() => {
-                    alert("Аккаунт создан! Роль: Игрок.");
+                    alert("Аккаунт создан! Входите.");
                     switchAuthView('login');
                     document.getElementById('loginNick').value = nick;
                     document.getElementById('loginPass').value = pass;
@@ -1022,28 +1026,37 @@
         const nick = document.getElementById('loginNick').value.trim();
         const pass = document.getElementById('loginPass').value.trim();
         const remember = document.getElementById('rememberMe').checked;
-        
-        if(!nick || !pass) { 
-            document.getElementById('loginError').innerText = "Введите данные"; 
-            return; 
-        }
+        if(!nick || !pass) { document.getElementById('loginError').innerText = "Введите данные"; return; }
         checkLogin(nick, pass, false, remember);
     }
 
     async function checkLogin(nick, pass, isAuto, remember = false) {
+        // 1. ПОПЫТКА ОФЛАЙН ВХОДА (ЧЕРЕЗ КЭШ)
         const tryLocalLogin = () => {
             const knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
+            
+            // Если пароль совпадает с сохраненным
             if (knownUsers[nick] && knownUsers[nick] === pass) {
                 const cachedUser = JSON.parse(localStorage.getItem('op_user') || '{}');
-                const savedRole = cachedUser.role || 'player'; 
-                performLogin(nick, pass, remember || isAuto, cachedUser.displayName || nick, savedRole);
-                return true;
+                
+                // Проверяем, тот ли это пользователь в кэше
+                if (cachedUser.nick === nick) {
+                    if (cachedUser.isBanned) {
+                        showBannedOverlay();
+                        return true;
+                    }
+                    // Входим с сохраненной ролью
+                    const savedRole = cachedUser.role || 'player'; 
+                    performLogin(nick, pass, remember || isAuto, cachedUser.displayName || nick, savedRole, false);
+                    return true;
+                }
             }
             return false;
         };
 
+        // Если нет интернета - сразу пробуем локальный вход
         if (!navigator.onLine) {
-            if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Нет сети";
+            if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Нет сети и кэша";
             return;
         }
 
@@ -1051,14 +1064,29 @@
             const snapshot = await get(child(ref(db), `users/${nick}`));
             if (snapshot.exists()) {
                 const userData = snapshot.val();
+                
+                // Проверка БАНА онлайн
+                if (userData.isBanned === true) {
+                    let cached = { nick: nick, isBanned: true };
+                    localStorage.setItem('op_user', JSON.stringify(cached));
+                    showBannedOverlay();
+                    return;
+                }
+
                 if(userData.pass === pass) {
+                    // ОБНОВЛЯЕМ КЭШ ПРИ УСПЕШНОМ ОНЛАЙН ВХОДЕ
                     let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
                     knownUsers[nick] = pass;
                     localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
                     
                     const dispName = userData.displayName || nick;
                     const dbRole = userData.role || 'player';
-                    performLogin(nick, pass, remember || isAuto, dispName, dbRole);
+                    
+                    // Сохраняем полные данные для будущего офлайн входа
+                    const userObj = { nick, pass, displayName: dispName, role: dbRole, isBanned: false };
+                    localStorage.setItem('op_user', JSON.stringify(userObj));
+
+                    performLogin(nick, pass, remember || isAuto, dispName, dbRole, false);
                 } else {
                     if(!isAuto) document.getElementById('loginError').innerText = "Неверный пароль";
                     if(isAuto) { localStorage.removeItem('op_user'); sessionStorage.removeItem('op_session_user'); }
@@ -1067,41 +1095,69 @@
                 if(!isAuto) document.getElementById('loginError').innerText = "Пользователь не найден";
             }
         } catch (error) {
+            // Если ошибка сети при попытке онлайн входа - пробуем офлайн
             if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Ошибка сети";
         }
     }
 
-    function performLogin(nick, pass, remember, displayName, loadedRole) {
+    function showBannedOverlay() {
         document.getElementById('login-overlay').style.display = 'none';
-        
+        const banScreen = document.getElementById('banned-overlay');
+        banScreen.classList.remove('hidden');
+        banScreen.style.display = 'flex';
+    }
+
+    function performLogin(nick, pass, remember, displayName, loadedRole, isBanned) {
+        if (isBanned) {
+            showBannedOverlay();
+            return;
+        }
+
+        document.getElementById('login-overlay').style.display = 'none';
         const finalName = displayName || nick;
         updateMenuUI(finalName, nick);
         
         let role = loadedRole || 'player';
-        if (nick === 'Zagonskiy') {
-            role = 'admin';
-        } 
+        if (nick === 'Zagonskiy') role = 'admin';
         
-        const userObj = { nick, pass, displayName: finalName, role: role };
+        const userObj = { nick, pass, displayName: finalName, role: role, isBanned: false };
         
         sessionStorage.setItem('op_session_user', JSON.stringify(userObj));
+        // Дублируем в localStorage для надежности офлайна
         if(remember) localStorage.setItem('op_user', JSON.stringify(userObj));
         
         setOnlineStatus(nick);
-        fetchUserRole(nick); 
+        fetchUserRole(nick); // Попробует обновить роль, если есть сеть
         applyRoleUI();
     }
 
     function fetchUserRole(nick) {
-        if (nick === 'Zagonskiy') return; 
+        if (nick === 'Zagonskiy' || !navigator.onLine) return; // Не грузим, если нет сети
         
-        get(child(ref(db), `users/${nick}/role`)).then((snap) => {
-            let role = snap.val() || 'player';
+        get(child(ref(db), `users/${nick}`)).then((snap) => {
+            const uData = snap.val();
+            if (!uData) return;
+
+            if (uData.isBanned === true) {
+                showBannedOverlay();
+                let cur = JSON.parse(localStorage.getItem('op_user') || '{}');
+                cur.isBanned = true;
+                localStorage.setItem('op_user', JSON.stringify(cur));
+                return;
+            }
+
+            let role = uData.role || 'player';
             let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
             if(sessionUser) {
                 if (sessionUser.role !== role) {
                     sessionUser.role = role;
                     sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
+                    // Обновляем и кэш
+                    let localUser = JSON.parse(localStorage.getItem('op_user') || '{}');
+                    if (localUser.nick === nick) {
+                        localUser.role = role;
+                        localStorage.setItem('op_user', JSON.stringify(localUser));
+                    }
                     applyRoleUI();
                 }
             }
@@ -1561,6 +1617,7 @@
 
 </body>
 </html>
+
 
 
 
