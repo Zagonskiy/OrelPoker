@@ -996,27 +996,21 @@
 
         // --- ЛОГИКА СЛЕЖЕНИЯ ЗА АКТИВНЫМ ЗВОНКОМ ---
         onValue(ref(db, `voice_rooms/${chatId}`), (snap) => {
-            // Если мы уже внутри звонка (панель открыта), кнопку входа и бейдж прячем/адаптируем
             const isInCall = !document.getElementById('voiceControlPanel').classList.contains('hidden');
             
             if (snap.exists() && snap.hasChildren()) {
-                // Звонок идет!
                 const count = Object.keys(snap.val()).length;
-                
                 if (!isInCall) {
-                    // Если я НЕ в звонке, показываем красный бейдж
                     callBadge.classList.remove('hidden');
                     document.getElementById('callMembersCount').innerText = `(${count})`;
-                    btnVoice.classList.add('hidden'); // Прячем кнопку "Войти", так как жмем на бейдж
+                    btnVoice.classList.add('hidden'); 
                 } else {
-                    // Если я УЖЕ в звонке, бейдж не нужен (мы видим панель)
                     callBadge.classList.add('hidden');
                 }
             } else {
-                // Звонка нет
                 callBadge.classList.add('hidden');
                 if (!isInCall && chatId !== 'general') {
-                    btnVoice.classList.remove('hidden'); // Показываем обычную кнопку
+                    btnVoice.classList.remove('hidden'); 
                 }
             }
         });
@@ -1157,7 +1151,7 @@
         if (!currentChatId) return;
         
         document.getElementById('btnVoiceCall').classList.add('hidden');
-        document.getElementById('activeCallBadge').classList.add('hidden'); // Скрываем бейдж при входе
+        document.getElementById('activeCallBadge').classList.add('hidden'); 
         document.getElementById('voiceControlPanel').classList.remove('hidden');
 
         try {
