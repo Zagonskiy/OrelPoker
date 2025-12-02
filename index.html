@@ -396,6 +396,29 @@
         .btn-trusted { background-color: #0277bd; border-color: #01579b; }
         .btn-player { background-color: #2e7d32; border-color: #1b5e20; }
         .btn-cancel-role { background: transparent; border: none; text-decoration: underline; color: var(--accent-brown); font-family: 'Special Elite', monospace; cursor: pointer; font-size: 1.1em; }
+
+
+
+        /* Кнопка входа в голосовой чат */
+        .btn-voice-call {
+            background-color: #0288d1; color: white; border: 1px solid #01579b;
+            border-radius: 4px; padding: 5px 10px; font-family: 'Rye', cursive;
+            cursor: pointer; margin-right: 5px; margin-left: 5px;
+        }
+        
+        /* Панель активного звонка */
+        .voice-panel {
+            background: #2a1b0f; border-bottom: 2px solid var(--accent-gold);
+            padding: 10px; display: flex; align-items: center; justify-content: space-between;
+            color: #fff;
+        }
+        .voice-status { font-family: 'Special Elite', monospace; color: #00e676; font-size: 0.9em; animation: pulse 2s infinite; }
+        .voice-avatars { display: flex; gap: 5px; overflow-x: auto; max-width: 50%; }
+        .voice-peer-icon { width: 30px; height: 30px; border-radius: 50%; background: #fff; border: 2px solid var(--accent-green); display: flex; justify-content: center; align-items: center; font-size: 1.2em; }
+        
+        .btn-mic { background: #444; color: #fff; border: 1px solid #666; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+        .btn-mic.muted { background: #d32f2f; border-color: #b71c1c; }
+        .btn-hangup { background: #b71c1c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 5px; }
  
     </style>
 
@@ -508,15 +531,27 @@
                     <span class="chat-preview">Нажмите, чтобы войти...</span>
                 </div>
             </div>
-            <div id="privateChatsList"></div>
+            <div id="sList"></div>
         </div>
 
         <div id="chatConversationPanel" class="hidden" style="display:flex; flex-direction:column; height:100%;">
             <div id="privateChatHeader" class="chat-header-private">
                 <button class="btn-back-general" onclick="showChatList()">⬅</button>
-                <button id="btnTransfer" class="btn-money-transfer hidden" onclick="openTransferModal()">💸 Перевод</button>
+                
+                <button id="btnVoiceCall" class="btn-voice-call hidden" onclick="toggleVoiceRoom()">🎙️ Голос</button>
+                
+                <button id="btnTransfer" class="btn-money-transfer hidden" onclick="openTransferModal()">💸</button>
                 <span id="privateChatTitle" style="flex:1; text-align:right;">Чат</span>
             </div>
+
+            <div id="voiceControlPanel" class="voice-panel hidden">
+                <span class="voice-status">🟢 В эфире</span>
+                <div id="voiceParticipants" class="voice-avatars"></div>
+                <button class="btn-mic" onclick="toggleMic()" id="btnMicToggle">🎤 ВКЛ</button>
+                <button class="btn-hangup" onclick="leaveVoiceRoom()">❌ Выйти</button>
+            </div>
+            
+            <div id="remoteAudioContainer" style="display:none;"></div>
 
             <div id="chatMessages" class="chat-messages"></div>
             
@@ -925,10 +960,12 @@
             currentChatPartner = null;
             btnTransfer.classList.add('hidden'); 
             titleEl.innerText = "Общий чат";
+            document.getElementById('btnVoiceCall').classList.add('hidden');
         } else {
             titleEl.innerText = title;
             currentChatPartner = title.replace('@', ''); 
-            btnTransfer.classList.remove('hidden'); 
+            btnTransfer.classList.remove('hidden');
+            document.getElementById('btnVoiceCall').classList.remove('hidden');
         }
 
         const path = chatId === 'general' ? 'chat' : `private_chats/${chatId}`;
@@ -1674,10 +1711,228 @@
         }
     }
 
+
+    // ==========================================
+    // СОБСТВЕННАЯ СИСТЕМА ГОЛОСОВЫХ ЗВОНКОВ (WebRTC + Firebase)
+    // ==========================================
+    
+    let localStream = null;
+    let peerConnections = {}; // Хранит соединения: { userId: RTCPeerConnection }
+    let isMicMuted = false;
+    let voiceRoomRef = null;
+    
+    // Бесплатные STUN серверы Google (нужны для соединения компьютеров напрямую)
+    const rtcConfig = {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+    };
+
+    // 1. Вход в комнату (Нажатие кнопки)
+    window.toggleVoiceRoom = async function() {
+        if (!currentChatId) return;
+        
+        // UI
+        document.getElementById('btnVoiceCall').classList.add('hidden');
+        document.getElementById('voiceControlPanel').classList.remove('hidden');
+
+        try {
+            // Получаем доступ к микрофону
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        } catch (err) {
+            alert("Ошибка доступа к микрофону! Проверьте настройки браузера и HTTPS.");
+            leaveVoiceRoom();
+            return;
+        }
+
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        const myLogin = sessionUser.nick;
+        const roomId = currentChatId;
+
+        // Ссылка на комнату в Firebase
+        voiceRoomRef = ref(db, `voice_rooms/${roomId}`);
+
+        // 1. Добавляем себя в список участников
+        const myParticipantRef = child(voiceRoomRef, myLogin);
+        onDisconnect(myParticipantRef).remove(); // Если инет пропадет, удалит нас
+        set(myParticipantRef, { online: true });
+
+        // 2. Слушаем появление других участников
+        onValue(voiceRoomRef, (snapshot) => {
+            const participants = snapshot.val() || {};
+            updateVoiceUI(participants); // Обновить иконки
+            
+            Object.keys(participants).forEach(userId => {
+                if (userId !== myLogin && !peerConnections[userId]) {
+                    // Если это новый участник и ID > моего (чтобы не создавать 2 соединения), инициируем звонок
+                    // Простая логика Mesh: тот, у кого ник "больше" по алфавиту, звонит первому
+                    if (myLogin > userId) {
+                        initiateConnection(userId, roomId);
+                    }
+                }
+            });
+        });
+
+        // 3. Слушаем входящие сигналы (Offer, Answer, ICE Candidates)
+        const signalsRef = ref(db, `voice_signals/${roomId}/${myLogin}`);
+        onValue(signalsRef, (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            
+            // Обрабатываем каждый сигнал и удаляем его
+            Object.keys(data).forEach(async (key) => {
+                const signal = data[key];
+                await handleSignal(signal, roomId);
+                remove(child(signalsRef, key)); // Удаляем обработанный сигнал
+            });
+        });
+    }
+
+    // 2. Логика соединения (WebRTC)
+    async function initiateConnection(targetUserId, roomId) {
+        console.log("Звоним пользователю:", targetUserId);
+        const pc = createPeerConnection(targetUserId, roomId);
+        
+        // Создаем Offer
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        // Отправляем Offer через Firebase
+        sendSignal(targetUserId, roomId, { type: 'offer', sdp: offer });
+    }
+
+    function createPeerConnection(targetUserId, roomId) {
+        const pc = new RTCPeerConnection(rtcConfig);
+        peerConnections[targetUserId] = pc;
+
+        // Добавляем наш микрофон в соединение
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+        // Когда получаем звук от собеседника
+        pc.ontrack = (event) => {
+            console.log("Получен аудио поток от", targetUserId);
+            const audio = document.createElement('audio');
+            audio.srcObject = event.streams[0];
+            audio.autoplay = true;
+            audio.id = `audio_${targetUserId}`;
+            document.getElementById('remoteAudioContainer').appendChild(audio);
+        };
+
+        // Обработка ICE кандидатов (путей соединения)
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                sendSignal(targetUserId, roomId, { type: 'candidate', candidate: event.candidate });
+            }
+        };
+        
+        // Обработка разрыва
+        pc.oniceconnectionstatechange = () => {
+            if (pc.iceConnectionState === 'disconnected') {
+                closeConnection(targetUserId);
+            }
+        };
+
+        return pc;
+    }
+
+    async function handleSignal(signal, roomId) {
+        const senderId = signal.senderId;
+        
+        // Если соединения нет, создаем (мы принимающая сторона)
+        if (!peerConnections[senderId]) {
+            createPeerConnection(senderId, roomId);
+        }
+        
+        const pc = peerConnections[senderId];
+
+        if (signal.type === 'offer') {
+            await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            sendSignal(senderId, roomId, { type: 'answer', sdp: answer });
+        } 
+        else if (signal.type === 'answer') {
+            await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+        } 
+        else if (signal.type === 'candidate') {
+            await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+        }
+    }
+
+    // Отправка данных через Firebase
+    function sendSignal(targetUserId, roomId, data) {
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        const signalData = {
+            senderId: sessionUser.nick,
+            ...data
+        };
+        push(ref(db, `voice_signals/${roomId}/${targetUserId}`), signalData);
+    }
+
+    // 3. Управление интерфейсом и звуком
+    function updateVoiceUI(participants) {
+        const container = document.getElementById('voiceParticipants');
+        container.innerHTML = '';
+        Object.keys(participants).forEach(userId => {
+            const div = document.createElement('div');
+            div.className = 'voice-peer-icon';
+            div.innerText = "👤"; // Можно заменить на аватар из базы если подгрузить
+            div.title = userId;
+            container.appendChild(div);
+        });
+    }
+
+    window.toggleMic = function() {
+        if (!localStream) return;
+        isMicMuted = !isMicMuted;
+        localStream.getAudioTracks()[0].enabled = !isMicMuted;
+        
+        const btn = document.getElementById('btnMicToggle');
+        if (isMicMuted) {
+            btn.innerText = "🎤 ВЫКЛ";
+            btn.classList.add('muted');
+        } else {
+            btn.innerText = "🎤 ВКЛ";
+            btn.classList.remove('muted');
+        }
+    }
+
+    window.leaveVoiceRoom = function() {
+        // 1. Удаляем себя из Firebase
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (voiceRoomRef && sessionUser) {
+            remove(child(voiceRoomRef, sessionUser.nick));
+        }
+
+        // 2. Закрываем все соединения
+        Object.keys(peerConnections).forEach(userId => closeConnection(userId));
+        
+        // 3. Останавливаем микрофон
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+            localStream = null;
+        }
+
+        // 4. UI
+        document.getElementById('voiceControlPanel').classList.add('hidden');
+        document.getElementById('btnVoiceCall').classList.remove('hidden');
+    }
+
+    function closeConnection(userId) {
+        if (peerConnections[userId]) {
+            peerConnections[userId].close();
+            delete peerConnections[userId];
+        }
+        const audioEl = document.getElementById(`audio_${userId}`);
+        if (audioEl) audioEl.remove();
+    }
+
     
 </script>
     
 </body>
 </html>
+
 
 
