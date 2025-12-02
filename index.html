@@ -415,6 +415,27 @@
         .btn-mic { background: #444; color: #fff; border: 1px solid #666; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
         .btn-mic.muted { background: #d32f2f; border-color: #b71c1c; }
         .btn-hangup { background: #b71c1c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 5px; }
+
+        /* Индикатор активного звонка в заголовке */
+        .active-call-badge {
+            background-color: #d32f2f;
+            color: white;
+            font-size: 0.8em;
+            padding: 5px 10px;
+            border-radius: 20px;
+            margin-right: 10px;
+            font-family: 'Special Elite', monospace;
+            animation: pulse-red 2s infinite;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid #fff;
+        }
+        
+        /* Убедимся, что скрытие работает железно */
+        .hidden { display: none !important; }
+        
     </style>
 
 </head>
@@ -533,14 +554,17 @@
             <div id="privateChatHeader" class="chat-header-private">
                 <button class="btn-back-general" onclick="showChatList()">⬅</button>
                 
-                <button id="btnVoiceCall" class="btn-voice-call hidden" onclick="toggleVoiceRoom()">🎙️ Голос</button>
+                <div id="activeCallBadge" class="active-call-badge hidden" onclick="toggleVoiceRoom()">
+                    🔊 Идет звонок <span id="callMembersCount">(0)</span>
+                </div>
+
+                <button id="btnVoiceCall" class="btn-voice-call hidden" onclick="toggleVoiceRoom()">🎙️ Войти</button>
                 
                 <button id="btnTransfer" class="btn-money-transfer hidden" onclick="openTransferModal()">💸</button>
                 <span id="privateChatTitle" style="flex:1; text-align:right;">Чат</span>
             </div>
 
             <div id="voiceControlPanel" class="voice-panel hidden">
-                <span class="voice-status">🟢 В эфире</span>
                 <div id="voiceParticipants" class="voice-avatars"></div>
                 <button class="btn-mic" onclick="toggleMic()" id="btnMicToggle">🎤 ВКЛ</button>
                 <button class="btn-hangup" onclick="leaveVoiceRoom()">❌ Выйти</button>
@@ -925,7 +949,7 @@
                     const otherLogin = participants[0] === myLogin ? participants[1] : participants[0];
                     const item = document.createElement('div');
                     item.className = 'chat-list-item';
-                    item.onclick = () => loadChat(chatKey, '@' + otherLogin);
+                    item.onclick = () => (chatKey, '@' + otherLogin);
                     item.innerHTML = `
                         <div class="chat-avatar" style="background-color:#fff8e1; color:#e65100;">👤</div>
                         <div class="chat-info">
@@ -948,21 +972,57 @@
         const titleEl = document.getElementById('privateChatTitle');
         const container = document.getElementById('chatMessages');
         const btnTransfer = document.getElementById('btnTransfer');
+        const btnVoice = document.getElementById('btnVoiceCall');
+        const callBadge = document.getElementById('activeCallBadge');
 
         container.innerHTML = '<div style="text-align:center; padding:20px;">Загрузка сообщений...</div>';
         
+        // Сброс UI при входе в новый чат
+        btnVoice.classList.add('hidden');
+        callBadge.classList.add('hidden'); 
+
         if (chatId === 'general') {
             currentChatPartner = null;
             btnTransfer.classList.add('hidden'); 
             titleEl.innerText = "Общий чат";
-            document.getElementById('btnVoiceCall').classList.add('hidden');
+            // В общем чате звонки отключим, чтобы не было хаоса (или включи, убрав эту строку)
+            // btnVoice.classList.add('hidden'); 
         } else {
             titleEl.innerText = title;
             currentChatPartner = title.replace('@', ''); 
             btnTransfer.classList.remove('hidden'); 
-            document.getElementById('btnVoiceCall').classList.remove('hidden');
+            btnVoice.classList.remove('hidden');
         }
 
+        // --- ЛОГИКА СЛЕЖЕНИЯ ЗА АКТИВНЫМ ЗВОНКОМ ---
+        // Слушаем, есть ли кто-то в комнате voice_rooms/ID
+        onValue(ref(db, `voice_rooms/${chatId}`), (snap) => {
+            // Если мы уже внутри звонка (панель открыта), кнопку входа и бейдж прячем/адаптируем
+            const isInCall = !document.getElementById('voiceControlPanel').classList.contains('hidden');
+            
+            if (snap.exists() && snap.hasChildren()) {
+                // Звонок идет!
+                const count = Object.keys(snap.val()).length;
+                
+                if (!isInCall) {
+                    // Если я НЕ в звонке, показываем красный бейдж
+                    callBadge.classList.remove('hidden');
+                    document.getElementById('callMembersCount').innerText = `(${count})`;
+                    btnVoice.classList.add('hidden'); // Прячем кнопку "Войти", так как жмем на бейдж
+                } else {
+                    // Если я УЖЕ в звонке, бейдж не нужен (мы видим панель)
+                    callBadge.classList.add('hidden');
+                }
+            } else {
+                // Звонка нет
+                callBadge.classList.add('hidden');
+                if (!isInCall && chatId !== 'general') {
+                    btnVoice.classList.remove('hidden'); // Показываем обычную кнопку
+                }
+            }
+        });
+
+        // Загрузка сообщений
         const path = chatId === 'general' ? 'chat' : `private_chats/${chatId}`;
         const targetRef = ref(db, path);
 
@@ -1928,3 +1988,4 @@
     
 </body>
 </html>
+
