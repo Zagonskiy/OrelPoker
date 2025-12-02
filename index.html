@@ -191,7 +191,29 @@
         .player-note-text { font-family: 'Courier New', monospace; font-size: 0.75em; color: #b71c1c; font-weight: bold; display: block; margin-top: 2px; margin-left: 20px; font-style: italic; width: 100%; word-wrap: break-word; }
 
         /* АВАТАРЫ */
-        .table-avatar { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; border: 2px solid var(--accent-brown); object-fit: cover; background: #fff; cursor: pointer;}
+        .table-avatar { 
+            width: 40px; 
+            height: 40px; 
+            /* Запрещаем сжатие, чтобы всегда был круг */
+            min-width: 40px; 
+            flex-shrink: 0;
+            
+            border-radius: 50%; 
+            margin-right: 10px; 
+            border: 2px solid var(--accent-brown); 
+            background: #fff; 
+            cursor: pointer;
+            
+            /* Для центрирования эмодзи */
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-size: 1.5em;
+            
+            /* Для загруженных фото */
+            background-size: cover;
+            background-position: center;
+        }
         
         /* ПРОФИЛЬ */
         .profile-container {
@@ -200,7 +222,19 @@
         }
         .profile-section-title { font-family: 'Rye', cursive; color: var(--accent-brown); border-bottom: 2px solid var(--accent-brown); margin-bottom: 15px; }
         .avatar-selection-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 15px; max-height: 150px; overflow-y: auto; padding: 5px; border: 1px inset #ccc; }
-        .avatar-option { font-size: 2em; cursor: pointer; border: 2px solid transparent; border-radius: 50%; padding: 5px; transition: 0.2s; }
+        .avatar-option { 
+            width: 50px; 
+            height: 50px; 
+            font-size: 2em; 
+            cursor: pointer; 
+            border: 2px solid transparent; 
+            border-radius: 50%; 
+            /* Эти 3 строки центрируют смайлик */
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            transition: 0.2s; 
+        }
         .avatar-option:hover, .avatar-option.selected { background: #fff8e1; border-color: var(--accent-gold); transform: scale(1.1); }
         .current-avatar-preview { font-size: 4em; display: block; margin: 10px auto; width: 80px; height: 80px; line-height: 80px; border-radius: 50%; background: #fff; border: 3px solid var(--accent-brown); }
         textarea.profile-desc-input { width: 100%; height: 80px; padding: 10px; border: 2px solid var(--accent-brown); font-family: 'Special Elite', monospace; background: rgba(255,255,255,0.5); margin-bottom: 10px; }
@@ -507,6 +541,11 @@
             <div id="currentAvatarPreview" class="current-avatar-preview">👤</div>
             <div class="avatar-selection-grid" id="avatarGrid">
                 </div>
+            <div style="margin-bottom: 20px;">
+                <button class="btn-refresh" onclick="document.getElementById('fileUpload').click()">📤 Загрузить свое фото</button>
+                <input type="file" id="fileUpload" accept="image/*" style="display: none;" onchange="handleFileUpload(this)">
+                <div style="font-size:0.7em; color:#666; margin-top:5px;">(Макс. 2МБ, желательно квадратное)</div>
+            </div>
             
             <div class="profile-section-title">ДАННЫЕ</div>
             <input type="text" id="profileDisplayName" class="login-input" placeholder="Ваше имя">
@@ -645,7 +684,12 @@
 
     function selectAvatar(emoji, element) {
         selectedAvatarEmoji = emoji;
-        document.getElementById('currentAvatarPreview').innerText = emoji;
+        const preview = document.getElementById('currentAvatarPreview');
+        
+        // Сбрасываем картинку и ставим текст
+        preview.style.backgroundImage = "none";
+        preview.innerText = emoji;
+        
         document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
         element.classList.add('selected');
     }
@@ -723,14 +767,26 @@
         }
 
         // 3. Заполняем модалку
-        document.getElementById('ppAvatar').innerText = userData.avatar || "👤";
-        document.getElementById('ppName').innerText = userData.displayName || name;
-        document.getElementById('ppLogin').innerText = "@" + login;
-        document.getElementById('ppDesc').innerText = userData.description || "Игрок не оставил описания.";
-        
-        const stEl = document.getElementById('ppStatus');
-        stEl.innerText = statusText;
-        stEl.className = "pp-status " + statusClass;
+        const ppAvatarEl = document.getElementById('ppAvatar');
+        const userAvatar = userData.avatar || "👤";
+
+        if (userAvatar.startsWith('data:image')) {
+            // Если это картинка, показываем её как фон, убираем текст
+            ppAvatarEl.style.backgroundImage = `url(${userAvatar})`;
+            ppAvatarEl.style.backgroundSize = "cover";
+            ppAvatarEl.style.backgroundPosition = "center";
+            ppAvatarEl.style.width = "100px";  // Задаем явный размер для фото
+            ppAvatarEl.style.height = "100px";
+            ppAvatarEl.style.borderRadius = "50%";
+            ppAvatarEl.style.margin = "0 auto 10px auto"; // Центрируем
+            ppAvatarEl.innerText = ""; 
+        } else {
+            // Если смайлик
+            ppAvatarEl.style.backgroundImage = "none";
+            ppAvatarEl.style.width = "auto"; 
+            ppAvatarEl.style.height = "auto";
+            ppAvatarEl.innerText = userAvatar;
+        }
 
         // 4. Админские кнопки
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
@@ -982,9 +1038,16 @@
         // АВАТАРКА
         const avatarDiv = document.createElement('div');
         avatarDiv.className = 'table-avatar';
-        avatarDiv.style.display = 'flex'; avatarDiv.style.alignItems = 'center'; avatarDiv.style.justifyContent = 'center';
-        avatarDiv.style.fontSize = '1.5em';
-        avatarDiv.innerText = player.avatar || "👤";
+        
+        // Проверяем, это картинка (Base64) или смайлик
+        if (player.avatar && player.avatar.startsWith('data:image')) {
+            avatarDiv.style.backgroundImage = `url(${player.avatar})`;
+            avatarDiv.innerText = "";
+        } else {
+            avatarDiv.style.backgroundImage = "none";
+            avatarDiv.innerText = player.avatar || "👤";
+        }
+
         // При клике на аватар открываем профиль
         if (player.login) {
             avatarDiv.onclick = () => openPublicProfile(player.login, player.name);
@@ -1540,10 +1603,41 @@
         }
         return null;
     }
+
+    // Обработка загрузки файла
+    window.handleFileUpload = function(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            
+            // Ограничение размера (например, 2 МБ)
+            if (file.size > 2 * 1024 * 1024) {
+                alert("Файл слишком большой! Выберите фото меньше 2 МБ.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Сохраняем Base64 строку в переменную аватара
+                selectedAvatarEmoji = e.target.result;
+                
+                // Обновляем превью
+                const preview = document.getElementById('currentAvatarPreview');
+                preview.innerText = ""; // Убираем текст
+                preview.style.backgroundImage = `url(${selectedAvatarEmoji})`;
+                preview.style.backgroundSize = "cover";
+                preview.style.backgroundPosition = "center";
+                
+                // Снимаем выделение со смайликов
+                document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
+            }
+            reader.readAsDataURL(file);
+        }
+    }
 </script>
     
 </body>
 </html>
+
 
 
 
