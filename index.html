@@ -298,51 +298,20 @@
             tfoot { display: none; }
         }
         
-        /* Кнопка входа в голосовой чат */
-        .btn-voice-call {
-            background-color: #0288d1; color: white; border: 1px solid #01579b;
-            border-radius: 4px; padding: 5px 10px; font-family: 'Rye', cursive;
-            cursor: pointer; margin-right: 5px; margin-left: 5px;
-        }
-        
-        /* Панель активного звонка */
-        .voice-panel {
-            background: #2a1b0f; border-bottom: 2px solid var(--accent-gold);
-            padding: 10px; display: flex; align-items: center; justify-content: space-between;
-            color: #fff;
-        }
-        .voice-status { font-family: 'Special Elite', monospace; color: #00e676; font-size: 0.9em; animation: pulse 2s infinite; }
-        .voice-avatars { display: flex; gap: 5px; overflow-x: auto; max-width: 50%; }
-        .voice-peer-icon { width: 30px; height: 30px; border-radius: 50%; background: #fff; border: 2px solid var(--accent-green); display: flex; justify-content: center; align-items: center; font-size: 1.2em; }
-        
-        .btn-mic { background: #444; color: #fff; border: 1px solid #666; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
-        .btn-mic.muted { background: #d32f2f; border-color: #b71c1c; }
-        .btn-hangup { background: #b71c1c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 5px; }
-
-        /* Индикатор активного звонка в заголовке */
-        .active-call-badge {
-            background-color: #d32f2f;
-            color: white;
-            font-size: 0.8em;
-            padding: 5px 10px;
-            border-radius: 20px;
-            margin-right: 10px;
-            font-family: 'Special Elite', monospace;
-            animation: pulse-red 2s infinite;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            border: 1px solid #fff;
-        }
-        
-        /* Убедимся, что скрытие работает железно */
-        .hidden { display: none !important; }
-        
         /* --- МОДАЛЬНОЕ ОКНО РОЛЕЙ --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 5000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
         
-        .modal-overlay.hidden { display: none !important; }
+        .modal-overlay.hidden {
+            display: none !important;
+        }
+
+        .modal-card { background-image: var(--paper-texture); background-color: var(--paper-bg); border: 4px double var(--accent-brown); padding: 25px; border-radius: 8px; width: 90%; max-width: 320px; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        .role-buttons-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        .role-select-btn { padding: 15px; font-family: 'Rye', cursive; font-size: 1.1em; border: 2px solid rgba(0,0,0,0.2); cursor: pointer; color: white; text-shadow: 1px 1px 0 #000; }
+        .btn-admin { background-color: #b71c1c; border-color: #7f0000; }
+        .btn-trusted { background-color: #0277bd; border-color: #01579b; }
+        .btn-player { background-color: #2e7d32; border-color: #1b5e20; }
+        .btn-cancel-role { background: transparent; border: none; text-decoration: underline; color: var(--accent-brown); font-family: 'Special Elite', monospace; cursor: pointer; font-size: 1.1em; }
     </style>
 
 </head>
@@ -460,26 +429,9 @@
         <div id="chatConversationPanel" class="hidden" style="display:flex; flex-direction:column; height:100%;">
             <div id="privateChatHeader" class="chat-header-private">
                 <button class="btn-back-general" onclick="showChatList()">⬅</button>
-                
-                <div id="activeCallBadge" class="active-call-badge hidden" onclick="toggleVoiceRoom()">
-                    🔊 Идет звонок <span id="callMembersCount">(0)</span>
-                </div>
-
-                <button id="btnVoiceCall" class="btn-voice-call hidden" onclick="toggleVoiceRoom()">🎙️ Войти</button>
-                
-                <button id="btnTransfer" class="btn-money-transfer hidden" onclick="openTransferModal()">💸</button>
+                <button id="btnTransfer" class="btn-money-transfer hidden" onclick="openTransferModal()">💸 Перевод</button>
                 <span id="privateChatTitle" style="flex:1; text-align:right;">Чат</span>
             </div>
-
-            <div id="voiceControlPanel" class="voice-panel hidden">
-                <div id="voiceParticipants" class="voice-avatars"></div>
-                <div style="display:flex;">
-                    <button class="btn-mic" onclick="toggleMic()" id="btnMicToggle">🎤 ВКЛ</button>
-                    <button class="btn-hangup" onclick="leaveVoiceRoom()">❌ Выйти</button>
-                </div>
-            </div>
-            
-            <div id="remoteAudioContainer" style="display:none;"></div>
 
             <div id="chatMessages" class="chat-messages"></div>
             
@@ -533,7 +485,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v77.0 (FixAll)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v78.0 (Stable Restore)</div>
     
     <div id="publicProfileModal" class="modal-overlay hidden">
         <div class="public-profile-card">
@@ -764,14 +716,6 @@
             return;
         }
         
-        const sessionUser = sessionStorage.getItem('op_session_user');
-        if(sessionUser) {
-            try {
-                const user = JSON.parse(sessionUser);
-                checkLogin(user.nick, user.pass, true, false);
-            } catch(e) {}
-        }
-        
         if(navigator.onLine) syncUsersToTable();
     });
 
@@ -969,14 +913,9 @@
         const titleEl = document.getElementById('privateChatTitle');
         const container = document.getElementById('chatMessages');
         const btnTransfer = document.getElementById('btnTransfer');
-        const btnVoice = document.getElementById('btnVoiceCall');
-        const callBadge = document.getElementById('activeCallBadge');
 
         container.innerHTML = '<div style="text-align:center; padding:20px;">Загрузка сообщений...</div>';
         
-        btnVoice.classList.add('hidden');
-        callBadge.classList.add('hidden'); 
-
         if (chatId === 'general') {
             currentChatPartner = null;
             btnTransfer.classList.add('hidden'); 
@@ -985,30 +924,11 @@
             titleEl.innerText = title;
             currentChatPartner = title.replace('@', ''); 
             btnTransfer.classList.remove('hidden'); 
-            btnVoice.classList.remove('hidden');
         }
-
-        onValue(ref(db, `voice_rooms/${chatId}`), (snap) => {
-            const isInCall = !document.getElementById('voiceControlPanel').classList.contains('hidden');
-            if (snap.exists() && snap.hasChildren()) {
-                const count = Object.keys(snap.val()).length;
-                if (!isInCall) {
-                    callBadge.classList.remove('hidden');
-                    document.getElementById('callMembersCount').innerText = `(${count})`;
-                    btnVoice.classList.add('hidden'); 
-                } else {
-                    callBadge.classList.add('hidden');
-                }
-            } else {
-                callBadge.classList.add('hidden');
-                if (!isInCall && chatId !== 'general') {
-                    btnVoice.classList.remove('hidden'); 
-                }
-            }
-        });
 
         const path = chatId === 'general' ? 'chat' : `private_chats/${chatId}`;
         const targetRef = ref(db, path);
+
         onValue(targetRef, (snapshot) => {
             if (currentChatId === chatId) {
                 renderChatMessages(snapshot);
@@ -1109,150 +1029,294 @@
             if (editingMsgId === key) cancelEditMode();
         }
     }
-    
-    let localStream = null;
-    let peerConnections = {}; 
-    let isMicMuted = false;
-    let voiceRoomRef = null;
-    
-    const rtcConfig = {
-        iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
-        ]
-    };
 
-    window.toggleVoiceRoom = async function() {
-        if (!currentChatId) return;
-        document.getElementById('btnVoiceCall').classList.add('hidden');
-        document.getElementById('activeCallBadge').classList.add('hidden'); 
-        document.getElementById('voiceControlPanel').classList.remove('hidden');
-        try {
-            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        } catch (err) {
-            alert("Ошибка доступа к микрофону! Проверьте настройки браузера и HTTPS.");
-            window.leaveVoiceRoom();
-            return;
+    function renderPlayerRow(id, player) {
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || { role: 'player' };
+        const myRole = sessionUser.role;
+        const myLogin = sessionUser.nick; 
+
+        const tableBody = document.getElementById('tableBody');
+        const newRow = tableBody.insertRow();
+        const { total, historyArray } = calculatePlayerStats(player);
+
+        // 1. ИМЯ + АВАТАР
+        const cellName = newRow.insertCell(0);
+        const nameWrapper = document.createElement('div');
+        nameWrapper.className = 'name-wrapper';
+        
+        const statusDot = document.createElement('div');
+        statusDot.className = 'player-status-indicator';
+        if(player.login) statusDot.setAttribute('data-player-login', player.login);
+        const keyToCheck = player.login || player.name;
+        if (onlineNicknames.has(keyToCheck)) statusDot.classList.add('is-online');
+        
+        // КНОПКА ЛИЧКИ
+        if (player.login && player.login !== myLogin) {
+            const btnDM = document.createElement('span');
+            btnDM.innerText = '✉️'; btnDM.className = 'btn-start-dm'; btnDM.title = 'Написать личное сообщение';
+            btnDM.onclick = () => openPrivateChat(player.login);
+            nameWrapper.appendChild(btnDM);
         }
+
+        // АВАТАРКА
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = 'table-avatar';
+        
+        // Проверяем, это картинка (Base64) или смайлик
+        if (player.avatar && player.avatar.startsWith('data:image')) {
+            avatarDiv.style.backgroundImage = `url(${player.avatar})`;
+            avatarDiv.innerText = "";
+        } else {
+            avatarDiv.style.backgroundImage = "none";
+            avatarDiv.innerText = player.avatar || "👤";
+        }
+
+        const roleBadge = document.createElement('span');
+        roleBadge.className = 'role-badge';
+        if (!player.login) { roleBadge.innerText = '👽'; roleBadge.title = 'Гость'; } 
+        else if (player.login === 'Zagonskiy') { roleBadge.innerText = '👑'; roleBadge.title = 'Создатель'; }
+        else {
+            roleBadge.innerText = '⏳';
+            get(child(ref(db), 'users/' + player.login + '/role')).then((snap) => {
+                const r = snap.val();
+                if (r === 'admin') { roleBadge.innerText = '👑'; roleBadge.title = 'Админ'; }
+                else if (r === 'trusted') { roleBadge.innerText = '🛡️'; roleBadge.title = 'Доверенный'; }
+                else { roleBadge.innerText = '👤'; roleBadge.title = 'Игрок'; }
+            });
+        }
+
+        const inputName = document.createElement('input');
+        inputName.type = 'text'; inputName.className = 'player-name'; inputName.value = player.name || "";
+        inputName.readOnly = true;
+        
+        // Клик на имя открывает профиль
+        if (player.login) {
+            inputName.onclick = () => openPublicProfile(player.login, player.name);
+            avatarDiv.onclick = () => openPublicProfile(player.login, player.name);
+        } else if ((myRole === 'admin' || myRole === 'trusted') && !player.login) {
+            // Для гостей оставляем переименование
+            inputName.style.borderBottom = "1px dashed var(--accent-brown)";
+            inputName.onclick = () => {
+                const newName = prompt("Переименовать гостя:", player.name);
+                if (newName && newName.trim() !== "") update(ref(db, 'players/' + id), { name: newName.trim() });
+            };
+        }
+
+        nameWrapper.appendChild(statusDot); 
+        nameWrapper.appendChild(avatarDiv); // Добавили аватар
+        nameWrapper.appendChild(roleBadge);
+        nameWrapper.appendChild(inputName); 
+
+        // ЗАМЕТКИ (Admin only)
+        const uniqueKey = player.login || player.name; 
+        const localNotes = JSON.parse(localStorage.getItem('op_local_notes') || '{}');
+        const noteText = localNotes[uniqueKey];
+
+        if (myRole === 'admin') {
+            const btnNote = document.createElement('span');
+            btnNote.innerText = '📝'; btnNote.className = 'btn-local-note';
+            if(noteText) btnNote.classList.add('has-note');
+            btnNote.onclick = () => setLocalNote(uniqueKey);
+            nameWrapper.appendChild(btnNote);
+        }
+
+        cellName.appendChild(nameWrapper);
+        if (noteText && myRole === 'admin') {
+            const noteDiv = document.createElement('div');
+            noteDiv.className = 'player-note-text'; noteDiv.innerText = noteText;
+            cellName.appendChild(noteDiv);
+        }
+
+        // 2. СТАТУС
+        const cellStatus = newRow.insertCell(1);
+        cellStatus.className = 'status-cell';
+        let statusText = "Дворник"; let statusClass = "st-dvornik";
+        if (total >= 50000) { statusText = "Читак ебаный"; statusClass = "st-cheat"; }
+        else if (total >= 10000) { statusText = "Донатер"; statusClass = "st-donate"; }
+        else if (total >= 5000) { statusText = "Богач"; statusClass = "st-rich"; }
+        else if (total >= 2000) { statusText = "Средняк"; statusClass = "st-mid"; }
+        else if (total >= 1000) { statusText = "Новобранец"; statusClass = "st-novo"; }
+        else if (total === 0) { statusText = "Банкрот"; statusClass = "st-bankrot"; }
+        cellStatus.innerText = statusText;
+        cellStatus.classList.add(statusClass);
+
+        // 3. ДЕЙСТВИЯ
+        const cellAction = newRow.insertCell(2);
+        if (myRole !== 'player') {
+            const inputNum = document.createElement('input');
+            inputNum.type = 'number'; inputNum.className = 'input-val'; inputNum.placeholder = '0';
+            inputNum.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') { event.preventDefault(); handleScore(id, inputNum, 1); }
+            });
+            cellAction.append(inputNum, createBtn('+', 'btn-calc', () => handleScore(id, inputNum, 1)), createBtn('-', 'btn-calc', () => handleScore(id, inputNum, -1)), createBtn('↩', 'btn-undo', () => undoLast(id)), createBtn('↪', 'btn-redo', () => redoLast(id)));
+        } else { cellAction.innerText = "—"; }
+
+        // 4. ИТОГ
+        const cellTotal = newRow.insertCell(3);
+        cellTotal.className = 'score-cell'; cellTotal.innerText = total;
+
+        // 5. ИСТОРИЯ
+        const cellHistory = newRow.insertCell(4);
+        cellHistory.className = 'history-log';
+        cellHistory.innerText = historyArray.length > 0 ? historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ') : 'Пусто';
+
+        // 6. УДАЛЕНИЕ
+        const cellDelete = newRow.insertCell(5);
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
+        if (myRole === 'admin') {
+             wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
+             if (player.login) { wrapper.appendChild(createBtn('✕', 'btn-delete', () => safeDeletePlayer(id, player.login))); }
+             else { wrapper.appendChild(createBtn('✕', 'btn-delete', () => { if(confirm("Удалить гостя навсегда?")) remove(ref(db, 'players/' + id)); })); }
+        }
+        cellDelete.appendChild(wrapper);
+    }
+
+    // --- ЛОКАЛЬНЫЕ ЗАМЕТКИ ---
+    window.setLocalNote = function(key) {
+        const notes = JSON.parse(localStorage.getItem('op_local_notes') || '{}');
+        const current = notes[key] || "";
+        const newNote = prompt("Заметка об игроке (видна только вам):", current);
+        if (newNote === null) return; 
+        if (newNote.trim() === "") delete notes[key]; else notes[key] = newNote.trim();
+        localStorage.setItem('op_local_notes', JSON.stringify(notes));
+        const savedData = JSON.parse(localStorage.getItem('poker_data_v74'));
+        renderTable(savedData);
+    }
+
+    window.refreshTable = async function() {
+        const pass = prompt("Для обновления введите код доступа:");
+        if (pass !== "108020") { if(pass !== null) alert("Ошибка доступа"); return; }
+        try { await syncUsersToTable(); alert("Таблица синхронизирована!"); } catch(e) { alert("Ошибка: " + e.message); }
+    }
+
+    async function syncUsersToTable(currentDisplayName) {
+        try {
+            const usersSnap = await get(usersRef);
+            const playersSnap = await get(playersRef);
+            const users = usersSnap.val() || {};
+            const players = playersSnap.val() || {};
+            const existingLogins = new Set();
+            for(let id in players) { const pLogin = players[id].login || players[id].name; existingLogins.add(pLogin); }
+            const updates = {};
+            let hasUpdates = false;
+            for(let login in users) {
+                if(!existingLogins.has(login)) {
+                    const userData = users[login];
+                    const dispName = userData.displayName || login;
+                    const avatar = userData.avatar || "👤";
+                    const newKey = push(ref(db, 'players')).key;
+                    let historyToRestore = { 'start_bonus': 1000 }; 
+                    if (userData.saved_history) { historyToRestore = userData.saved_history; }
+                    updates['players/' + newKey] = { name: dispName, login: login, avatar: avatar, history: historyToRestore };
+                    hasUpdates = true;
+                }
+            }
+            if(hasUpdates) { await update(ref(db), updates); }
+        } catch(e) { console.error("Sync error", e); }
+    }
+
+    window.switchAuthView = function(view) {
+        document.getElementById('loginError').innerText = "";
+        document.getElementById('regError').innerText = "";
+        if(view === 'register') {
+            document.getElementById('login-view-card').classList.add('hidden');
+            document.getElementById('register-view-card').classList.remove('hidden');
+        } else {
+            document.getElementById('register-view-card').classList.add('hidden');
+            document.getElementById('login-view-card').classList.remove('hidden');
+        }
+    }
+
+    window.safeDeletePlayer = async function(id, login) {
+        if(!confirm("Убрать игрока со стола? (Баланс сохранится)")) return;
+        const snapshot = await get(ref(db, 'players/' + id));
+        const data = snapshot.val();
+        if (data && login) {
+            if (data.history) { await update(ref(db, 'users/' + login), { saved_history: data.history }); }
+        }
+        remove(ref(db, 'players/' + id));
+    }
+
+    window.toggleSidebar = function() { document.getElementById('sidebar').classList.toggle('open'); }
+
+    window.showView = function(viewName) {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('view-game').classList.add('hidden');
+        document.getElementById('view-journal').classList.add('hidden');
+        document.getElementById('view-chat').classList.add('hidden');
+        document.getElementById('view-profile').classList.add('hidden');
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+
+        if (viewName === 'game') {
+            document.getElementById('view-game').classList.remove('hidden');
+            document.getElementById('btn-nav-game').classList.add('active');
+        } else if (viewName === 'chat') {
+            document.getElementById('view-chat').classList.remove('hidden');
+            document.getElementById('btn-nav-chat').classList.add('active');
+            if (!currentChatId) { showChatList(); } 
+            else { const container = document.getElementById('chatMessages'); setTimeout(() => container.scrollTop = container.scrollHeight, 100); }
+        } else if (viewName === 'journal') {
+            document.getElementById('view-journal').classList.remove('hidden');
+            document.getElementById('btn-nav-journal').classList.add('active');
+        } else if (viewName === 'profile') {
+            document.getElementById('view-profile').classList.remove('hidden');
+            document.getElementById('btn-nav-profile').classList.add('active');
+        }
+    }
+
+    // --- СИСТЕМА ПЕРЕВОДОВ ---
+    window.openTransferModal = async function() {
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (!sessionUser) return;
+        const myId = await findPlayerIdByLogin(sessionUser.nick);
+        if (!myId) { alert("Вы не сидите за столом! Сначала создайте игрока."); return; }
+        const snap = await get(ref(db, 'players/' + myId));
+        const player = snap.val();
+        const { total } = calculatePlayerStats(player);
+        document.getElementById('myCurrentBalance').innerText = total;
+        document.getElementById('transferAmount').value = '';
+        document.getElementById('transferModal').classList.remove('hidden');
+    }
+
+    window.confirmTransfer = async function() {
+        const amount = parseFloat(document.getElementById('transferAmount').value);
+        if (isNaN(amount) || amount <= 0) { alert("Некорректная сумма"); return; }
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         const myLogin = sessionUser.nick;
-        const roomId = currentChatId;
-        voiceRoomRef = ref(db, `voice_rooms/${roomId}`);
-        const myParticipantRef = child(voiceRoomRef, myLogin);
-        onDisconnect(myParticipantRef).remove(); 
-        set(myParticipantRef, { online: true });
-        onValue(voiceRoomRef, (snapshot) => {
-            const participants = snapshot.val() || {};
-            updateVoiceUI(participants); 
-            Object.keys(participants).forEach(userId => {
-                if (userId !== myLogin && !peerConnections[userId]) {
-                    if (myLogin > userId) {
-                        initiateConnection(userId, roomId);
-                    }
-                }
-            });
-        });
-        const signalsRef = ref(db, `voice_signals/${roomId}/${myLogin}`);
-        onValue(signalsRef, (snapshot) => {
-            const data = snapshot.val();
-            if (!data) return;
-            Object.keys(data).forEach(async (key) => {
-                const signal = data[key];
-                await handleSignal(signal, roomId);
-                remove(child(signalsRef, key)); 
-            });
-        });
+        const targetLogin = currentChatPartner;
+        if (!targetLogin) return;
+        const myId = await findPlayerIdByLogin(myLogin);
+        const targetId = await findPlayerIdByLogin(targetLogin);
+        if (!myId) { alert("Ошибка: Вы не за столом."); return; }
+        if (!targetId) { alert("Ошибка: Получатель не за столом."); return; }
+        const snap = await get(ref(db, 'players/' + myId));
+        const { total } = calculatePlayerStats(snap.val());
+        if (total < amount) { alert("Недостаточно средств!"); return; }
+        if (!confirm(`Перевести ${amount} игроку @${targetLogin}?`)) return;
+        const updates = {};
+        const pushKey1 = push(ref(db, 'players/' + myId + '/history')).key;
+        updates['players/' + myId + '/history/' + pushKey1] = -amount;
+        const pushKey2 = push(ref(db, 'players/' + targetId + '/history')).key;
+        updates['players/' + targetId + '/history/' + pushKey2] = amount;
+        await update(ref(db), updates);
+        const path = `private_chats/${currentChatId}`;
+        push(ref(db, path), { sender: "Система", senderLogin: "system", text: `💸 ПЕРЕВОД: ${sessionUser.displayName} отправил ${amount} монет.`, timestamp: Date.now() });
+        document.getElementById('transferModal').classList.add('hidden');
+        alert("Перевод выполнен!");
     }
 
-    async function initiateConnection(targetUserId, roomId) {
-        const pc = createPeerConnection(targetUserId, roomId);
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        sendSignal(targetUserId, roomId, { type: 'offer', sdp: offer });
-    }
-
-    function createPeerConnection(targetUserId, roomId) {
-        const pc = new RTCPeerConnection(rtcConfig);
-        peerConnections[targetUserId] = pc;
-        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-        pc.ontrack = (event) => {
-            const audio = document.createElement('audio');
-            audio.srcObject = event.streams[0];
-            audio.autoplay = true;
-            audio.id = `audio_${targetUserId}`;
-            document.getElementById('remoteAudioContainer').appendChild(audio);
-        };
-        pc.onicecandidate = (event) => {
-            if (event.candidate) {
-                sendSignal(targetUserId, roomId, { type: 'candidate', candidate: event.candidate });
-            }
-        };
-        pc.oniceconnectionstatechange = () => {
-            if (pc.iceConnectionState === 'disconnected') {
-                closeConnection(targetUserId);
-            }
-        };
-        return pc;
-    }
-
-    async function handleSignal(signal, roomId) {
-        const senderId = signal.senderId;
-        if (!peerConnections[senderId]) { createPeerConnection(senderId, roomId); }
-        const pc = peerConnections[senderId];
-        if (signal.type === 'offer') {
-            await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            sendSignal(senderId, roomId, { type: 'answer', sdp: answer });
-        } else if (signal.type === 'answer') {
-            await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
-        } else if (signal.type === 'candidate') {
-            await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+    async function findPlayerIdByLogin(loginTarget) {
+        const snap = await get(playersRef);
+        const data = snap.val();
+        if (!data) return null;
+        for (let id in data) {
+            if (data[id].login === loginTarget || data[id].name === loginTarget) { return id; }
         }
+        return null;
     }
 
-    function sendSignal(targetUserId, roomId, data) {
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        const signalData = { senderId: sessionUser.nick, ...data };
-        push(ref(db, `voice_signals/${roomId}/${targetUserId}`), signalData);
-    }
-
-    function updateVoiceUI(participants) {
-        const container = document.getElementById('voiceParticipants');
-        container.innerHTML = '';
-        Object.keys(participants).forEach(userId => {
-            const div = document.createElement('div');
-            div.className = 'voice-peer-icon';
-            div.innerText = "👤"; 
-            div.title = userId;
-            container.appendChild(div);
-        });
-    }
-
-    window.toggleMic = function() {
-        if (!localStream) return;
-        isMicMuted = !isMicMuted;
-        localStream.getAudioTracks()[0].enabled = !isMicMuted;
-        const btn = document.getElementById('btnMicToggle');
-        if (isMicMuted) { btn.innerText = "🎤 ВЫКЛ"; btn.classList.add('muted'); } 
-        else { btn.innerText = "🎤 ВКЛ"; btn.classList.remove('muted'); }
-    }
-
-    window.leaveVoiceRoom = function() {
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        if (voiceRoomRef && sessionUser) { remove(child(voiceRoomRef, sessionUser.nick)); }
-        Object.keys(peerConnections).forEach(userId => closeConnection(userId));
-        if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
-        document.getElementById('voiceControlPanel').classList.add('hidden');
-        if (currentChatId !== 'general') { document.getElementById('btnVoiceCall').classList.remove('hidden'); }
-    }
-
-    function closeConnection(userId) {
-        if (peerConnections[userId]) { peerConnections[userId].close(); delete peerConnections[userId]; }
-        const audioEl = document.getElementById(`audio_${userId}`);
-        if (audioEl) audioEl.remove();
-    }
-
+    // Обработка загрузки файла
     window.handleFileUpload = function(input) {
         if (input.files && input.files[0]) {
             const file = input.files[0];
