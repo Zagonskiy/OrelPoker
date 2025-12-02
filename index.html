@@ -12,7 +12,7 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap" rel="stylesheet">
     <style>
-        /* Глобальный сброс */
+        /* --- ОСНОВНЫЕ СТИЛИ --- */
         * { box-sizing: border-box; }
 
         :root {
@@ -265,7 +265,6 @@
         .btn-money-transfer { background-color: var(--accent-green); color: white; border: 1px solid #1b5e20; border-radius: 4px; padding: 5px 10px; font-family: 'Rye', cursive; cursor: pointer; margin-right: auto; margin-left: 10px; display: flex; align-items: center; gap: 5px; }
         .btn-money-transfer:hover { background-color: #388e3c; }
         #transferModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 4000; display: flex; justify-content: center; align-items: center; }
-        #transferModal.hidden { display: none !important; }
         .transfer-card { background: var(--paper-bg); border: 4px double var(--accent-brown); padding: 20px; text-align: center; width: 280px; border-radius: 8px; box-shadow: 0 0 20px rgba(255, 215, 0, 0.2); }
         .balance-display { font-size: 1.5em; color: var(--accent-green); font-weight: bold; margin: 10px 0; font-family: 'Special Elite', monospace; }
 
@@ -298,13 +297,13 @@
             tfoot { display: none; }
         }
         
+        /* --- СИСТЕМА РАНГОВ --- */
+        .role-hidden { display: none !important; }
+        .role-badge { font-size: 1.2em; margin-right: 5px; cursor: help; text-shadow: 1px 1px 0 rgba(0,0,0,0.3); }
+        .view-only-input { border: none !important; background: transparent !important; pointer-events: none; color: var(--ink-color) !important; text-align: center; }
+        
         /* --- МОДАЛЬНОЕ ОКНО РОЛЕЙ --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 5000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
-        
-        .modal-overlay.hidden {
-            display: none !important;
-        }
-
         .modal-card { background-image: var(--paper-texture); background-color: var(--paper-bg); border: 4px double var(--accent-brown); padding: 25px; border-radius: 8px; width: 90%; max-width: 320px; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
         .role-buttons-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
         .role-select-btn { padding: 15px; font-family: 'Rye', cursive; font-size: 1.1em; border: 2px solid rgba(0,0,0,0.2); cursor: pointer; color: white; text-shadow: 1px 1px 0 #000; }
@@ -312,6 +311,9 @@
         .btn-trusted { background-color: #0277bd; border-color: #01579b; }
         .btn-player { background-color: #2e7d32; border-color: #1b5e20; }
         .btn-cancel-role { background: transparent; border: none; text-decoration: underline; color: var(--accent-brown); font-family: 'Special Elite', monospace; cursor: pointer; font-size: 1.1em; }
+        
+        /* САМЫЙ ВАЖНЫЙ СТИЛЬ - В КОНЦЕ */
+        .hidden { display: none !important; }
     </style>
 
 </head>
@@ -429,7 +431,7 @@
         <div id="chatConversationPanel" class="hidden" style="display:flex; flex-direction:column; height:100%;">
             <div id="privateChatHeader" class="chat-header-private">
                 <button class="btn-back-general" onclick="showChatList()">⬅</button>
-                <button id="btnTransfer" class="btn-money-transfer hidden" onclick="openTransferModal()">💸 Перевод</button>
+                <button id="btnTransfer" class="btn-money-transfer hidden" onclick="openTransferModal()">💸</button>
                 <span id="privateChatTitle" style="flex:1; text-align:right;">Чат</span>
             </div>
 
@@ -470,7 +472,7 @@
             <div class="profile-section-title">АВАТАР</div>
             <div id="currentAvatarPreview" class="current-avatar-preview">👤</div>
             <div class="avatar-selection-grid" id="avatarGrid">
-                </div>
+            </div>
             <div style="margin-bottom: 20px;">
                 <button class="btn-refresh" onclick="document.getElementById('fileUpload').click()">📤 Загрузить свое фото</button>
                 <input type="file" id="fileUpload" accept="image/*" style="display: none;" onchange="handleFileUpload(this)">
@@ -485,7 +487,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v78.0 (Stable Restore)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v79.0 (Revert Stable)</div>
     
     <div id="publicProfileModal" class="modal-overlay hidden">
         <div class="public-profile-card">
@@ -505,6 +507,19 @@
                     <button class="role-select-btn btn-player" onclick="setRoleFromProfile('player')">👤 ИГРОК</button>
                 </div>
             </div>
+        </div>
+    </div>
+    
+    <div id="roleModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3 style="margin-top:0; color:#8b4513; font-family:'Rye', cursive;">НАЗНАЧИТЬ РОЛЬ</h3>
+            <p id="roleTargetName" style="font-weight:bold; font-size:1.2em; margin-bottom:15px;">...</p>
+            <div class="role-buttons-list">
+                <button class="role-select-btn btn-admin" onclick="setRole('admin')">👑 АДМИН</button>
+                <button class="role-select-btn btn-trusted" onclick="setRole('trusted')">🛡️ ДОВЕРЕННОЕ ЛИЦО</button>
+                <button class="role-select-btn btn-player" onclick="setRole('player')">👤 ИГРОК</button>
+            </div>
+            <button class="btn-cancel-role" onclick="closeRoleModal()">Отмена</button>
         </div>
     </div>
 </div>
@@ -534,8 +549,7 @@
     let currentConnectionRef = null;
     let onlineNicknames = new Set();
 
-    // --- ВАЖНО: ФУНКЦИИ АВТОРИЗАЦИИ (Определяем первыми, чтобы были доступны) ---
-    
+    // --- ФУНКЦИИ АВТОРИЗАЦИИ ---
     window.handleRegister = function() {
         const nick = document.getElementById('regNick').value.trim();
         const pass = document.getElementById('regPass').value.trim();
@@ -567,20 +581,16 @@
 
     async function checkLogin(nick, pass, isAuto, remember = false) {
         try {
-            // Попытка онлайн
             if (navigator.onLine) {
                 const snapshot = await get(child(ref(db), `users/${nick}`));
                 if (snapshot.exists()) {
                     const userData = snapshot.val();
                     if(userData.pass === pass) {
-                        // Успех - сохраняем кэш
                         let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
                         knownUsers[nick] = pass;
                         localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
-                        
                         const dispName = userData.displayName || nick;
                         const dbRole = userData.role || 'player';
-                        
                         const userObj = { nick, pass, displayName: dispName, role: dbRole };
                         localStorage.setItem('op_user', JSON.stringify(userObj));
                         performLogin(nick, pass, remember || isAuto, dispName, dbRole);
@@ -595,8 +605,7 @@
                     return;
                 }
             }
-            
-            // Если оффлайн или ошибка сети - пробуем локально
+            // Локальный вход
             const knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
             if (knownUsers[nick] && knownUsers[nick] === pass) {
                 const cachedUser = JSON.parse(localStorage.getItem('op_user') || '{}');
@@ -657,7 +666,6 @@
         }
     }
 
-    // --- ОСТАЛЬНЫЕ ФУНКЦИИ ---
     const AVATARS = ["👤", "🤠", "😎", "🤑", "🤡", "🤖", "👽", "👹", "💀", "👻", "🐯", "🐺", "🐻", "🐼", "🦁", "🐮", "🐷", "🐸", "🐔", "🦄"];
 
     function updateMenuUI(displayName, loginName) {
@@ -855,9 +863,9 @@
             .catch(e => alert("Ошибка: " + e));
     }
     
+    // --- ЧАТ (БЕЗ ЗВОНКОВ) ---
     let currentChatId = null;
     let currentChatPartner = null; 
-    let chatListener = null;
     let editingMsgId = null;
 
     window.showChatList = function() {
@@ -870,7 +878,6 @@
     function renderPrivateChatsList() {
         const listContainer = document.getElementById('privateChatsList');
         listContainer.innerHTML = '<div style="text-align:center; font-size:0.8em; opacity:0.5;">Загрузка чатов...</div>';
-        
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         if (!sessionUser) return;
         const myLogin = sessionUser.nick;
@@ -881,27 +888,18 @@
                 listContainer.innerHTML = '<div style="text-align:center; padding:10px;">Личных переписок пока нет</div>';
                 return;
             }
-            let foundCount = 0;
             snapshot.forEach((child) => {
                 const chatKey = child.key; 
                 const participants = chatKey.split('_');
                 if (participants.includes(myLogin)) {
-                    foundCount++;
                     const otherLogin = participants[0] === myLogin ? participants[1] : participants[0];
                     const item = document.createElement('div');
                     item.className = 'chat-list-item';
                     item.onclick = () => window.loadChat(chatKey, '@' + otherLogin);
-                    item.innerHTML = `
-                        <div class="chat-avatar" style="background-color:#fff8e1; color:#e65100;">👤</div>
-                        <div class="chat-info">
-                            <span class="chat-name">@${otherLogin}</span>
-                            <span class="chat-preview">Личная переписка</span>
-                        </div>
-                    `;
+                    item.innerHTML = `<div class="chat-avatar" style="background-color:#fff8e1; color:#e65100;">👤</div><div class="chat-info"><span class="chat-name">@${otherLogin}</span><span class="chat-preview">Личная переписка</span></div>`;
                     listContainer.appendChild(item);
                 }
             });
-            if (foundCount === 0) listContainer.innerHTML = '<div style="text-align:center; padding:10px;">Личных переписок пока нет</div>';
         });
     }
     
@@ -1039,7 +1037,6 @@
         const newRow = tableBody.insertRow();
         const { total, historyArray } = calculatePlayerStats(player);
 
-        // 1. ИМЯ + АВАТАР
         const cellName = newRow.insertCell(0);
         const nameWrapper = document.createElement('div');
         nameWrapper.className = 'name-wrapper';
@@ -1050,7 +1047,6 @@
         const keyToCheck = player.login || player.name;
         if (onlineNicknames.has(keyToCheck)) statusDot.classList.add('is-online');
         
-        // КНОПКА ЛИЧКИ
         if (player.login && player.login !== myLogin) {
             const btnDM = document.createElement('span');
             btnDM.innerText = '✉️'; btnDM.className = 'btn-start-dm'; btnDM.title = 'Написать личное сообщение';
@@ -1058,11 +1054,8 @@
             nameWrapper.appendChild(btnDM);
         }
 
-        // АВАТАРКА
         const avatarDiv = document.createElement('div');
         avatarDiv.className = 'table-avatar';
-        
-        // Проверяем, это картинка (Base64) или смайлик
         if (player.avatar && player.avatar.startsWith('data:image')) {
             avatarDiv.style.backgroundImage = `url(${player.avatar})`;
             avatarDiv.innerText = "";
@@ -1089,12 +1082,10 @@
         inputName.type = 'text'; inputName.className = 'player-name'; inputName.value = player.name || "";
         inputName.readOnly = true;
         
-        // Клик на имя открывает профиль
         if (player.login) {
             inputName.onclick = () => openPublicProfile(player.login, player.name);
             avatarDiv.onclick = () => openPublicProfile(player.login, player.name);
         } else if ((myRole === 'admin' || myRole === 'trusted') && !player.login) {
-            // Для гостей оставляем переименование
             inputName.style.borderBottom = "1px dashed var(--accent-brown)";
             inputName.onclick = () => {
                 const newName = prompt("Переименовать гостя:", player.name);
@@ -1103,11 +1094,10 @@
         }
 
         nameWrapper.appendChild(statusDot); 
-        nameWrapper.appendChild(avatarDiv); // Добавили аватар
+        nameWrapper.appendChild(avatarDiv); 
         nameWrapper.appendChild(roleBadge);
         nameWrapper.appendChild(inputName); 
 
-        // ЗАМЕТКИ (Admin only)
         const uniqueKey = player.login || player.name; 
         const localNotes = JSON.parse(localStorage.getItem('op_local_notes') || '{}');
         const noteText = localNotes[uniqueKey];
@@ -1127,7 +1117,6 @@
             cellName.appendChild(noteDiv);
         }
 
-        // 2. СТАТУС
         const cellStatus = newRow.insertCell(1);
         cellStatus.className = 'status-cell';
         let statusText = "Дворник"; let statusClass = "st-dvornik";
@@ -1140,7 +1129,6 @@
         cellStatus.innerText = statusText;
         cellStatus.classList.add(statusClass);
 
-        // 3. ДЕЙСТВИЯ
         const cellAction = newRow.insertCell(2);
         if (myRole !== 'player') {
             const inputNum = document.createElement('input');
@@ -1151,16 +1139,13 @@
             cellAction.append(inputNum, createBtn('+', 'btn-calc', () => handleScore(id, inputNum, 1)), createBtn('-', 'btn-calc', () => handleScore(id, inputNum, -1)), createBtn('↩', 'btn-undo', () => undoLast(id)), createBtn('↪', 'btn-redo', () => redoLast(id)));
         } else { cellAction.innerText = "—"; }
 
-        // 4. ИТОГ
         const cellTotal = newRow.insertCell(3);
         cellTotal.className = 'score-cell'; cellTotal.innerText = total;
 
-        // 5. ИСТОРИЯ
         const cellHistory = newRow.insertCell(4);
         cellHistory.className = 'history-log';
         cellHistory.innerText = historyArray.length > 0 ? historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ') : 'Пусто';
 
-        // 6. УДАЛЕНИЕ
         const cellDelete = newRow.insertCell(5);
         const wrapper = document.createElement('div');
         wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
@@ -1172,7 +1157,6 @@
         cellDelete.appendChild(wrapper);
     }
 
-    // --- ЛОКАЛЬНЫЕ ЗАМЕТКИ ---
     window.setLocalNote = function(key) {
         const notes = JSON.parse(localStorage.getItem('op_local_notes') || '{}');
         const current = notes[key] || "";
@@ -1216,38 +1200,19 @@
         } catch(e) { console.error("Sync error", e); }
     }
 
-    window.switchAuthView = function(view) {
-        document.getElementById('loginError').innerText = "";
-        document.getElementById('regError').innerText = "";
-        if(view === 'register') {
-            document.getElementById('login-view-card').classList.add('hidden');
-            document.getElementById('register-view-card').classList.remove('hidden');
-        } else {
-            document.getElementById('register-view-card').classList.add('hidden');
-            document.getElementById('login-view-card').classList.remove('hidden');
-        }
-    }
-
-    window.safeDeletePlayer = async function(id, login) {
-        if(!confirm("Убрать игрока со стола? (Баланс сохранится)")) return;
-        const snapshot = await get(ref(db, 'players/' + id));
-        const data = snapshot.val();
-        if (data && login) {
-            if (data.history) { await update(ref(db, 'users/' + login), { saved_history: data.history }); }
-        }
-        remove(ref(db, 'players/' + id));
-    }
-
     window.toggleSidebar = function() { document.getElementById('sidebar').classList.toggle('open'); }
 
     window.showView = function(viewName) {
+        // 1. Скрываем всё принудительно
         document.getElementById('sidebar').classList.remove('open');
-        document.getElementById('view-game').classList.add('hidden');
-        document.getElementById('view-journal').classList.add('hidden');
-        document.getElementById('view-chat').classList.add('hidden');
-        document.getElementById('view-profile').classList.add('hidden');
+        const views = ['view-game', 'view-chat', 'view-journal', 'view-profile'];
+        views.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.classList.add('hidden');
+        });
         document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
 
+        // 2. Показываем нужное
         if (viewName === 'game') {
             document.getElementById('view-game').classList.remove('hidden');
             document.getElementById('btn-nav-game').classList.add('active');
@@ -1265,7 +1230,6 @@
         }
     }
 
-    // --- СИСТЕМА ПЕРЕВОДОВ ---
     window.openTransferModal = async function() {
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         if (!sessionUser) return;
@@ -1316,7 +1280,6 @@
         return null;
     }
 
-    // Обработка загрузки файла
     window.handleFileUpload = function(input) {
         if (input.files && input.files[0]) {
             const file = input.files[0];
