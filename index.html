@@ -387,8 +387,6 @@
             display: none !important;
         }
 
-        
-
         .modal-card { background-image: var(--paper-texture); background-color: var(--paper-bg); border: 4px double var(--accent-brown); padding: 25px; border-radius: 8px; width: 90%; max-width: 320px; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
         .role-buttons-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
         .role-select-btn { padding: 15px; font-family: 'Rye', cursive; font-size: 1.1em; border: 2px solid rgba(0,0,0,0.2); cursor: pointer; color: white; text-shadow: 1px 1px 0 #000; }
@@ -396,8 +394,6 @@
         .btn-trusted { background-color: #0277bd; border-color: #01579b; }
         .btn-player { background-color: #2e7d32; border-color: #1b5e20; }
         .btn-cancel-role { background: transparent; border: none; text-decoration: underline; color: var(--accent-brown); font-family: 'Special Elite', monospace; cursor: pointer; font-size: 1.1em; }
-
-
 
         /* Кнопка входа в голосовой чат */
         .btn-voice-call {
@@ -419,7 +415,6 @@
         .btn-mic { background: #444; color: #fff; border: 1px solid #666; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
         .btn-mic.muted { background: #d32f2f; border-color: #b71c1c; }
         .btn-hangup { background: #b71c1c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 5px; }
- 
     </style>
 
 </head>
@@ -531,7 +526,7 @@
                     <span class="chat-preview">Нажмите, чтобы войти...</span>
                 </div>
             </div>
-            <div id="sList"></div>
+            <div id="privateChatsList"></div>
         </div>
 
         <div id="chatConversationPanel" class="hidden" style="display:flex; flex-direction:column; height:100%;">
@@ -964,7 +959,7 @@
         } else {
             titleEl.innerText = title;
             currentChatPartner = title.replace('@', ''); 
-            btnTransfer.classList.remove('hidden');
+            btnTransfer.classList.remove('hidden'); 
             document.getElementById('btnVoiceCall').classList.remove('hidden');
         }
 
@@ -1933,6 +1928,3 @@
     
 </body>
 </html>
-
-
-
