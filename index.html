@@ -77,6 +77,13 @@
             font-family: 'Special Elite', monospace; color: #d4c5a3;
             font-size: 0.8em; opacity: 0.6; margin-top: 4px;
         }
+        .edit-icon {
+            cursor: pointer;
+            font-size: 0.8em;
+            opacity: 0.7;
+            transition: 0.2s;
+        }
+        .edit-icon:hover { opacity: 1; transform: scale(1.1); }
 
         .nav-btn {
             background: transparent; border: 1px solid var(--accent-brown); color: #d4c5a3;
@@ -222,6 +229,7 @@
         }
         .profile-section-title { font-family: 'Rye', cursive; color: var(--accent-brown); border-bottom: 2px solid var(--accent-brown); margin-bottom: 15px; }
         .avatar-selection-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 15px; max-height: 150px; overflow-y: auto; padding: 5px; border: 1px inset #ccc; }
+        
         .avatar-option { 
             width: 50px; 
             height: 50px; 
@@ -235,6 +243,7 @@
             align-items: center; 
             transition: 0.2s; 
         }
+
         .avatar-option:hover, .avatar-option.selected { background: #fff8e1; border-color: var(--accent-gold); transform: scale(1.1); }
         .current-avatar-preview { font-size: 4em; display: block; margin: 10px auto; width: 80px; height: 80px; line-height: 80px; border-radius: 50%; background: #fff; border: 3px solid var(--accent-brown); }
         textarea.profile-desc-input { width: 100%; height: 80px; padding: 10px; border: 2px solid var(--accent-brown); font-family: 'Special Elite', monospace; background: rgba(255,255,255,0.5); margin-bottom: 10px; }
@@ -373,9 +382,11 @@
         
         /* --- МОДАЛЬНОЕ ОКНО РОЛЕЙ --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 5000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
+        
         .modal-overlay.hidden {
             display: none !important;
         }
+
         .modal-card { background-image: var(--paper-texture); background-color: var(--paper-bg); border: 4px double var(--accent-brown); padding: 25px; border-radius: 8px; width: 90%; max-width: 320px; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
         .role-buttons-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
         .role-select-btn { padding: 15px; font-family: 'Rye', cursive; font-size: 1.1em; border: 2px solid rgba(0,0,0,0.2); cursor: pointer; color: white; text-shadow: 1px 1px 0 #000; }
@@ -830,7 +841,17 @@
             document.getElementById('ppDesc').innerText = "Ошибка загрузки данных.";
         }
     }
-    
+
+    window.setRoleFromProfile = function(newRole) {
+        if (!currentProfileLoginTarget) return;
+        update(ref(db, 'users/' + currentProfileLoginTarget), { role: newRole })
+            .then(() => {
+                alert(`Роль изменена на ${newRole}!`);
+                document.getElementById('publicProfileModal').classList.add('hidden');
+            })
+            .catch(e => alert("Ошибка: " + e));
+    }
+
     // =========================================================
     // НОВАЯ СИСТЕМА ЧАТОВ (СПИСОК + ЛИЧКА)
     // =========================================================
@@ -1067,14 +1088,6 @@
             avatarDiv.innerText = player.avatar || "👤";
         }
 
-        // Внутри renderPlayerRow
-        if (player.login) {
-    // ВАЖНО: передаем и login, и player.name
-            inputName.onclick = () => openPublicProfile(player.login, player.name);
-    // То же самое для аватара
-            if (avatarDiv) avatarDiv.onclick = () => openPublicProfile(player.login, player.name);
-        }
-
         const roleBadge = document.createElement('span');
         roleBadge.className = 'role-badge';
         if (!player.login) { roleBadge.innerText = '👽'; roleBadge.title = 'Гость'; } 
@@ -1096,6 +1109,7 @@
         // Клик на имя открывает профиль
         if (player.login) {
             inputName.onclick = () => openPublicProfile(player.login, player.name);
+            avatarDiv.onclick = () => openPublicProfile(player.login, player.name);
         } else if ((myRole === 'admin' || myRole === 'trusted') && !player.login) {
             // Для гостей оставляем переименование
             inputName.style.borderBottom = "1px dashed var(--accent-brown)";
@@ -1659,9 +1673,3 @@
     
 </body>
 </html>
-
-
-
-
-
-
