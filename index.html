@@ -475,7 +475,7 @@
                 <div id="voiceParticipants" class="voice-avatars"></div>
                 <div style="display:flex;">
                     <button class="btn-mic" onclick="toggleMic()" id="btnMicToggle">🎤 ВКЛ</button>
-                    <button class="btn-hangup" onclick="leaveVoiceRoom()">❌</button>
+                    <button class="btn-hangup" onclick="leaveVoiceRoom()">❌ Выйти</button>
                 </div>
             </div>
             
@@ -533,7 +533,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v76.0 (Stable Login)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v77.0 (FixAll)</div>
     
     <div id="publicProfileModal" class="modal-overlay hidden">
         <div class="public-profile-card">
@@ -764,6 +764,14 @@
             return;
         }
         
+        const sessionUser = sessionStorage.getItem('op_session_user');
+        if(sessionUser) {
+            try {
+                const user = JSON.parse(sessionUser);
+                checkLogin(user.nick, user.pass, true, false);
+            } catch(e) {}
+        }
+        
         if(navigator.onLine) syncUsersToTable();
     });
 
@@ -784,12 +792,19 @@
         const login = sessionUser.nick;
         const newName = document.getElementById('profileDisplayName').value.trim();
         const newDesc = document.getElementById('profileDescription').value.trim();
+        
         if (!newName) { alert("Имя не может быть пустым!"); return; }
+
         try {
-            await update(ref(db, 'users/' + login), { displayName: newName, description: newDesc, avatar: selectedAvatarEmoji });
+            await update(ref(db, 'users/' + login), {
+                displayName: newName,
+                description: newDesc,
+                avatar: selectedAvatarEmoji
+            });
             sessionUser.displayName = newName;
             sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
             updateMenuUI(newName, login);
+
             const playersSnap = await get(playersRef);
             const updates = {};
             let found = false;
@@ -803,7 +818,9 @@
             });
             if (found) await update(ref(db), updates);
             alert("Профиль сохранен!");
-        } catch(e) { alert("Ошибка сохранения: " + e.message); }
+        } catch(e) {
+            alert("Ошибка сохранения: " + e.message);
+        }
     }
 
     let currentProfileLoginTarget = null; 
@@ -826,6 +843,7 @@
             }
 
             document.getElementById('ppDesc').innerText = userData.description || "Игрок не оставил описания.";
+
             const userAvatar = userData.avatar || "👤";
             if (userAvatar.startsWith('data:image')) {
                 ppAvatarEl.style.backgroundImage = `url(${userAvatar})`;
@@ -876,6 +894,7 @@
             } else {
                 adminPanel.classList.add('hidden');
             }
+
         } catch (e) {
             console.error("Ошибка профиля:", e);
             document.getElementById('ppDesc').innerText = "Ошибка загрузки данных.";
@@ -1234,19 +1253,25 @@
         if (audioEl) audioEl.remove();
     }
 
-    function fetchUserRole(nick) {
-        if (nick === 'Zagonskiy') return; 
-        get(child(ref(db), `users/${nick}/role`)).then((snap) => {
-            let role = snap.val() || 'player';
-            let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-            if(sessionUser) {
-                if (sessionUser.role !== role) {
-                    sessionUser.role = role;
-                    sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
-                    applyRoleUI();
-                }
+    window.handleFileUpload = function(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            if (file.size > 2 * 1024 * 1024) {
+                alert("Файл слишком большой! Выберите фото меньше 2 МБ.");
+                return;
             }
-        });
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                selectedAvatarEmoji = e.target.result;
+                const preview = document.getElementById('currentAvatarPreview');
+                preview.innerText = ""; 
+                preview.style.backgroundImage = `url(${selectedAvatarEmoji})`;
+                preview.style.backgroundSize = "cover";
+                preview.style.backgroundPosition = "center";
+                document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
+            }
+            reader.readAsDataURL(file);
+        }
     }
 </script>
     
