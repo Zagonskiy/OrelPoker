@@ -566,8 +566,10 @@
 
             <div id="voiceControlPanel" class="voice-panel hidden">
                 <div id="voiceParticipants" class="voice-avatars"></div>
-                <button class="btn-mic" onclick="toggleMic()" id="btnMicToggle">🎤 ВКЛ</button>
-                <button class="btn-hangup" onclick="leaveVoiceRoom()">❌ Выйти</button>
+                <div style="display:flex;">
+                    <button class="btn-mic" onclick="toggleMic()" id="btnMicToggle">🎤 ВКЛ</button>
+                    <button class="btn-hangup" onclick="leaveVoiceRoom()">❌</button>
+                </div>
             </div>
             
             <div id="remoteAudioContainer" style="display:none;"></div>
@@ -949,7 +951,7 @@
                     const otherLogin = participants[0] === myLogin ? participants[1] : participants[0];
                     const item = document.createElement('div');
                     item.className = 'chat-list-item';
-                    item.onclick = () => (chatKey, '@' + otherLogin);
+                    item.onclick = () => loadChat(chatKey, '@' + otherLogin);
                     item.innerHTML = `
                         <div class="chat-avatar" style="background-color:#fff8e1; color:#e65100;">👤</div>
                         <div class="chat-info">
@@ -985,8 +987,6 @@
             currentChatPartner = null;
             btnTransfer.classList.add('hidden'); 
             titleEl.innerText = "Общий чат";
-            // В общем чате звонки отключим, чтобы не было хаоса (или включи, убрав эту строку)
-            // btnVoice.classList.add('hidden'); 
         } else {
             titleEl.innerText = title;
             currentChatPartner = title.replace('@', ''); 
@@ -995,7 +995,6 @@
         }
 
         // --- ЛОГИКА СЛЕЖЕНИЯ ЗА АКТИВНЫМ ЗВОНКОМ ---
-        // Слушаем, есть ли кто-то в комнате voice_rooms/ID
         onValue(ref(db, `voice_rooms/${chatId}`), (snap) => {
             // Если мы уже внутри звонка (панель открыта), кнопку входа и бейдж прячем/адаптируем
             const isInCall = !document.getElementById('voiceControlPanel').classList.contains('hidden');
@@ -1022,7 +1021,6 @@
             }
         });
 
-        // Загрузка сообщений
         const path = chatId === 'general' ? 'chat' : `private_chats/${chatId}`;
         const targetRef = ref(db, path);
 
@@ -1139,644 +1137,15 @@
         }
     }
 
-    // =========================================================
-    // ОБНОВЛЕННАЯ ТАБЛИЦА
-    // =========================================================
-
-    function renderPlayerRow(id, player) {
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || { role: 'player' };
-        const myRole = sessionUser.role;
-        const myLogin = sessionUser.nick; 
-
-        const tableBody = document.getElementById('tableBody');
-        const newRow = tableBody.insertRow();
-        const { total, historyArray } = calculatePlayerStats(player);
-
-        // 1. ИМЯ + АВАТАР
-        const cellName = newRow.insertCell(0);
-        const nameWrapper = document.createElement('div');
-        nameWrapper.className = 'name-wrapper';
-        
-        const statusDot = document.createElement('div');
-        statusDot.className = 'player-status-indicator';
-        if(player.login) statusDot.setAttribute('data-player-login', player.login);
-        const keyToCheck = player.login || player.name;
-        if (onlineNicknames.has(keyToCheck)) statusDot.classList.add('is-online');
-        
-        // КНОПКА ЛИЧКИ
-        if (player.login && player.login !== myLogin) {
-            const btnDM = document.createElement('span');
-            btnDM.innerText = '✉️'; btnDM.className = 'btn-start-dm'; btnDM.title = 'Написать личное сообщение';
-            btnDM.onclick = () => openPrivateChat(player.login);
-            nameWrapper.appendChild(btnDM);
-        }
-
-        // АВАТАРКА
-        const avatarDiv = document.createElement('div');
-        avatarDiv.className = 'table-avatar';
-        
-        // Проверяем, это картинка (Base64) или смайлик
-        if (player.avatar && player.avatar.startsWith('data:image')) {
-            avatarDiv.style.backgroundImage = `url(${player.avatar})`;
-            avatarDiv.innerText = "";
-        } else {
-            avatarDiv.style.backgroundImage = "none";
-            avatarDiv.innerText = player.avatar || "👤";
-        }
-
-        const roleBadge = document.createElement('span');
-        roleBadge.className = 'role-badge';
-        if (!player.login) { roleBadge.innerText = '👽'; roleBadge.title = 'Гость'; } 
-        else if (player.login === 'Zagonskiy') { roleBadge.innerText = '👑'; roleBadge.title = 'Создатель'; }
-        else {
-            roleBadge.innerText = '⏳';
-            get(child(ref(db), 'users/' + player.login + '/role')).then((snap) => {
-                const r = snap.val();
-                if (r === 'admin') { roleBadge.innerText = '👑'; roleBadge.title = 'Админ'; }
-                else if (r === 'trusted') { roleBadge.innerText = '🛡️'; roleBadge.title = 'Доверенный'; }
-                else { roleBadge.innerText = '👤'; roleBadge.title = 'Игрок'; }
-            });
-        }
-
-        const inputName = document.createElement('input');
-        inputName.type = 'text'; inputName.className = 'player-name'; inputName.value = player.name || "";
-        inputName.readOnly = true;
-        
-        // Клик на имя открывает профиль
-        if (player.login) {
-            inputName.onclick = () => openPublicProfile(player.login, player.name);
-            avatarDiv.onclick = () => openPublicProfile(player.login, player.name);
-        } else if ((myRole === 'admin' || myRole === 'trusted') && !player.login) {
-            // Для гостей оставляем переименование
-            inputName.style.borderBottom = "1px dashed var(--accent-brown)";
-            inputName.onclick = () => {
-                const newName = prompt("Переименовать гостя:", player.name);
-                if (newName && newName.trim() !== "") update(ref(db, 'players/' + id), { name: newName.trim() });
-            };
-        }
-
-        nameWrapper.appendChild(statusDot); 
-        nameWrapper.appendChild(avatarDiv); // Добавили аватар
-        nameWrapper.appendChild(roleBadge);
-        nameWrapper.appendChild(inputName); 
-
-        // ЗАМЕТКИ (Admin only)
-        const uniqueKey = player.login || player.name; 
-        const localNotes = JSON.parse(localStorage.getItem('op_local_notes') || '{}');
-        const noteText = localNotes[uniqueKey];
-
-        if (myRole === 'admin') {
-            const btnNote = document.createElement('span');
-            btnNote.innerText = '📝'; btnNote.className = 'btn-local-note';
-            if(noteText) btnNote.classList.add('has-note');
-            btnNote.onclick = () => setLocalNote(uniqueKey);
-            nameWrapper.appendChild(btnNote);
-        }
-
-        cellName.appendChild(nameWrapper);
-        if (noteText && myRole === 'admin') {
-            const noteDiv = document.createElement('div');
-            noteDiv.className = 'player-note-text'; noteDiv.innerText = noteText;
-            cellName.appendChild(noteDiv);
-        }
-
-        // 2. СТАТУС
-        const cellStatus = newRow.insertCell(1);
-        cellStatus.className = 'status-cell';
-        let statusText = "Дворник"; let statusClass = "st-dvornik";
-        if (total >= 50000) { statusText = "Читак ебаный"; statusClass = "st-cheat"; }
-        else if (total >= 10000) { statusText = "Донатер"; statusClass = "st-donate"; }
-        else if (total >= 5000) { statusText = "Богач"; statusClass = "st-rich"; }
-        else if (total >= 2000) { statusText = "Средняк"; statusClass = "st-mid"; }
-        else if (total >= 1000) { statusText = "Новобранец"; statusClass = "st-novo"; }
-        else if (total === 0) { statusText = "Банкрот"; statusClass = "st-bankrot"; }
-        cellStatus.innerText = statusText;
-        cellStatus.classList.add(statusClass);
-
-        // 3. ДЕЙСТВИЯ
-        const cellAction = newRow.insertCell(2);
-        if (myRole !== 'player') {
-            const inputNum = document.createElement('input');
-            inputNum.type = 'number'; inputNum.className = 'input-val'; inputNum.placeholder = '0';
-            inputNum.addEventListener('keypress', function(event) {
-                if (event.key === 'Enter') { event.preventDefault(); handleScore(id, inputNum, 1); }
-            });
-            cellAction.append(inputNum, createBtn('+', 'btn-calc', () => handleScore(id, inputNum, 1)), createBtn('-', 'btn-calc', () => handleScore(id, inputNum, -1)), createBtn('↩', 'btn-undo', () => undoLast(id)), createBtn('↪', 'btn-redo', () => redoLast(id)));
-        } else { cellAction.innerText = "—"; }
-
-        // 4. ИТОГ
-        const cellTotal = newRow.insertCell(3);
-        cellTotal.className = 'score-cell'; cellTotal.innerText = total;
-
-        // 5. ИСТОРИЯ
-        const cellHistory = newRow.insertCell(4);
-        cellHistory.className = 'history-log';
-        cellHistory.innerText = historyArray.length > 0 ? historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ') : 'Пусто';
-
-        // 6. УДАЛЕНИЕ
-        const cellDelete = newRow.insertCell(5);
-        const wrapper = document.createElement('div');
-        wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
-        if (myRole === 'admin') {
-             wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
-             if (player.login) { wrapper.appendChild(createBtn('✕', 'btn-delete', () => safeDeletePlayer(id, player.login))); }
-             else { wrapper.appendChild(createBtn('✕', 'btn-delete', () => { if(confirm("Удалить гостя навсегда?")) remove(ref(db, 'players/' + id)); })); }
-        }
-        cellDelete.appendChild(wrapper);
-    }
-
-    // --- ЛОКАЛЬНЫЕ ЗАМЕТКИ ---
-    window.setLocalNote = function(key) {
-        const notes = JSON.parse(localStorage.getItem('op_local_notes') || '{}');
-        const current = notes[key] || "";
-        const newNote = prompt("Заметка об игроке (видна только вам):", current);
-        if (newNote === null) return; 
-        if (newNote.trim() === "") delete notes[key]; else notes[key] = newNote.trim();
-        localStorage.setItem('op_local_notes', JSON.stringify(notes));
-        const savedData = JSON.parse(localStorage.getItem('poker_data_v74'));
-        renderTable(savedData);
-    }
-
-    window.refreshTable = async function() {
-        const pass = prompt("Для обновления введите код доступа:");
-        if (pass !== "108020") { if(pass !== null) alert("Ошибка доступа"); return; }
-        try { await syncUsersToTable(); alert("Таблица синхронизирована!"); } catch(e) { alert("Ошибка: " + e.message); }
-    }
-
-    async function syncUsersToTable(currentDisplayName) {
-        try {
-            const usersSnap = await get(usersRef);
-            const playersSnap = await get(playersRef);
-            const users = usersSnap.val() || {};
-            const players = playersSnap.val() || {};
-            const existingLogins = new Set();
-            for(let id in players) { const pLogin = players[id].login || players[id].name; existingLogins.add(pLogin); }
-            const updates = {};
-            let hasUpdates = false;
-            for(let login in users) {
-                if(!existingLogins.has(login)) {
-                    const userData = users[login];
-                    const dispName = userData.displayName || login;
-                    const avatar = userData.avatar || "👤";
-                    const newKey = push(ref(db, 'players')).key;
-                    let historyToRestore = { 'start_bonus': 1000 }; 
-                    if (userData.saved_history) { historyToRestore = userData.saved_history; }
-                    updates['players/' + newKey] = { name: dispName, login: login, avatar: avatar, history: historyToRestore };
-                    hasUpdates = true;
-                }
-            }
-            if(hasUpdates) { await update(ref(db), updates); }
-        } catch(e) { console.error("Sync error", e); }
-    }
-
-    window.switchAuthView = function(view) {
-        document.getElementById('loginError').innerText = "";
-        document.getElementById('regError').innerText = "";
-        if(view === 'register') {
-            document.getElementById('login-view-card').classList.add('hidden');
-            document.getElementById('register-view-card').classList.remove('hidden');
-        } else {
-            document.getElementById('register-view-card').classList.add('hidden');
-            document.getElementById('login-view-card').classList.remove('hidden');
-        }
-    }
-
-    window.safeDeletePlayer = async function(id, login) {
-        if(!confirm("Убрать игрока со стола? (Баланс сохранится)")) return;
-        const snapshot = await get(ref(db, 'players/' + id));
-        const data = snapshot.val();
-        if (data && login) {
-            if (data.history) { await update(ref(db, 'users/' + login), { saved_history: data.history }); }
-        }
-        remove(ref(db, 'players/' + id));
-    }
-
-    window.handleRegister = function() {
-        const nick = document.getElementById('regNick').value.trim();
-        const pass = document.getElementById('regPass').value.trim();
-        const passRepeat = document.getElementById('regPassRepeat').value.trim();
-        if(!nick || !pass) { document.getElementById('regError').innerText = "Заполните все поля"; return; }
-        if(pass !== passRepeat) { document.getElementById('regError').innerText = "Пароли не совпадают!"; return; }
-        get(child(ref(db), `users/${nick}`)).then((snapshot) => {
-            if (snapshot.exists()) { document.getElementById('regError').innerText = "Ник занят!"; } else {
-                set(ref(db, 'users/' + nick), { pass: pass, created: Date.now(), displayName: nick, role: 'player', avatar: "👤" }).then(() => {
-                    const newPlayerRef = push(ref(db, 'players'));
-                    return set(newPlayerRef, { name: nick, login: nick, avatar: "👤", history: { 'start_bonus': 1000 } });
-                }).then(() => {
-                    alert("Аккаунт создан! Входите.");
-                    switchAuthView('login');
-                    document.getElementById('loginNick').value = nick;
-                    document.getElementById('loginPass').value = pass;
-                });
-            }
-        });
-    }
-
-    window.handleLogin = function() {
-        const nick = document.getElementById('loginNick').value.trim();
-        const pass = document.getElementById('loginPass').value.trim();
-        const remember = document.getElementById('rememberMe').checked;
-        if(!nick || !pass) { document.getElementById('loginError').innerText = "Введите данные"; return; }
-        checkLogin(nick, pass, false, remember);
-    }
-
-    async function checkLogin(nick, pass, isAuto, remember = false) {
-        const tryLocalLogin = () => {
-            const knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
-            if (knownUsers[nick] && knownUsers[nick] === pass) {
-                const cachedUser = JSON.parse(localStorage.getItem('op_user') || '{}');
-                if (cachedUser.nick === nick) {
-                    const savedRole = cachedUser.role || 'player'; 
-                    const name = cachedUser.displayName || nick;
-                    performLogin(nick, pass, remember || isAuto, name, savedRole);
-                    return true;
-                }
-            }
-            return false;
-        };
-        if (!navigator.onLine) {
-            if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Нет сети";
-            return;
-        }
-        try {
-            const snapshot = await get(child(ref(db), `users/${nick}`));
-            if (snapshot.exists()) {
-                const userData = snapshot.val();
-                if(userData.pass === pass) {
-                    let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
-                    knownUsers[nick] = pass;
-                    localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
-                    const dispName = userData.displayName || nick;
-                    const dbRole = userData.role || 'player';
-                    const userObj = { nick, pass, displayName: dispName, role: dbRole };
-                    localStorage.setItem('op_user', JSON.stringify(userObj));
-                    performLogin(nick, pass, remember || isAuto, dispName, dbRole);
-                } else {
-                    if(!isAuto) document.getElementById('loginError').innerText = "Неверный пароль";
-                    if(isAuto) { localStorage.removeItem('op_user'); sessionStorage.removeItem('op_session_user'); }
-                }
-            } else { if(!isAuto) document.getElementById('loginError').innerText = "Пользователь не найден"; }
-        } catch (error) { if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Ошибка сети"; }
-    }
-
-    function performLogin(nick, pass, remember, displayName, loadedRole) {
-        document.getElementById('login-overlay').style.display = 'none';
-        const finalName = displayName || nick;
-        updateMenuUI(finalName, nick);
-        let role = loadedRole || 'player';
-        if (nick === 'Zagonskiy') { role = 'admin'; } 
-        const userObj = { nick, pass, displayName: finalName, role: role };
-        sessionStorage.setItem('op_session_user', JSON.stringify(userObj));
-        if(remember) localStorage.setItem('op_user', JSON.stringify(userObj));
-        setOnlineStatus(nick);
-        fetchUserRole(nick); 
-        applyRoleUI();
-        
-        // Подгружаем данные в профиль сразу
-        document.getElementById('profileDisplayName').value = finalName;
-        get(child(ref(db), `users/${nick}`)).then(snap => {
-            const d = snap.val();
-            if(d) {
-                if(d.description) document.getElementById('profileDescription').value = d.description;
-                if(d.avatar) {
-                    selectedAvatarEmoji = d.avatar;
-                    document.getElementById('currentAvatarPreview').innerText = d.avatar;
-                }
-            }
-        });
-    }
-
-    function fetchUserRole(nick) {
-        if (nick === 'Zagonskiy') return; 
-        get(child(ref(db), `users/${nick}/role`)).then((snap) => {
-            let role = snap.val() || 'player';
-            let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-            if(sessionUser) {
-                if (sessionUser.role !== role) {
-                    sessionUser.role = role;
-                    sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
-                    applyRoleUI();
-                }
-            }
-        });
-    }
-
-    window.applyRoleUI = function() {
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        const role = sessionUser ? sessionUser.role : 'player';
-        const controlsDiv = document.querySelector('.controls');
-        const oldRestore = document.getElementById('btnRestore');
-        if(oldRestore) oldRestore.remove();
-        const extremeResetBtn = document.querySelector('.btn-extreme-reset');
-        if (role === 'player') {
-            if(controlsDiv) controlsDiv.classList.add('role-hidden');
-            if(extremeResetBtn) extremeResetBtn.classList.add('role-hidden');
-        } else {
-            if(controlsDiv) {
-                controlsDiv.classList.remove('role-hidden');
-                if (!document.getElementById('btnRestore')) {
-                    const btnRestore = document.createElement('button');
-                    btnRestore.id = 'btnRestore';
-                    btnRestore.className = 'btn-refresh';
-                    btnRestore.innerText = '♻️ Восстановить';
-                    btnRestore.onclick = window.restorePlayers;
-                    const btnAdd = document.querySelector('.btn-add');
-                    if(btnAdd && btnAdd.parentNode) btnAdd.parentNode.insertBefore(btnRestore, btnAdd.nextSibling);
-                }
-            }
-            if (role === 'admin') { if(extremeResetBtn) extremeResetBtn.classList.remove('role-hidden'); } 
-            else { if(extremeResetBtn) extremeResetBtn.classList.add('role-hidden'); }
-        }
-        const savedData = JSON.parse(localStorage.getItem('poker_data_v74'));
-        if (savedData) renderTable(savedData);
-    }
-
-    window.restorePlayers = async function() {
-        if(!confirm("Вернуть всех зарегистрированных игроков за стол?")) return;
-        await syncUsersToTable();
-        alert("Список синхронизирован!");
-    }
-
-    window.logout = function() {
-        if(confirm("Выйти?")) {
-            if (currentConnectionRef) remove(currentConnectionRef);
-            localStorage.removeItem('op_user');
-            sessionStorage.removeItem('op_session_user');
-            location.reload();
-        }
-    }
-
-    function setOnlineStatus(nickname) {
-        const myUserRef = ref(db, `online_users/${nickname}`);
-        currentConnectionRef = push(myUserRef);
-        onDisconnect(currentConnectionRef).remove();
-        set(currentConnectionRef, true);
-    }
-
-    onValue(connectedRef, (snap) => {
-        const dotMobile = document.getElementById('mobileStatusDot');
-        const dotDesktop = document.getElementById('desktopStatusDot');
-        const statusEl = document.getElementById('networkStatus');
-        if(statusEl) statusEl.style.display = 'none';
-        if (snap.val() === true) {
-            dotMobile.classList.add('online'); dotDesktop.classList.add('online');
-        } else {
-            dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
-        }
-    });
-
-    onValue(onlineUsersRef, (snap) => {
-        const countDisplay = document.getElementById('onlineCounter');
-        onlineNicknames.clear();
-        if (snap.exists()) {
-            const data = snap.val();
-            Object.keys(data).forEach(n => onlineNicknames.add(n));
-            countDisplay.innerText = `👁️ Онлайн: ${onlineNicknames.size}`;
-        } else { countDisplay.innerText = `👁️ Онлайн: 0`; }
-        updateTableStatusDots();
-    });
-
-    function updateTableStatusDots() {
-        document.querySelectorAll('.player-status-indicator').forEach(dot => {
-            const name = dot.getAttribute('data-player-name');
-            const login = dot.getAttribute('data-player-login');
-            const keyToCheck = login || name;
-            if (onlineNicknames.has(keyToCheck)) dot.classList.add('is-online');
-            else dot.classList.remove('is-online');
-        });
-    }
-
-    onValue(playersRef, (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
-        localStorage.setItem('poker_data_v74', JSON.stringify(data));
-        renderTable(data);
-    });
-
-    function renderTable(data) {
-        if (document.activeElement.tagName === 'INPUT') return; 
-        const tableBody = document.getElementById('tableBody');
-        tableBody.innerHTML = '';
-        for (let id in data) { renderPlayerRow(id, data[id]); }
-        recalculateGrandTotal();
-        updateTableStatusDots();
-    }
-
-    function recalculateGrandTotal() {
-        const scoreCells = document.querySelectorAll('.score-cell');
-        let totalSum = 0;
-        scoreCells.forEach(cell => totalSum += parseFloat(cell.innerText || 0));
-        document.getElementById('grandTotal').innerText = totalSum;
-    }
-
-    function calculatePlayerStats(player) {
-        let historyArray = [];
-        let total = 0;
-        if (player.history) {
-            if (typeof player.history === 'object' && !Array.isArray(player.history)) { historyArray = Object.values(player.history); } 
-            else if (Array.isArray(player.history)) { historyArray = player.history; }
-        }
-        historyArray.forEach(val => total += val);
-        return { total, historyArray };
-    }
-
-    function createBtn(text, cls, onClick) {
-        const btn = document.createElement('button');
-        btn.innerText = text; btn.className = cls; btn.onclick = onClick;
-        return btn;
-    }
-
-    window.handleScore = function(id, inputElem, multiplier) {
-        let val = parseFloat(inputElem.value);
-        if (isNaN(val)) return;
-        let change = val * multiplier;
-        push(ref(db, 'players/' + id + '/history'), change);
-        set(ref(db, 'players/' + id + '/redoStack'), null);
-        inputElem.value = ''; inputElem.focus();
-    }
-
-    window.undoLast = async function(id) {
-        const historyRef = ref(db, 'players/' + id + '/history');
-        const lastItemQuery = query(historyRef, orderByKey(), limitToLast(1));
-        const snapshot = await get(lastItemQuery);
-        snapshot.forEach((child) => {
-            const val = child.val();
-            remove(child.ref);
-            push(ref(db, 'players/' + id + '/redoStack'), val);
-        });
-    }
-
-    window.redoLast = async function(id) {
-        const redoRef = ref(db, 'players/' + id + '/redoStack');
-        const lastRedoQuery = query(redoRef, orderByKey(), limitToLast(1));
-        const snapshot = await get(lastRedoQuery);
-        snapshot.forEach((child) => {
-            const val = child.val();
-            remove(child.ref);
-            push(ref(db, 'players/' + id + '/history'), val);
-        });
-    }
-
-    window.createNewPlayer = function() {
-        let guestName = prompt("Введите имя гостя:", "Гость");
-        if (guestName === null) return;
-        if (guestName.trim() === "") guestName = "Гость";
-        push(playersRef, { name: guestName.trim(), history: {} });
-    }
-    window.resetPlayer = (id) => { if (prompt("Сбросить игрока (Код)?") === "108020") update(ref(db, 'players/' + id), { history: null, redoStack: null }); else alert("Ошибка"); };
-    window.extremeReset = async () => { if (prompt("ПОЛНЫЙ СБРОС (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { updates['players/' + child.key + '/history'] = null; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); } };
-    window.startNewDay = async () => { if (prompt("НОВЫЙ ДЕНЬ (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { const { total } = calculatePlayerStats(child.val()); const key1 = push(ref(db)).key; const key2 = push(ref(db)).key; const newHistory = {}; newHistory[key1] = total; newHistory[key2] = 500; updates['players/' + child.key + '/history'] = newHistory; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); alert("День начат! +500"); } };
-    
-    window.addToJournal=async function(){if(!confirm("Сохранить итоги в Журнал?"))return;const dv=document.getElementById('gameDate').value;if(!dv){alert("Ошибка даты!");return;}const[y,m,d]=dv.split('-');const fd=`${d}.${m}.${y}`;const s=await get(playersRef);const dt=s.val();if(!dt)return;let gt=0;const sp=[];for(let i in dt){const p=dt[i];const{total,historyArray}=calculatePlayerStats(p);gt+=total;sp.push({name:p.name||"Без имени",total:total,history:historyArray.join(' ')})}push(journalRef,{date:fd+' '+new Date().toLocaleTimeString().slice(0,5),timestamp:Date.now(),grandTotal:gt,players:sp});alert("Сохранено за "+fd+"!");};
-
-    window.deleteJournalEntry = function(id) { 
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        if (sessionUser.role === 'admin' || sessionUser.role === 'trusted') { if(confirm("Удалить запись?")) remove(ref(db, 'journal/' + id)); } else { alert("Нет прав!"); }
-    }
-
-    onValue(journalRef, (snapshot) => {
-        const listDiv = document.getElementById('journalList');
-        listDiv.innerHTML = '';
-        const data = snapshot.val();
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || { role: 'player' };
-        const canDelete = (sessionUser.role === 'admin' || sessionUser.role === 'trusted');
-        if (!data) { listDiv.innerHTML = '<div style="text-align:center;">Пусто</div>'; return; }
-        const entries = Object.entries(data).sort((a, b) => b[1].timestamp - a[1].timestamp);
-        entries.forEach(([id, entry]) => {
-            const card = document.createElement('div'); card.className = 'journal-card';
-            const header = document.createElement('div'); header.className = 'journal-header';
-            let deleteBtnHtml = '';
-            if (canDelete) { deleteBtnHtml = `<button class="btn-journal-delete" onclick="event.stopPropagation(); deleteJournalEntry('${id}')">🗑️</button>`; }
-            header.innerHTML = `<div style="display:flex; align-items:center;"><span>📅 ${entry.date}</span>${deleteBtnHtml}</div><span class="journal-total">Банк: ${entry.grandTotal}</span>`;
-            const details = document.createElement('div'); details.className = 'journal-details';
-            let detailsHtml = `<div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px; display:flex; justify-content:space-between;"><span>Игрок</span><span>Итог</span></div>`;
-            if (entry.players) { entry.players.forEach(p => { detailsHtml += `<div class="detail-row"><span style="font-weight:bold;">${p.name}</span><span style="color:${p.total >= 0 ? 'green' : 'red'}">${p.total}</span></div><div style="font-size:0.8em; color:#666; margin-bottom:5px;">${p.history}</div>`; }); }
-            details.innerHTML = detailsHtml;
-            card.appendChild(header); card.appendChild(details);
-            card.onclick = () => card.classList.toggle('open');
-            listDiv.appendChild(card);
-        });
-    });
-
-    window.toggleSidebar = function() { document.getElementById('sidebar').classList.toggle('open'); }
-
-    window.showView = function(viewName) {
-        document.getElementById('sidebar').classList.remove('open');
-        document.getElementById('view-game').classList.add('hidden');
-        document.getElementById('view-journal').classList.add('hidden');
-        document.getElementById('view-chat').classList.add('hidden');
-        document.getElementById('view-profile').classList.add('hidden');
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-
-        if (viewName === 'game') {
-            document.getElementById('view-game').classList.remove('hidden');
-            document.getElementById('btn-nav-game').classList.add('active');
-        } else if (viewName === 'chat') {
-            document.getElementById('view-chat').classList.remove('hidden');
-            document.getElementById('btn-nav-chat').classList.add('active');
-            if (!currentChatId) { showChatList(); } 
-            else { const container = document.getElementById('chatMessages'); setTimeout(() => container.scrollTop = container.scrollHeight, 100); }
-        } else if (viewName === 'journal') {
-            document.getElementById('view-journal').classList.remove('hidden');
-            document.getElementById('btn-nav-journal').classList.add('active');
-        } else if (viewName === 'profile') {
-            document.getElementById('view-profile').classList.remove('hidden');
-            document.getElementById('btn-nav-profile').classList.add('active');
-        }
-    }
-
-    // --- СИСТЕМА ПЕРЕВОДОВ ---
-    window.openTransferModal = async function() {
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        if (!sessionUser) return;
-        const myId = await findPlayerIdByLogin(sessionUser.nick);
-        if (!myId) { alert("Вы не сидите за столом! Сначала создайте игрока."); return; }
-        const snap = await get(ref(db, 'players/' + myId));
-        const player = snap.val();
-        const { total } = calculatePlayerStats(player);
-        document.getElementById('myCurrentBalance').innerText = total;
-        document.getElementById('transferAmount').value = '';
-        document.getElementById('transferModal').classList.remove('hidden');
-    }
-
-    window.confirmTransfer = async function() {
-        const amount = parseFloat(document.getElementById('transferAmount').value);
-        if (isNaN(amount) || amount <= 0) { alert("Некорректная сумма"); return; }
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        const myLogin = sessionUser.nick;
-        const targetLogin = currentChatPartner;
-        if (!targetLogin) return;
-        const myId = await findPlayerIdByLogin(myLogin);
-        const targetId = await findPlayerIdByLogin(targetLogin);
-        if (!myId) { alert("Ошибка: Вы не за столом."); return; }
-        if (!targetId) { alert("Ошибка: Получатель не за столом."); return; }
-        const snap = await get(ref(db, 'players/' + myId));
-        const { total } = calculatePlayerStats(snap.val());
-        if (total < amount) { alert("Недостаточно средств!"); return; }
-        if (!confirm(`Перевести ${amount} игроку @${targetLogin}?`)) return;
-        const updates = {};
-        const pushKey1 = push(ref(db, 'players/' + myId + '/history')).key;
-        updates['players/' + myId + '/history/' + pushKey1] = -amount;
-        const pushKey2 = push(ref(db, 'players/' + targetId + '/history')).key;
-        updates['players/' + targetId + '/history/' + pushKey2] = amount;
-        await update(ref(db), updates);
-        const path = `private_chats/${currentChatId}`;
-        push(ref(db, path), { sender: "Система", senderLogin: "system", text: `💸 ПЕРЕВОД: ${sessionUser.displayName} отправил ${amount} монет.`, timestamp: Date.now() });
-        document.getElementById('transferModal').classList.add('hidden');
-        alert("Перевод выполнен!");
-    }
-
-    async function findPlayerIdByLogin(loginTarget) {
-        const snap = await get(playersRef);
-        const data = snap.val();
-        if (!data) return null;
-        for (let id in data) {
-            if (data[id].login === loginTarget || data[id].name === loginTarget) { return id; }
-        }
-        return null;
-    }
-
-    // Обработка загрузки файла
-    window.handleFileUpload = function(input) {
-        if (input.files && input.files[0]) {
-            const file = input.files[0];
-            
-            // Ограничение размера (например, 2 МБ)
-            if (file.size > 2 * 1024 * 1024) {
-                alert("Файл слишком большой! Выберите фото меньше 2 МБ.");
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                // Сохраняем Base64 строку в переменную аватара
-                selectedAvatarEmoji = e.target.result;
-                
-                // Обновляем превью
-                const preview = document.getElementById('currentAvatarPreview');
-                preview.innerText = ""; // Убираем текст
-                preview.style.backgroundImage = `url(${selectedAvatarEmoji})`;
-                preview.style.backgroundSize = "cover";
-                preview.style.backgroundPosition = "center";
-                
-                // Снимаем выделение со смайликов
-                document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
-            }
-            reader.readAsDataURL(file);
-        }
-    }
-
-
     // ==========================================
     // СОБСТВЕННАЯ СИСТЕМА ГОЛОСОВЫХ ЗВОНКОВ (WebRTC + Firebase)
     // ==========================================
     
     let localStream = null;
-    let peerConnections = {}; // Хранит соединения: { userId: RTCPeerConnection }
+    let peerConnections = {}; 
     let isMicMuted = false;
     let voiceRoomRef = null;
     
-    // Бесплатные STUN серверы Google (нужны для соединения компьютеров напрямую)
     const rtcConfig = {
         iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
@@ -1784,16 +1153,14 @@
         ]
     };
 
-    // 1. Вход в комнату (Нажатие кнопки)
     window.toggleVoiceRoom = async function() {
         if (!currentChatId) return;
         
-        // UI
         document.getElementById('btnVoiceCall').classList.add('hidden');
+        document.getElementById('activeCallBadge').classList.add('hidden'); // Скрываем бейдж при входе
         document.getElementById('voiceControlPanel').classList.remove('hidden');
 
         try {
-            // Получаем доступ к микрофону
             localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         } catch (err) {
             alert("Ошибка доступа к микрофону! Проверьте настройки браузера и HTTPS.");
@@ -1805,23 +1172,17 @@
         const myLogin = sessionUser.nick;
         const roomId = currentChatId;
 
-        // Ссылка на комнату в Firebase
         voiceRoomRef = ref(db, `voice_rooms/${roomId}`);
-
-        // 1. Добавляем себя в список участников
         const myParticipantRef = child(voiceRoomRef, myLogin);
-        onDisconnect(myParticipantRef).remove(); // Если инет пропадет, удалит нас
+        onDisconnect(myParticipantRef).remove(); 
         set(myParticipantRef, { online: true });
 
-        // 2. Слушаем появление других участников
         onValue(voiceRoomRef, (snapshot) => {
             const participants = snapshot.val() || {};
-            updateVoiceUI(participants); // Обновить иконки
+            updateVoiceUI(participants); 
             
             Object.keys(participants).forEach(userId => {
                 if (userId !== myLogin && !peerConnections[userId]) {
-                    // Если это новый участник и ID > моего (чтобы не создавать 2 соединения), инициируем звонок
-                    // Простая логика Mesh: тот, у кого ник "больше" по алфавиту, звонит первому
                     if (myLogin > userId) {
                         initiateConnection(userId, roomId);
                     }
@@ -1829,31 +1190,22 @@
             });
         });
 
-        // 3. Слушаем входящие сигналы (Offer, Answer, ICE Candidates)
         const signalsRef = ref(db, `voice_signals/${roomId}/${myLogin}`);
         onValue(signalsRef, (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
-            
-            // Обрабатываем каждый сигнал и удаляем его
             Object.keys(data).forEach(async (key) => {
                 const signal = data[key];
                 await handleSignal(signal, roomId);
-                remove(child(signalsRef, key)); // Удаляем обработанный сигнал
+                remove(child(signalsRef, key)); 
             });
         });
     }
 
-    // 2. Логика соединения (WebRTC)
     async function initiateConnection(targetUserId, roomId) {
-        console.log("Звоним пользователю:", targetUserId);
         const pc = createPeerConnection(targetUserId, roomId);
-        
-        // Создаем Offer
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
-
-        // Отправляем Offer через Firebase
         sendSignal(targetUserId, roomId, { type: 'offer', sdp: offer });
     }
 
@@ -1861,12 +1213,9 @@
         const pc = new RTCPeerConnection(rtcConfig);
         peerConnections[targetUserId] = pc;
 
-        // Добавляем наш микрофон в соединение
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
-        // Когда получаем звук от собеседника
         pc.ontrack = (event) => {
-            console.log("Получен аудио поток от", targetUserId);
             const audio = document.createElement('audio');
             audio.srcObject = event.streams[0];
             audio.autoplay = true;
@@ -1874,14 +1223,12 @@
             document.getElementById('remoteAudioContainer').appendChild(audio);
         };
 
-        // Обработка ICE кандидатов (путей соединения)
         pc.onicecandidate = (event) => {
             if (event.candidate) {
                 sendSignal(targetUserId, roomId, { type: 'candidate', candidate: event.candidate });
             }
         };
         
-        // Обработка разрыва
         pc.oniceconnectionstatechange = () => {
             if (pc.iceConnectionState === 'disconnected') {
                 closeConnection(targetUserId);
@@ -1893,12 +1240,9 @@
 
     async function handleSignal(signal, roomId) {
         const senderId = signal.senderId;
-        
-        // Если соединения нет, создаем (мы принимающая сторона)
         if (!peerConnections[senderId]) {
             createPeerConnection(senderId, roomId);
         }
-        
         const pc = peerConnections[senderId];
 
         if (signal.type === 'offer') {
@@ -1915,7 +1259,6 @@
         }
     }
 
-    // Отправка данных через Firebase
     function sendSignal(targetUserId, roomId, data) {
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         const signalData = {
@@ -1925,14 +1268,13 @@
         push(ref(db, `voice_signals/${roomId}/${targetUserId}`), signalData);
     }
 
-    // 3. Управление интерфейсом и звуком
     function updateVoiceUI(participants) {
         const container = document.getElementById('voiceParticipants');
         container.innerHTML = '';
         Object.keys(participants).forEach(userId => {
             const div = document.createElement('div');
             div.className = 'voice-peer-icon';
-            div.innerText = "👤"; // Можно заменить на аватар из базы если подгрузить
+            div.innerText = "👤"; 
             div.title = userId;
             container.appendChild(div);
         });
@@ -1942,7 +1284,6 @@
         if (!localStream) return;
         isMicMuted = !isMicMuted;
         localStream.getAudioTracks()[0].enabled = !isMicMuted;
-        
         const btn = document.getElementById('btnMicToggle');
         if (isMicMuted) {
             btn.innerText = "🎤 ВЫКЛ";
@@ -1954,24 +1295,19 @@
     }
 
     window.leaveVoiceRoom = function() {
-        // 1. Удаляем себя из Firebase
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         if (voiceRoomRef && sessionUser) {
             remove(child(voiceRoomRef, sessionUser.nick));
         }
-
-        // 2. Закрываем все соединения
         Object.keys(peerConnections).forEach(userId => closeConnection(userId));
-        
-        // 3. Останавливаем микрофон
         if (localStream) {
             localStream.getTracks().forEach(track => track.stop());
             localStream = null;
         }
-
-        // 4. UI
         document.getElementById('voiceControlPanel').classList.add('hidden');
-        document.getElementById('btnVoiceCall').classList.remove('hidden');
+        if (currentChatId !== 'general') {
+             document.getElementById('btnVoiceCall').classList.remove('hidden');
+        }
     }
 
     function closeConnection(userId) {
@@ -1983,9 +1319,28 @@
         if (audioEl) audioEl.remove();
     }
 
-    
+    // Обработка загрузки файла
+    window.handleFileUpload = function(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            if (file.size > 2 * 1024 * 1024) {
+                alert("Файл слишком большой! Выберите фото меньше 2 МБ.");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                selectedAvatarEmoji = e.target.result;
+                const preview = document.getElementById('currentAvatarPreview');
+                preview.innerText = ""; 
+                preview.style.backgroundImage = `url(${selectedAvatarEmoji})`;
+                preview.style.backgroundSize = "cover";
+                preview.style.backgroundPosition = "center";
+                document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
+            }
+            reader.readAsDataURL(file);
+        }
+    }
 </script>
     
 </body>
 </html>
-
