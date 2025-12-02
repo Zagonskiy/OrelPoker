@@ -396,54 +396,9 @@
         .btn-trusted { background-color: #0277bd; border-color: #01579b; }
         .btn-player { background-color: #2e7d32; border-color: #1b5e20; }
         .btn-cancel-role { background: transparent; border: none; text-decoration: underline; color: var(--accent-brown); font-family: 'Special Elite', monospace; cursor: pointer; font-size: 1.1em; }
-
-
-        /* Кнопка звонка */
-        .btn-voice-call {
-            background-color: #0277bd; /* Синий цвет */
-            color: white;
-            border: 1px solid #01579b;
-            border-radius: 4px;
-            padding: 5px 10px;
-            font-family: 'Rye', cursive;
-            cursor: pointer;
-            margin-right: 10px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .btn-voice-call:hover { background-color: #0288d1; }
-
-        /* Контейнер для звонка (поверх всего) */
-        #callContainer {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            z-index: 6000; /* Выше чем все модалки */
-            display: none; /* Скрыт по умолчанию */
-            flex-direction: column;
-        }
-        
-        #jitsi-meet-conf-container {
-            flex: 1; /* Занимает всё место */
-            width: 100%;
-            height: 100%;
-        }
-
-        .call-controls-header {
-            background: #1a1008;
-            color: #fff;
-            padding: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--accent-gold);
-        }
-
-        
+ 
     </style>
 
-    <script src='https://meet.jit.si/external_api.js'></script>
 </head>
 <body>
 
@@ -559,7 +514,6 @@
         <div id="chatConversationPanel" class="hidden" style="display:flex; flex-direction:column; height:100%;">
             <div id="privateChatHeader" class="chat-header-private">
                 <button class="btn-back-general" onclick="showChatList()">⬅</button>
-                <button id="btnVoiceCall" class="btn-voice-call" onclick="toggleVoiceCall()">📞 Звонок</button>
                 <button id="btnTransfer" class="btn-money-transfer hidden" onclick="openTransferModal()">💸 Перевод</button>
                 <span id="privateChatTitle" style="flex:1; text-align:right;">Чат</span>
             </div>
@@ -1720,84 +1674,10 @@
         }
     }
 
-
-    // --- СИСТЕМА ГОЛОСОВЫХ ЗВОНКОВ (JITSI) ---
-    let jitsiApi = null;
-
-    window.toggleVoiceCall = function() {
-        if (!currentChatId) return;
-
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        const myName = sessionUser.displayName || sessionUser.nick;
-        
-        // Уникальное имя комнаты: Prefix + ChatID (чтобы никто левый не зашел)
-        // Используем replace чтобы убрать запрещенные символы если есть
-        const roomName = `OrelPoker_Secure_Room_${currentChatId.replace(/[^a-zA-Z0-9]/g, '')}`;
-
-        const container = document.getElementById('callContainer');
-        container.style.display = 'flex';
-
-        // Если звонок уже идет, просто показываем окно
-        if (jitsiApi) return;
-
-        const domain = 'meet.jit.si';
-        const options = {
-            roomName: roomName,
-            width: '100%',
-            height: '100%',
-            parentNode: document.getElementById('jitsi-meet-conf-container'),
-            userInfo: {
-                displayName: myName
-            },
-            configOverwrite: {
-                startWithAudioMuted: false,
-                startWithVideoMuted: true, // По умолчанию без видео (голосовой чат)
-                prejoinPageEnabled: false // Сразу заходим без проверки микрофона
-            },
-            interfaceConfigOverwrite: {
-                // Убираем лишние кнопки, оставляем только микрофон и выход
-                TOOLBAR_BUTTONS: [
-                    'microphone', 'camera', 'closedcaptions', 'desktop', 'fullscreen',
-                    'fodeviceselection', 'hangup', 'profile', 'chat', 'recording',
-                    'livestreaming', 'etherpad', 'sharedvideo', 'settings', 'raisehand',
-                    'videoquality', 'filmstrip', 'invite', 'feedback', 'stats', 'shortcuts',
-                    'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone', 'security'
-                ],
-                SHOW_JITSI_WATERMARK: false,
-                MOBILE_APP_PROMO: false
-            },
-            lang: 'ru'
-        };
-
-        jitsiApi = new JitsiMeetExternalAPI(domain, options);
-
-        // Обработка выхода из звонка внутри фрейма
-        jitsiApi.addEventListeners({
-            videoConferenceLeft: function () {
-                endCall();
-            }
-        });
-    }
-
-    window.endCall = function() {
-        const container = document.getElementById('callContainer');
-        container.style.display = 'none';
-        
-        if (jitsiApi) {
-            jitsiApi.dispose(); // Полностью убиваем объект звонка
-            jitsiApi = null;
-        }
-    }
-
     
 </script>
-<div id="callContainer">
-        <div class="call-controls-header">
-            <span style="font-family:'Rye', cursive;">🔊 Голосовой чат</span>
-            <button class="btn-delete" onclick="endCall()" style="width:auto; padding:5px 15px; border-radius:4px;">СВЕРНУТЬ / ВЫЙТИ</button>
-        </div>
-        <div id="jitsi-meet-conf-container"></div>
-    </div> 
+    
 </body>
 </html>
+
 
