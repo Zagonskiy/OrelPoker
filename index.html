@@ -738,80 +738,99 @@
     }
 
     // Открытие чужого профиля (Public)
-    let currentProfileLoginTarget = null; // Для админских действий
+    let currentProfileLoginTarget = null; // Глобальная переменная для админ-действий
 
     window.openPublicProfile = async function(login, name) {
-        if (!login) return; // Гостей без логина можно не открывать или показывать заглушку
-        
-        // 1. Получаем данные пользователя
-        const userSnap = await get(child(ref(db), `users/${login}`));
-        const userData = userSnap.val() || {};
-        
-        // 2. Получаем статус (баланс)
-        const myId = await findPlayerIdByLogin(login);
-        let statusText = "Не за столом";
-        let statusClass = "st-dvornik";
-        
-        if (myId) {
-            const pSnap = await get(child(ref(db), `players/${myId}`));
-            const player = pSnap.val();
-            const { total } = calculatePlayerStats(player);
-            
-            if (total >= 50000) { statusText = "Читак ебаный"; statusClass = "st-cheat"; }
-            else if (total >= 10000) { statusText = "Донатер"; statusClass = "st-donate"; }
-            else if (total >= 5000) { statusText = "Богач"; statusClass = "st-rich"; }
-            else if (total >= 2000) { statusText = "Средняк"; statusClass = "st-mid"; }
-            else if (total >= 1000) { statusText = "Новобранец"; statusClass = "st-novo"; }
-            else if (total === 0)   { statusText = "Банкрот"; statusClass = "st-bankrot"; }
-            else { statusText = "Дворник"; statusClass = "st-dvornik"; }
-        }
-
-        // 3. Заполняем модалку
-        const ppAvatarEl = document.getElementById('ppAvatar');
-        const userAvatar = userData.avatar || "👤";
-
-        if (userAvatar.startsWith('data:image')) {
-            // Если это картинка, показываем её как фон, убираем текст
-            ppAvatarEl.style.backgroundImage = `url(${userAvatar})`;
-            ppAvatarEl.style.backgroundSize = "cover";
-            ppAvatarEl.style.backgroundPosition = "center";
-            ppAvatarEl.style.width = "100px";  // Задаем явный размер для фото
-            ppAvatarEl.style.height = "100px";
-            ppAvatarEl.style.borderRadius = "50%";
-            ppAvatarEl.style.margin = "0 auto 10px auto"; // Центрируем
-            ppAvatarEl.innerText = ""; 
-        } else {
-            // Если смайлик
-            ppAvatarEl.style.backgroundImage = "none";
-            ppAvatarEl.style.width = "auto"; 
-            ppAvatarEl.style.height = "auto";
-            ppAvatarEl.innerText = userAvatar;
-        }
-
-        // 4. Админские кнопки
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        const adminPanel = document.getElementById('ppAdminControls');
-        currentProfileLoginTarget = login; // Запоминаем кого редактируем
-
-        if (sessionUser && sessionUser.role === 'admin' && login !== 'Zagonskiy') {
-            adminPanel.classList.remove('hidden');
-        } else {
-            adminPanel.classList.add('hidden');
-        }
-
+        // 1. Сначала показываем модалку, чтобы пользователь видел реакцию
         document.getElementById('publicProfileModal').classList.remove('hidden');
-    }
 
-    window.setRoleFromProfile = function(newRole) {
-        if (!currentProfileLoginTarget) return;
-        update(ref(db, 'users/' + currentProfileLoginTarget), { role: newRole })
-            .then(() => {
-                alert(`Роль изменена на ${newRole}!`);
-                document.getElementById('publicProfileModal').classList.add('hidden');
-            })
-            .catch(e => alert("Ошибка: " + e));
-    }
+        // 2. СРАЗУ ставим известные данные (Имя и Логин), не дожидаясь базы данных
+        document.getElementById('ppName').innerText = name || "Без имени";
+        document.getElementById('ppLogin').innerText = login ? "@" + login : "Гость";
+        
+        // Ставим "заглушки", пока идет загрузка
+        document.getElementById('ppDesc').innerText = "Загрузка...";
+        document.getElementById('ppStatus').innerText = "Вычисляем...";
+        
+        // Сбрасываем аватар на "загрузку"
+        const ppAvatarEl = document.getElementById('ppAvatar');
+        ppAvatarEl.style.backgroundImage = "none";
+        ppAvatarEl.innerText = "⏳";
 
+        try {
+            // 3. ЗАГРУЗКА ОПИСАНИЯ И АВАТАРА (из users)
+            let userData = {};
+            if (login) {
+                const userSnap = await get(child(ref(db), `users/${login}`));
+                userData = userSnap.val() || {};
+            }
+
+            // Отрисовка описания
+            document.getElementById('ppDesc').innerText = userData.description || "Игрок не оставил описания.";
+
+            // Отрисовка Аватара (с учетом фото)
+            const userAvatar = userData.avatar || "👤";
+            if (userAvatar.startsWith('data:image')) {
+                // Если это фото
+                ppAvatarEl.style.backgroundImage = `url(${userAvatar})`;
+                ppAvatarEl.style.backgroundSize = "cover";
+                ppAvatarEl.style.backgroundPosition = "center";
+                ppAvatarEl.style.width = "120px";
+                ppAvatarEl.style.height = "120px";
+                ppAvatarEl.style.borderRadius = "50%";
+                ppAvatarEl.style.margin = "0 auto 10px auto";
+                ppAvatarEl.innerText = ""; 
+            } else {
+                // Если смайлик
+                ppAvatarEl.style.backgroundImage = "none";
+                ppAvatarEl.style.width = "auto";
+                ppAvatarEl.style.height = "auto";
+                ppAvatarEl.style.fontSize = "5em";
+                ppAvatarEl.innerText = userAvatar;
+            }
+
+            // 4. РАСЧЕТ СТАТУСА (из players)
+            const myId = await findPlayerIdByLogin(login);
+            let statusText = "Не за столом";
+            let statusClass = "st-dvornik";
+
+            if (myId) {
+                const pSnap = await get(child(ref(db), `players/${myId}`));
+                const player = pSnap.val();
+                if (player) {
+                    const { total } = calculatePlayerStats(player);
+
+                    if (total >= 50000) { statusText = "Читак ебаный"; statusClass = "st-cheat"; }
+                    else if (total >= 10000) { statusText = "Донатер"; statusClass = "st-donate"; }
+                    else if (total >= 5000) { statusText = "Богач"; statusClass = "st-rich"; }
+                    else if (total >= 2000) { statusText = "Средняк"; statusClass = "st-mid"; }
+                    else if (total >= 1000) { statusText = "Новобранец"; statusClass = "st-novo"; }
+                    else if (total === 0)   { statusText = "Банкрот"; statusClass = "st-bankrot"; }
+                    else { statusText = "Дворник"; statusClass = "st-dvornik"; }
+                }
+            }
+
+            const stEl = document.getElementById('ppStatus');
+            stEl.innerText = statusText;
+            stEl.className = "pp-status " + statusClass;
+
+            // 5. АДМИНСКИЕ КНОПКИ
+            const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+            const adminPanel = document.getElementById('ppAdminControls');
+            currentProfileLoginTarget = login; 
+
+            if (sessionUser && sessionUser.role === 'admin' && login !== 'Zagonskiy') {
+                adminPanel.classList.remove('hidden');
+            } else {
+                adminPanel.classList.add('hidden');
+            }
+
+        } catch (e) {
+            console.error("Ошибка профиля:", e);
+            document.getElementById('ppDesc').innerText = "Ошибка загрузки данных.";
+        }
+    }
+    
     // =========================================================
     // НОВАЯ СИСТЕМА ЧАТОВ (СПИСОК + ЛИЧКА)
     // =========================================================
@@ -1048,9 +1067,12 @@
             avatarDiv.innerText = player.avatar || "👤";
         }
 
-        // При клике на аватар открываем профиль
+        // Внутри renderPlayerRow
         if (player.login) {
-            avatarDiv.onclick = () => openPublicProfile(player.login, player.name);
+    // ВАЖНО: передаем и login, и player.name
+            inputName.onclick = () => openPublicProfile(player.login, player.name);
+    // То же самое для аватара
+            if (avatarDiv) avatarDiv.onclick = () => openPublicProfile(player.login, player.name);
         }
 
         const roleBadge = document.createElement('span');
