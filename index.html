@@ -327,74 +327,6 @@
             tfoot { display: none; }
         }
         
-        /* CHAT */
-        .chat-wrapper { display: flex; flex-direction: column; height: calc(100vh - 100px); }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 10px; background: rgba(255, 255, 255, 0.3); border: 2px solid var(--accent-brown); border-radius: 8px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; }
-        .message-bubble { max-width: 80%; padding: 8px 12px; border-radius: 12px; position: relative; font-family: 'Special Elite', monospace; font-size: 1em; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); }
-        .message-sender { font-size: 0.75em; font-weight: bold; margin-bottom: 2px; display: block; font-family: 'Rye', cursive; }
-        .msg-time { font-size: 0.8em; opacity: 0.6; margin-left: 8px; font-weight: normal; float: right; }
-        .msg-actions { display: inline-flex; gap: 5px; margin-left: 8px; opacity: 0.6; }
-        .btn-msg-action { background: transparent; border: none; cursor: pointer; font-size: 0.9em; padding: 0; color: inherit; }
-        .edited-label { font-size: 0.7em; color: #888; font-style: italic; margin-left: 5px; }
-        .input-editing { background-color: #fff8e1 !important; border-color: #ffb300 !important; box-shadow: 0 0 5px rgba(255, 179, 0, 0.5); }
-        .msg-meta { font-size: 0.7em; color: #6b523d; opacity: 0.7; float: right; margin-left: 10px; margin-top: 2px; }
-        .msg-actions { display: inline-flex; gap: 5px; margin-left: 8px; opacity: 0.5; transition: 0.2s; }
-        .message-bubble:hover .msg-actions { opacity: 1; }
-        .msg-btn { background: transparent; border: none; cursor: pointer; font-size: 1em; padding: 0; color: inherit; }
-        .msg-btn:hover { transform: scale(1.2); color: #000; }
-        .editing-mode { background-color: #fff3e0 !important; border-color: #ff9800 !important; box-shadow: 0 0 8px rgba(255, 152, 0, 0.5) !important; }
-        .edited-label { font-size: 0.7em; font-style: italic; color: #888; margin-left: 4px; }
-        .btn-msg-action:hover { opacity: 1; transform: scale(1.2); }
-        .my-message { align-self: flex-end; background-color: #e8f5e9; border: 1px solid var(--accent-green); border-bottom-right-radius: 0; }
-        .my-message .message-sender { color: var(--accent-green); text-align: right; }
-        .other-message { align-self: flex-start; background-color: #fff8e1; border: 1px solid var(--accent-brown); border-bottom-left-radius: 0; }
-        .other-message .message-sender { color: var(--accent-brown); }
-        .chat-input-bar { display: flex; gap: 10px; }
-        .chat-input { flex: 1; padding: 10px; border: 2px solid var(--accent-brown); border-radius: 4px; font-family: 'Special Elite', monospace; background: #fff; }
-        .btn-send { background-color: var(--accent-brown); color: var(--accent-gold); border: none; padding: 0 20px; border-radius: 4px; cursor: pointer; font-family: 'Rye', cursive; }
-
-        /* ИТОГ */
-        .grand-total-panel { margin-top: 20px; background: linear-gradient(145deg, #3e2b1f, #2a1b0f); border: 3px solid var(--accent-gold); border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 25px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
-        .grand-total-panel::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%); pointer-events: none; }
-        .gt-label { font-family: 'Rye', cursive; font-size: 1.5em; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
-        .gt-value { font-family: 'Rye', cursive; font-size: 2.5em; color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(203, 161, 53, 0.5), 3px 3px 0px #000; }
-
-        /* ЖУРНАЛ */
-        .journal-list { display: flex; flex-direction: column; gap: 15px; }
-        .journal-card { background: rgba(255, 255, 255, 0.6); border: 2px solid var(--accent-brown); padding: 15px; cursor: pointer; transition: 0.2s; }
-        .journal-card:hover { background: rgba(255, 255, 255, 0.9); }
-        .journal-header { display: flex; justify-content: space-between; align-items: center; font-family: 'Rye', cursive; font-size: 1.1em; color: var(--accent-brown); }
-        .journal-details { display: none; margin-top: 15px; border-top: 1px dashed var(--accent-brown); padding-top: 10px; }
-        .journal-card.open .journal-details { display: block; }
-        .detail-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dotted #ccc; font-size: 0.9em; }
-        .hidden { display: none; }
-        .btn-journal-delete { background: var(--accent-red); color: #fff; border: 1px solid #500; border-radius: 4px; padding: 3px 8px; font-size: 0.8em; margin-left: 10px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
-        .btn-journal-delete:hover { background: #a00000; }
-        
-        .name-wrapper { display: flex; align-items: center; width: 100%; }
-        .player-status-indicator { width: 10px; height: 10px; border-radius: 50%; background-color: #d32f2f; border: 1px solid rgba(0,0,0,0.3); margin-right: 8px; box-shadow: 0 0 2px rgba(0,0,0,0.5); transition: all 0.3s ease; flex-shrink: 0; }
-        .player-status-indicator.is-online { background-color: #00e676; box-shadow: 0 0 6px #00e676; border-color: #1b5e20; }
-
-        /* --- СИСТЕМА РАНГОВ --- */
-        .role-hidden { display: none !important; }
-        .role-badge { font-size: 1.2em; margin-right: 5px; cursor: help; text-shadow: 1px 1px 0 rgba(0,0,0,0.3); }
-        .view-only-input { border: none !important; background: transparent !important; pointer-events: none; color: var(--ink-color) !important; text-align: center; }
-        
-        /* --- МОДАЛЬНОЕ ОКНО РОЛЕЙ --- */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 5000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
-        
-        .modal-overlay.hidden {
-            display: none !important;
-        }
-
-        .modal-card { background-image: var(--paper-texture); background-color: var(--paper-bg); border: 4px double var(--accent-brown); padding: 25px; border-radius: 8px; width: 90%; max-width: 320px; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
-        .role-buttons-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
-        .role-select-btn { padding: 15px; font-family: 'Rye', cursive; font-size: 1.1em; border: 2px solid rgba(0,0,0,0.2); cursor: pointer; color: white; text-shadow: 1px 1px 0 #000; }
-        .btn-admin { background-color: #b71c1c; border-color: #7f0000; }
-        .btn-trusted { background-color: #0277bd; border-color: #01579b; }
-        .btn-player { background-color: #2e7d32; border-color: #1b5e20; }
-        .btn-cancel-role { background: transparent; border: none; text-decoration: underline; color: var(--accent-brown); font-family: 'Special Elite', monospace; cursor: pointer; font-size: 1.1em; }
-
         /* Кнопка входа в голосовой чат */
         .btn-voice-call {
             background-color: #0288d1; color: white; border: 1px solid #01579b;
@@ -435,9 +367,7 @@
         
         /* Убедимся, что скрытие работает железно */
         .hidden { display: none !important; }
-        
     </style>
-
 </head>
 <body>
 
@@ -626,7 +556,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v75.0 (Profile Update)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v75.1 (Fixed Login & Chat)</div>
     
     <div id="publicProfileModal" class="modal-overlay hidden">
         <div class="public-profile-card">
@@ -675,10 +605,8 @@
     let currentConnectionRef = null;
     let onlineNicknames = new Set();
 
-    // Набор аватаров (эмодзи)
     const AVATARS = ["👤", "🤠", "😎", "🤑", "🤡", "🤖", "👽", "👹", "💀", "👻", "🐯", "🐺", "🐻", "🐼", "🦁", "🐮", "🐷", "🐸", "🐔", "🦄"];
 
-    // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
     function updateMenuUI(displayName, loginName) {
         const nameEl = document.getElementById('menuDisplayName');
         const loginEl = document.getElementById('menuLoginName');
@@ -698,16 +626,14 @@
         }
     }
     
-    // --- ИНИЦИАЛИЗАЦИЯ ---
     document.addEventListener("DOMContentLoaded", () => {
-        addEnterTrigger('chatInput', sendMessage);
-        addEnterTrigger('loginNick', handleLogin);
-        addEnterTrigger('loginPass', handleLogin);
-        addEnterTrigger('regNick', handleRegister);
-        addEnterTrigger('regPass', handleRegister);
-        addEnterTrigger('regPassRepeat', handleRegister);
+        addEnterTrigger('chatInput', () => window.sendMessage());
+        addEnterTrigger('loginNick', () => window.handleLogin());
+        addEnterTrigger('loginPass', () => window.handleLogin());
+        addEnterTrigger('regNick', () => window.handleRegister());
+        addEnterTrigger('regPass', () => window.handleRegister());
+        addEnterTrigger('regPassRepeat', () => window.handleRegister());
 
-        // Дата
         const dateField = document.getElementById('gameDate');
         if (dateField) {
             const today = new Date();
@@ -717,7 +643,6 @@
             dateField.value = `${yyyy}-${mm}-${dd}`;
         }
 
-        // Заполнение сетки аватаров
         const grid = document.getElementById('avatarGrid');
         AVATARS.forEach(emoji => {
             const div = document.createElement('div');
@@ -727,7 +652,6 @@
             grid.appendChild(div);
         });
 
-        // Авто-вход (Офлайн/Онлайн)
         const savedUser = localStorage.getItem('op_user');
         if(savedUser) {
             try {
@@ -750,22 +674,17 @@
         if(navigator.onLine) syncUsersToTable();
     });
 
-    // --- ПРОФИЛЬ И АВАТАРЫ ---
     let selectedAvatarEmoji = "👤";
 
     function selectAvatar(emoji, element) {
         selectedAvatarEmoji = emoji;
         const preview = document.getElementById('currentAvatarPreview');
-        
-        // Сбрасываем картинку и ставим текст
         preview.style.backgroundImage = "none";
         preview.innerText = emoji;
-        
         document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
         element.classList.add('selected');
     }
 
-    // Сохранение моего профиля
     window.saveMyProfile = async function() {
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         if (!sessionUser) return;
@@ -776,19 +695,15 @@
         if (!newName) { alert("Имя не может быть пустым!"); return; }
 
         try {
-            // 1. Обновляем в /users
             await update(ref(db, 'users/' + login), {
                 displayName: newName,
                 description: newDesc,
                 avatar: selectedAvatarEmoji
             });
-
-            // 2. Обновляем сессию
             sessionUser.displayName = newName;
             sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
             updateMenuUI(newName, login);
 
-            // 3. Синхронизируем с таблицей игроков (если игрок сидит за столом)
             const playersSnap = await get(playersRef);
             const updates = {};
             let found = false;
@@ -801,48 +716,35 @@
                 }
             });
             if (found) await update(ref(db), updates);
-
             alert("Профиль сохранен!");
         } catch(e) {
             alert("Ошибка сохранения: " + e.message);
         }
     }
 
-    // Открытие чужого профиля (Public)
-    let currentProfileLoginTarget = null; // Глобальная переменная для админ-действий
+    let currentProfileLoginTarget = null; 
 
     window.openPublicProfile = async function(login, name) {
-        // 1. Сначала показываем модалку, чтобы пользователь видел реакцию
         document.getElementById('publicProfileModal').classList.remove('hidden');
-
-        // 2. СРАЗУ ставим известные данные (Имя и Логин), не дожидаясь базы данных
         document.getElementById('ppName').innerText = name || "Без имени";
         document.getElementById('ppLogin').innerText = login ? "@" + login : "Гость";
-        
-        // Ставим "заглушки", пока идет загрузка
         document.getElementById('ppDesc').innerText = "Загрузка...";
         document.getElementById('ppStatus').innerText = "Вычисляем...";
-        
-        // Сбрасываем аватар на "загрузку"
         const ppAvatarEl = document.getElementById('ppAvatar');
         ppAvatarEl.style.backgroundImage = "none";
         ppAvatarEl.innerText = "⏳";
 
         try {
-            // 3. ЗАГРУЗКА ОПИСАНИЯ И АВАТАРА (из users)
             let userData = {};
             if (login) {
                 const userSnap = await get(child(ref(db), `users/${login}`));
                 userData = userSnap.val() || {};
             }
 
-            // Отрисовка описания
             document.getElementById('ppDesc').innerText = userData.description || "Игрок не оставил описания.";
 
-            // Отрисовка Аватара (с учетом фото)
             const userAvatar = userData.avatar || "👤";
             if (userAvatar.startsWith('data:image')) {
-                // Если это фото
                 ppAvatarEl.style.backgroundImage = `url(${userAvatar})`;
                 ppAvatarEl.style.backgroundSize = "cover";
                 ppAvatarEl.style.backgroundPosition = "center";
@@ -852,7 +754,6 @@
                 ppAvatarEl.style.margin = "0 auto 10px auto";
                 ppAvatarEl.innerText = ""; 
             } else {
-                // Если смайлик
                 ppAvatarEl.style.backgroundImage = "none";
                 ppAvatarEl.style.width = "auto";
                 ppAvatarEl.style.height = "auto";
@@ -860,7 +761,6 @@
                 ppAvatarEl.innerText = userAvatar;
             }
 
-            // 4. РАСЧЕТ СТАТУСА (из players)
             const myId = await findPlayerIdByLogin(login);
             let statusText = "Не за столом";
             let statusClass = "st-dvornik";
@@ -870,7 +770,6 @@
                 const player = pSnap.val();
                 if (player) {
                     const { total } = calculatePlayerStats(player);
-
                     if (total >= 50000) { statusText = "Читак ебаный"; statusClass = "st-cheat"; }
                     else if (total >= 10000) { statusText = "Донатер"; statusClass = "st-donate"; }
                     else if (total >= 5000) { statusText = "Богач"; statusClass = "st-rich"; }
@@ -885,7 +784,6 @@
             stEl.innerText = statusText;
             stEl.className = "pp-status " + statusClass;
 
-            // 5. АДМИНСКИЕ КНОПКИ
             const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
             const adminPanel = document.getElementById('ppAdminControls');
             currentProfileLoginTarget = login; 
@@ -911,10 +809,6 @@
             })
             .catch(e => alert("Ошибка: " + e));
     }
-
-    // =========================================================
-    // НОВАЯ СИСТЕМА ЧАТОВ (СПИСОК + ЛИЧКА)
-    // =========================================================
     
     let currentChatId = null;
     let currentChatPartner = null; 
@@ -951,7 +845,7 @@
                     const otherLogin = participants[0] === myLogin ? participants[1] : participants[0];
                     const item = document.createElement('div');
                     item.className = 'chat-list-item';
-                    item.onclick = () => loadChat(chatKey, '@' + otherLogin);
+                    item.onclick = () => window.loadChat(chatKey, '@' + otherLogin);
                     item.innerHTML = `
                         <div class="chat-avatar" style="background-color:#fff8e1; color:#e65100;">👤</div>
                         <div class="chat-info">
@@ -979,7 +873,6 @@
 
         container.innerHTML = '<div style="text-align:center; padding:20px;">Загрузка сообщений...</div>';
         
-        // Сброс UI при входе в новый чат
         btnVoice.classList.add('hidden');
         callBadge.classList.add('hidden'); 
 
@@ -994,7 +887,6 @@
             btnVoice.classList.remove('hidden');
         }
 
-        // --- ЛОГИКА СЛЕЖЕНИЯ ЗА АКТИВНЫМ ЗВОНКОМ ---
         onValue(ref(db, `voice_rooms/${chatId}`), (snap) => {
             const isInCall = !document.getElementById('voiceControlPanel').classList.contains('hidden');
             
@@ -1027,7 +919,7 @@
 
     window.openGeneralChat = function() {
         showView('chat'); 
-        loadChat('general', 'Общий чат'); 
+        window.loadChat('general', 'Общий чат'); 
     }
 
     window.openPrivateChat = function(targetLogin) {
@@ -1040,7 +932,7 @@
         const chatId = participants.join('_');
         
         showView('chat'); 
-        loadChat(chatId, `@${targetLogin}`);
+        window.loadChat(chatId, `@${targetLogin}`);
     }
 
     window.sendMessage = function() {
@@ -1130,10 +1022,6 @@
             if (editingMsgId === key) cancelEditMode();
         }
     }
-
-    // ==========================================
-    // СОБСТВЕННАЯ СИСТЕМА ГОЛОСОВЫХ ЗВОНКОВ (WebRTC + Firebase)
-    // ==========================================
     
     let localStream = null;
     let peerConnections = {}; 
@@ -1158,7 +1046,7 @@
             localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         } catch (err) {
             alert("Ошибка доступа к микрофону! Проверьте настройки браузера и HTTPS.");
-            leaveVoiceRoom();
+            window.leaveVoiceRoom();
             return;
         }
 
@@ -1313,7 +1201,6 @@
         if (audioEl) audioEl.remove();
     }
 
-    // Обработка загрузки файла
     window.handleFileUpload = function(input) {
         if (input.files && input.files[0]) {
             const file = input.files[0];
