@@ -1,1 +1,2174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игорный клуб "Созвездие орла"</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f4e4bc">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1064/1064024.png">
+    <link rel="preload" href="./logo.png" as="image">
+
+    <link href="https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap" rel="stylesheet">
+    <style>
+        /* Глобальный сброс */
+        * { box-sizing: border-box; }
+
+        :root {
+            --paper-bg: #f4e4bc;
+            --paper-texture: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.4 0"/></filter><rect width="100%" height="100%" filter="url(%23noise)" opacity="0.1"/></svg>');
+            --ink-color: #3e2b1f;
+            --accent-brown: #8b4513;
+            --accent-gold: #cba135;
+            --accent-red: #8b0000;
+            --accent-green: #2e7d32;
+            --accent-undo: #d4af37;
+            --accent-redo: #008b8b;
+            --accent-purple: #6a0dad;
+            --accent-orange: #e65100;
+            --accent-teal: #009688;
+            --sidebar-width: 260px;
+        }
+
+        body {
+            font-family: 'Special Elite', 'Courier New', monospace;
+            background-color: #2a1b0f;
+            background-image: linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.1));
+            padding: 0;
+            color: var(--ink-color);
+            margin: 0;
+            overscroll-behavior: none;
+            min-height: 100vh;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: #1a1008;
+            border-right: 4px solid var(--accent-brown);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            z-index: 3500;
+            transition: transform 0.3s ease;
+            box-sizing: border-box;
+        }
+        .close-menu-btn {
+            display: none;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: transparent;
+            border: none;
+            color: var(--accent-red);
+            font-size: 2em;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 3002;
+            padding: 5px;
+            line-height: 0.8;
+
+        }
+        /* КНОПКА МЕНЮ */
+        .menu-toggle {
+            display: none; 
+            position: fixed; 
+            top: 15px;
+            left: 15px;
+            background: #6b523c;
+            border: none;
+            color: #4F3D2D;    
+            text-shadow: 1px 1px 0px #30251C, 2px 2px 3px rgba(0,0,0,0.4); 
+            font-size: 2.5em;
+            cursor: pointer;
+            z-index: 3001;
+        }
+
+        
+
+        .sidebar-logo { text-align: center; margin-bottom: 30px; }
+        .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
+
+        /* ИНФО О ЮЗЕРЕ В МЕНЮ */
+        .user-info-container {
+            margin-top: 10px;
+            text-align: center;
+        }
+        .display-name-row {
+            font-family: 'Rye', cursive;
+            color: var(--accent-gold);
+            font-size: 1.3em;
+            line-height: 1.2;        
+            display: flex;
+            flex-wrap: wrap;        
+            align-items: center;
+            justify-content: center; 
+            text-align: center;      
+            gap: 8px;
+            max-width: 100%;
+            word-break: break-word;  
+            padding: 0 10px;         
+        }
+        .login-name-row {
+            font-family: 'Special Elite', monospace;
+            color: #d4c5a3;
+            font-size: 0.8em;
+            opacity: 0.6;
+            margin-top: 4px;
+        }
+        .edit-icon {
+            cursor: pointer;
+            font-size: 0.8em;
+            opacity: 0.7;
+            transition: 0.2s;
+        }
+        .edit-icon:hover { opacity: 1; transform: scale(1.1); }
+
+        .role-badge {
+            font-size: 1.2em;
+            margin-right: 5px;
+            cursor: help;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+        }
+
+        /* НАВИГАЦИЯ */
+        .nav-btn {
+            background: transparent; border: 1px solid var(--accent-brown); color: #d4c5a3;
+            padding: 15px; margin-bottom: 10px; text-align: left;
+            font-family: 'Rye', cursive; font-size: 1.1em; cursor: pointer;
+            transition: 0.2s; display: flex; align-items: center; gap: 10px;
+        }
+        .nav-btn:hover, .nav-btn.active { background: var(--accent-brown); color: var(--accent-gold); border-color: var(--accent-gold); }
+
+        /* Кнопка перевода в заголовке чата */
+        .btn-money-transfer {
+            background-color: var(--accent-green);
+            color: white;
+            border: 1px solid #1b5e20;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-family: 'Rye', cursive;
+            cursor: pointer;
+            margin-right: auto; /* Сдвигает её влево, а кнопку "Назад" вправо */
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-money-transfer:hover { background-color: #388e3c; }
+
+        /* Модальное окно перевода */
+        /* Модальное окно перевода */
+        #transferModal {
+            position: fixed; /* Лучше fixed, чтобы не уезжало при скролле */
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 4000;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+        }
+        
+        /* Это правило жестко скроет окно, если есть класс hidden */
+        #transferModal.hidden {
+            display: none !important;
+        }
+
+        .transfer-card {
+            background: var(--paper-bg);
+            border: 4px double var(--accent-brown);
+            padding: 20px;
+            text-align: center;
+            width: 280px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+        }
+        .balance-display {
+            font-size: 1.5em; color: var(--accent-green); font-weight: bold;
+            margin: 10px 0; font-family: 'Special Elite', monospace;
+        }
+
+        /* СЧЁТЧИК СООБЩЕНИЙ */
+        .notification-badge {
+            background-color: #ff0000;
+            color: white;
+            border-radius: 50%; /* Делает круглым */
+            padding: 2px 6px;
+            font-size: 0.8em;
+            margin-left: auto; /* Прижимает вправо */
+            font-family: sans-serif;
+            border: 1px solid #fff;
+            box-shadow: 0 0 8px rgba(255, 0, 0, 0.8);
+            display: none; /* Скрыт, пока нет сообщений */
+            animation: pulse-red 2s infinite;
+        }
+    
+        .notification-badge.visible {
+            display: inline-block;
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(255, 0, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+        }
+
+        /* --- СПИСОК ЧАТОВ (LOBBY) --- */
+        .chat-list-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chat-list-item {
+            background: rgba(255, 255, 255, 0.6);
+            border: 2px solid var(--accent-brown);
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .chat-list-item:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateX(5px);
+        }
+
+        .chat-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--accent-brown);
+            color: var(--accent-gold);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2em;
+            margin-right: 15px;
+            border: 2px solid var(--accent-gold);
+            font-family: 'Rye', cursive;
+        }
+
+        .chat-info {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .chat-name {
+            font-family: 'Rye', cursive;
+            color: var(--accent-brown);
+            font-size: 1.1em;
+        }
+
+        .chat-preview {
+            font-size: 0.8em;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+        
+        /* Скрываем панель переписки по умолчанию */
+        .chat-conversation-panel.hidden {
+            display: none;
+        }
+
+        /* КНОПКА СБРОСА */
+        .btn-extreme-reset {
+            margin-top: auto; background-color: #500000; color: #ffcccc; border: 2px solid #ff0000;
+            padding: 12px; font-family: 'Special Elite', monospace; font-weight: bold; font-size: 0.9em;
+            cursor: pointer; width: 100%; border-radius: 4px; transition: all 0.2s; text-align: center;
+        }
+        .btn-extreme-reset:hover { background-color: #ff0000; color: white; box-shadow: 0 0 15px rgba(255, 0, 0, 0.5); }
+
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-left: var(--sidebar-width); 
+            width: calc(100% - var(--sidebar-width));
+            min-height: 100vh;
+            padding: 20px;
+            background-image: var(--paper-texture);
+            background-color: var(--paper-bg);
+            padding-bottom: 60px;
+            position: relative;
+        }
+
+        /* --- HEADER & BRAND --- */
+        .brand-container {
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 20px; border-bottom: none;
+            padding-bottom: 15px; flex-wrap: wrap; text-align: center;
+        }
+        .header-title {
+            font-family: 'Rye', cursive; text-align: center; color: var(--accent-brown);
+            font-size: 2.2em; margin: 0; text-shadow: 2px 2px 0px var(--paper-bg), 4px 4px 0px rgba(0,0,0,0.2);
+            text-transform: uppercase; letter-spacing: 2px; line-height: 1.2; width: 100%;
+        }
+        .online-counter {
+            text-align: center; font-family: 'Special Elite', monospace; font-size: 1.1em;
+            color: var(--accent-green); background: rgba(46, 125, 50, 0.1);
+            padding: 5px 15px; border-radius: 20px; border: 1px solid var(--accent-green);
+            display: inline-block; margin: 0 auto 15px auto; font-weight: bold;
+        }
+        .center-wrap { text-align: center; }
+
+        /* --- STATUS DOT --- */
+        .status-dot {
+            display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+            background-color: #d32f2f; border: 2px solid rgba(0,0,0,0.3);
+            box-shadow: 0 0 5px rgba(0,0,0,0.5); transition: all 0.3s ease;
+            vertical-align: middle; margin-left: 8px;
+        }
+        .status-dot.online { background-color: #00e676; box-shadow: 0 0 8px #00e676; border-color: #1b5e20; }
+
+        /* --- LOGIN OVERLAY --- */
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2a1b0f; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        .login-card { background-image: var(--paper-texture); background-color: var(--paper-bg); padding: 30px; border: 4px solid var(--accent-brown); border-radius: 8px; text-align: center; width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .login-card h2 { font-family: 'Rye', cursive; color: var(--accent-brown); margin-bottom: 20px; border-bottom: 2px double var(--accent-brown); }
+        .login-input { width: 100%; padding: 10px; margin-bottom: 15px; border: 2px solid var(--accent-brown); background: rgba(255,255,255,0.5); font-family: 'Special Elite', monospace; font-size: 1.1em; box-sizing: border-box; }
+        .login-checkbox { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; font-size: 0.9em; color: var(--accent-brown); }
+        .btn-login-action { width: 100%; padding: 12px; margin-bottom: 10px; background: var(--accent-green); color: white; border: 2px solid #1b5e20; font-family: 'Rye', cursive; cursor: pointer; font-size: 1.1em; border-radius: 4px; }
+        .btn-register { background: var(--accent-brown); border-color: #5d4037; }
+        .btn-register-link { background: transparent; border: none; color: var(--accent-gold); font-family: 'Rye', cursive; font-size: 1em; cursor: pointer; text-decoration: underline; margin-top: 10px; }
+        .btn-back { background: var(--accent-red); border-color: #b71c1c; }
+        .error-msg { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
+
+        .version-tag { position: fixed; bottom: 5px; right: 10px; font-size: 0.7em; color: #5a3a22; font-family: 'Special Elite', monospace; z-index: 2000; background: rgba(244, 228, 188, 0.9); padding: 2px 6px; border-radius: 4px; border: 1px solid #8b4513; pointer-events: none; opacity: 0.8; cursor: pointer; text-decoration: underline; }
+        
+        .network-badge { position: fixed; top: 15px; right: 15px; padding: 8px 15px; font-family: 'Rye', cursive; font-size: 0.9em; border-radius: 4px; z-index: 1000; box-shadow: 2px 2px 5px rgba(0,0,0,0.7); border: 2px solid #3e2b1f; transition: all 0.3s; text-transform: uppercase; }
+        .status-online { background-color: var(--accent-green); color: #fff; border-color: #1b5e20; }
+        .status-offline { background-color: #d32f2f; color: #fff; border-color: #b71c1c; animation: pulse 2s infinite; }
+
+        .date-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px auto 20px auto; /* Отступы сверху и снизу */
+            padding: 5px;
+        }
+
+        .date-section label {
+            font-family: 'Rye', cursive;
+            color: var(--accent-brown);
+            font-size: 1.2em;
+        }
+
+        input[type="date"] {
+            background: rgba(255, 255, 255, 0.6);
+            border: 2px solid var(--accent-brown);
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-family: 'Special Elite', monospace;
+            font-size: 1.1em;
+            color: #3e2b1f;
+            outline: none;
+            cursor: pointer;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+        }
+        .controls { margin-bottom: 25px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; padding-bottom: 20px; border-bottom: 2px solid var(--accent-brown); }
+        
+        button { padding: 12px 20px; border: 2px solid rgba(0,0,0,0.3); border-radius: 3px; cursor: pointer; font-size: 15px; font-family: 'Rye', cursive; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; box-shadow: inset 0 0 10px rgba(255,255,255,0.2), 2px 2px 3px rgba(0,0,0,0.3); text-shadow: 1px 1px 1px rgba(0,0,0,0.5); position: relative; top: 0; }
+        button:active { top: 2px; box-shadow: inset 0 0 5px rgba(0,0,0,0.4); }
+        .btn-add { background-color: var(--accent-green); color: #f4e4bc; border-color: #3a4a20; }
+        .btn-download { background-color: var(--accent-brown); color: var(--accent-gold); border-color: #5c300e; }
+        .btn-newday { background-color: var(--accent-purple); color: #fff; border-color: #4b0082; }
+        .btn-newday:hover { background-color: #5a0a94; }
+        .btn-refresh { background-color: var(--accent-teal); color: white; border-color: #00796b; }
+        .btn-refresh:hover { background-color: #00796b; }
+        .btn-calc, .btn-undo, .btn-redo { width: 40px; height: 40px; padding: 0; font-family: 'Special Elite', monospace; font-weight: bold; font-size: 1.5em; border-radius: 50%; border: 2px solid #3e2b1f; display: inline-flex; align-items: center; justify-content: center; margin: 0 2px; }
+        .btn-calc { background-color: #6b523d; color: var(--accent-gold); }
+        .btn-undo { background-color: var(--accent-undo); color: #3e2b1f; font-size: 1.2em; }
+        .btn-redo { background-color: var(--accent-redo); color: #fff; font-size: 1.2em; }
+        .btn-redo:hover { background-color: #00aaaa; }
+        .btn-delete { background-color: var(--accent-red); color: #f4e4bc; font-weight: bold; border-radius: 50%; width: 30px; height: 30px; padding: 0; border: 2px solid #500000; font-family: sans-serif; cursor: pointer; }
+        .btn-reset-player { background-color: var(--accent-orange); color: white; font-weight: bold; border-radius: 50%; width: 30px; height: 30px; padding: 0; border: 2px solid #bf360c; font-family: sans-serif; cursor: pointer; }
+        .btn-reset-player:hover { background-color: #ff6d00; }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0 10px; margin-top: 10px; }
+        th { padding: 15px 10px; text-align: left; background-color: #6b523d; color: var(--accent-gold); font-family: 'Rye', cursive; letter-spacing: 1px; border-top: 3px solid #3e2b1f; border-bottom: 3px solid #3e2b1f; }
+        tbody tr { background-color: rgba(255, 255, 255, 0.4); box-shadow: 2px 2px 4px rgba(0,0,0,0.1); border: 1px solid var(--accent-brown); }
+        td { padding: 15px 10px; border-top: 1px dashed rgba(139, 69, 19, 0.3); border-bottom: 2px solid var(--accent-brown); vertical-align: middle; }
+        input[type="text"], input[type="number"] { padding: 8px; background: transparent; border: none; border-bottom: 2px dashed var(--accent-brown); font-family: 'Special Elite', monospace; font-size: 1.1em; color: var(--ink-color); box-sizing: border-box; outline: none; }
+        input[type="text"].player-name { width: 100%; cursor: default; color: var(--accent-brown); font-weight: bold; }
+        input[type="text"] { width: 100%; }
+        input[type="number"] { width: 70px; margin-right: 5px; text-align: center; border: 2px solid var(--accent-brown); background-color: #f9f3e3; }
+        .score-cell { font-family: 'Rye', cursive; font-size: 1.8em; color: var(--accent-red); text-align: center; }
+        .history-log { font-size: 0.9em; color: #6b523d; font-style: italic; max-width: 250px; overflow-x: auto; white-space: nowrap; padding: 5px; background-color: rgba(139, 69, 19, 0.05); border-radius: 4px; }
+
+        /* Кнопка заметки */
+        .btn-local-note {
+            cursor: pointer;
+            font-size: 1.2em;
+            margin-left: 5px;
+            opacity: 0.3;
+            transition: 0.2s;
+        }
+        .btn-local-note:hover { opacity: 1; transform: scale(1.1); }
+    
+    /* Если заметка есть - кнопка яркая */
+        .btn-local-note.has-note {
+            opacity: 1;
+            text-shadow: 0 0 5px gold;
+        }
+
+    /* Текст заметки под именем */
+        .player-note-text {
+            font-family: 'Courier New', monospace;
+            font-size: 0.75em;
+            color: #b71c1c; /* Темно-красный */
+            font-weight: bold;
+            display: block;
+            margin-top: 2px;
+            margin-left: 20px; /* Отступ чтобы было красиво */
+            font-style: italic;
+            width: 100%;
+            word-wrap: break-word;
+        }
+
+        /* Кнопка начать личный чат (в таблице) */
+        .btn-start-dm {
+            cursor: pointer;
+            font-size: 1.2em;
+            margin-right: 8px;
+            color: var(--accent-brown);
+            transition: 0.2s;
+        }
+        .btn-start-dm:hover { transform: scale(1.2); color: var(--accent-orange); }
+
+    /* Заголовок приватного чата */
+        .chat-header-private {
+            background-color: #ffe0b2;
+            color: #e65100;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #e65100;
+            font-family: 'Special Elite', monospace;
+        }
+        .btn-back-general {
+            background: var(--accent-brown);
+            color: var(--accent-gold);
+                border: none;
+            cursor: pointer;
+            font-family: 'Rye', cursive;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+
+
+        /* --- СТАТУСЫ ИГРОКОВ --- */
+        .status-cell { font-family: 'Special Elite', monospace; font-weight: bold; font-size: 0.9em; text-align: center; }
+    
+        .st-dvornik { color: #7f8c8d; } /* Серый */
+        .st-novo    { color: #2ecc71; } /* Зеленый */
+        .st-mid     { color: #3498db; } /* Синий */
+        .st-rich    { color: #9b59b6; font-weight: 900; } /* Фиолетовый */
+        .st-donate  { color: #f1c40f; text-shadow: 0 0 5px #f1c40f; } /* Золотой */
+        .st-cheat   { color: #ff0000; text-shadow: 2px 2px 0px black; animation: pulse 0.5s infinite; letter-spacing: 1px; } /* Агрессивный красный */
+        
+        /* ДОБАВИТЬ ВОТ ЭТУ СТРОКУ: */
+        .st-bankrot { color: #000000; text-decoration: line-through; opacity: 0.6; } /* Черный, зачеркнутый */
+
+    /* ОБНОВЛЕНИЕ МОБИЛЬНОЙ ВЕРСИИ */
+        @media screen and (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); width: 260px; }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; width: 100%; padding-top: 60px; }
+            .menu-toggle { display: flex; align-items: center; justify-content: center; gap: 6px; line-height: 1; padding: 0; margin-top: -3px; }
+            .brand-container { flex-direction: column; gap: 10px; }
+            .header-title { margin-right: 0; font-size: 1.8em; padding-top: 15px; line-height: 1.4; }
+            
+            /* Скрываем шапку таблицы */
+            thead { display: none; }
+            
+            /* Превращаем строки в карточки */
+            table, tbody, tr, td { display: block; }
+            
+            tbody tr { 
+                background: rgba(255, 255, 255, 0.75); 
+                border: 2px solid var(--accent-brown); 
+                border-radius: 12px; 
+                margin-bottom: 25px; 
+                padding: 15px; 
+                position: relative; 
+                box-shadow: 3px 3px 10px rgba(0,0,0,0.3); 
+                padding-top: 40px; /* Место для кнопок удаления */
+            }
+            
+            td { padding: 5px 0; border: none; text-align: center; }
+
+            /* 1. ИМЯ (Слева сверху) */
+            td:nth-of-type(1) { 
+                text-align: left; 
+                margin-bottom: 2px;
+                display: flex;       
+                align-items: center;
+                flex-wrap: wrap; 
+                padding-right: 0;    
+            }
+            
+            /* Настройка поля ввода имени */
+            td:nth-of-type(1) input { 
+                font-weight: bold; 
+                font-size: 1.4em; 
+                color: var(--accent-brown); 
+                border-bottom: none; 
+                flex: 1;          
+                min-width: 50px; 
+                width: auto;
+            }
+            
+            .btn-local-note {
+                font-size: 1.5em;
+                padding: 5px;
+            }
+            
+            .player-note-text {
+                width: 100%;
+                margin-left: 0;
+                margin-top: 5px;
+                background: rgba(255,255,0,0.1);
+                padding: 2px;
+            }
+
+            /* 2. СТАТУС (Под именем, выглядит как бейдж) */
+            td:nth-of-type(2) {
+                text-align: center;
+                margin-bottom: 15px;
+                font-size: 1em;
+                background: rgba(0,0,0,0.05);
+                border-radius: 15px;
+                padding: 4px 10px;
+                display: inline-block; /* Чтобы был по центру но не на всю ширину */
+                width: auto;
+                margin-left: auto;
+                margin-right: auto;
+                border: 1px dashed rgba(139, 69, 19, 0.4);
+            }
+
+            /* 3. ДЕЙСТВИЯ (Кнопки) */
+            td:nth-of-type(3) { 
+                display: flex; 
+                justify-content: center; 
+                align-items: center; 
+                flex-wrap: wrap; 
+                gap: 8px; 
+                margin-bottom: 15px; 
+                border-top: 1px dashed rgba(139, 69, 19, 0.3);
+                padding-top: 15px;
+            }
+            td:nth-of-type(3) input { width: 70px; font-size: 1.2em; }
+
+            /* 4. ИТОГ (Баланс - Крупно) */
+            td:nth-of-type(4) { 
+                margin: 10px 0; 
+                font-size: 2.5em; 
+                font-weight: bold; 
+                color: var(--accent-red); 
+                line-height: 1;
+            }
+            td:nth-of-type(4)::before { 
+                content: "ТЕКУЩИЙ БАЛАНС"; 
+                display: block; 
+                font-size: 0.3em; 
+                color: #8b4513; 
+                text-transform: uppercase; 
+                letter-spacing: 2px; 
+                margin-bottom: 5px;
+            }
+
+            /* 5. ИСТОРИЯ (Серый блок внизу) */
+            td:nth-of-type(5) { 
+                font-size: 0.85em; 
+                color: #555; 
+                background: rgba(255,255,255,0.5); 
+                padding: 8px; 
+                border-radius: 4px; 
+                min-height: 30px;
+            }
+
+            /* 6. УДАЛЕНИЕ/БАН (Абсолютно в правом верхнем углу) */
+            td:nth-of-type(6) { 
+                position: absolute; 
+                top: 10px; 
+                right: 10px; 
+                display: flex; 
+                gap: 5px; 
+                padding: 0; 
+                z-index: 10;
+            }
+            
+            .btn-reset-player, .btn-delete, .btn-ban { 
+                width: 34px; 
+                height: 34px; 
+                font-size: 1em; 
+            }
+            
+            /* Поправляем панель итога для мобилок */
+            .grand-total-panel { 
+                flex-direction: column; 
+                text-align: center; 
+                gap: 5px; 
+                padding: 15px; 
+                width: 100%; 
+                box-sizing: border-box; 
+            }
+            .gt-label { font-size: 1.2em; }
+            .gt-value { font-size: 3em; line-height: 1; }
+            
+            .close-menu-btn { display: block; }
+            tfoot { display: none; }
+        }
+        
+        /* CHAT */
+        .chat-wrapper { display: flex; flex-direction: column; height: calc(100vh - 100px); }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 10px; background: rgba(255, 255, 255, 0.3); border: 2px solid var(--accent-brown); border-radius: 8px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .message-bubble { max-width: 80%; padding: 8px 12px; border-radius: 12px; position: relative; font-family: 'Special Elite', monospace; font-size: 1em; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); }
+        .message-sender { font-size: 0.75em; font-weight: bold; margin-bottom: 2px; display: block; font-family: 'Rye', cursive; }
+        .msg-time {
+            font-size: 0.8em;
+            opacity: 0.6;
+            margin-left: 8px;
+            font-weight: normal;
+            float: right; /* Время будет справа */
+        }
+        /* Кнопки действий с сообщениями */
+        .msg-actions {
+            display: inline-flex;
+            gap: 5px;
+            margin-left: 8px;
+            opacity: 0.6;
+        }
+        .btn-msg-action {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9em;
+            padding: 0;
+            color: inherit;
+        }
+        /* Метка (ред.) */
+        .edited-label {
+            font-size: 0.7em;
+            color: #888;
+            font-style: italic;
+            margin-left: 5px;
+        }
+        /* Подсветка поля ввода при редактировании */
+        .input-editing {
+            background-color: #fff8e1 !important;
+            border-color: #ffb300 !important;
+            box-shadow: 0 0 5px rgba(255, 179, 0, 0.5);
+        }
+
+/* Стиль даты и времени */
+        .msg-meta {
+            font-size: 0.7em;
+            color: #6b523d;
+            opacity: 0.7;
+            float: right;
+            margin-left: 10px;
+            margin-top: 2px;
+        }
+    
+    /* Блок кнопок (редактировать/удалить) */
+        .msg-actions {
+            display: inline-flex;
+            gap: 5px;
+            margin-left: 8px;
+            opacity: 0.5;
+            transition: 0.2s;
+        }
+        .message-bubble:hover .msg-actions { opacity: 1; }
+
+        .msg-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            padding: 0;
+            color: inherit;
+        }
+        .msg-btn:hover { transform: scale(1.2); color: #000; }
+
+    /* Режим редактирования (подсветка поля ввода) */
+        .editing-mode {
+            background-color: #fff3e0 !important; /* Светло-оранжевый фон */
+            border-color: #ff9800 !important;      /* Оранжевая рамка */
+            box-shadow: 0 0 8px rgba(255, 152, 0, 0.5) !important;
+        }
+    
+    /* Метка (ред.) */
+        .edited-label {
+            font-size: 0.7em;
+            font-style: italic;
+            color: #888;
+            margin-left: 4px;
+        }
+        
+        .btn-msg-action:hover { opacity: 1; transform: scale(1.2); }
+        .my-message { align-self: flex-end; background-color: #e8f5e9; border: 1px solid var(--accent-green); border-bottom-right-radius: 0; }
+        .my-message .message-sender { color: var(--accent-green); text-align: right; }
+        .other-message { align-self: flex-start; background-color: #fff8e1; border: 1px solid var(--accent-brown); border-bottom-left-radius: 0; }
+        .other-message .message-sender { color: var(--accent-brown); }
+        .chat-input-bar { display: flex; gap: 10px; }
+        .chat-input { flex: 1; padding: 10px; border: 2px solid var(--accent-brown); border-radius: 4px; font-family: 'Special Elite', monospace; background: #fff; }
+        .btn-send { background-color: var(--accent-brown); color: var(--accent-gold); border: none; padding: 0 20px; border-radius: 4px; cursor: pointer; font-family: 'Rye', cursive; }
+
+        /* ИТОГ */
+        .grand-total-panel { margin-top: 20px; background: linear-gradient(145deg, #3e2b1f, #2a1b0f); border: 3px solid var(--accent-gold); border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 25px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
+        .grand-total-panel::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%); pointer-events: none; }
+        .gt-label { font-family: 'Rye', cursive; font-size: 1.5em; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
+        .gt-value { font-family: 'Rye', cursive; font-size: 2.5em; color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(203, 161, 53, 0.5), 3px 3px 0px #000; }
+
+        /* ЖУРНАЛ */
+        .journal-list { display: flex; flex-direction: column; gap: 15px; }
+        .journal-card { background: rgba(255, 255, 255, 0.6); border: 2px solid var(--accent-brown); padding: 15px; cursor: pointer; transition: 0.2s; }
+        .journal-card:hover { background: rgba(255, 255, 255, 0.9); }
+        .journal-header { display: flex; justify-content: space-between; align-items: center; font-family: 'Rye', cursive; font-size: 1.1em; color: var(--accent-brown); }
+        .journal-details { display: none; margin-top: 15px; border-top: 1px dashed var(--accent-brown); padding-top: 10px; }
+        .journal-card.open .journal-details { display: block; }
+        .detail-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dotted #ccc; font-size: 0.9em; }
+        .hidden { display: none; }
+        .btn-journal-delete { background: var(--accent-red); color: #fff; border: 1px solid #500; border-radius: 4px; padding: 3px 8px; font-size: 0.8em; margin-left: 10px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        .btn-journal-delete:hover { background: #a00000; }
+        
+        .name-wrapper { display: flex; align-items: center; width: 100%; }
+        .player-status-indicator { width: 10px; height: 10px; border-radius: 50%; background-color: #d32f2f; border: 1px solid rgba(0,0,0,0.3); margin-right: 8px; box-shadow: 0 0 2px rgba(0,0,0,0.5); transition: all 0.3s ease; flex-shrink: 0; }
+        .player-status-indicator.is-online { background-color: #00e676; box-shadow: 0 0 6px #00e676; border-color: #1b5e20; }
+
+        /* --- СИСТЕМА РАНГОВ --- */
+        .role-hidden { display: none !important; }
+
+        .role-badge {
+            font-size: 1.2em;
+            margin-right: 5px;
+            cursor: help;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+        }
+
+        
+
+        /* Участник видит только текст, не видит inputs */
+        .view-only-input {
+            border: none !important;
+            background: transparent !important;
+            pointer-events: none; /* Запрет клика */
+            color: var(--ink-color) !important;
+            text-align: center;
+        }
+        /* --- МОДАЛЬНОЕ ОКНО РОЛЕЙ --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 5000; /* Самый верхний слой */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-card {
+            background-image: var(--paper-texture);
+            background-color: var(--paper-bg);
+            border: 4px double var(--accent-brown);
+            padding: 25px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 320px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        .role-buttons-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .role-select-btn {
+            padding: 15px;
+            font-family: 'Rye', cursive;
+            font-size: 1.1em;
+            border: 2px solid rgba(0,0,0,0.2);
+            cursor: pointer;
+            color: white;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .btn-admin { background-color: #b71c1c; border-color: #7f0000; }
+        .btn-trusted { background-color: #0277bd; border-color: #01579b; }
+        .btn-player { background-color: #2e7d32; border-color: #1b5e20; }
+
+        .btn-cancel-role {
+            background: transparent;
+            border: none;
+            text-decoration: underline;
+            color: var(--accent-brown);
+            font-family: 'Special Elite', monospace;
+            cursor: pointer;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+
+<div id="login-overlay">
+    <div id="login-view-card" class="login-card">
+        <h2>ВХОД В КЛУБ</h2>
+        <div class="brand-container" style="border:none; margin:0; padding:0;">
+             <img src="./logo.png" class="header-logo-round" style="margin-bottom:15px; width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #8b4513;">
+        </div>
+        <input type="text" id="loginNick" class="login-input" placeholder="Никнейм">
+        <input type="password" id="loginPass" class="login-input" placeholder="Пароль">
+        <div class="login-checkbox">
+            <input type="checkbox" id="rememberMe" style="width:auto;">
+            <label for="rememberMe">Запомнить меня</label>
+        </div>
+        <button class="btn-login-action" onclick="handleLogin()">ВОЙТИ</button>
+        <button class="btn-register-link" onclick="switchAuthView('register')">Нет аккаунта? Регистрация</button>
+        <div id="loginError" class="error-msg"></div>
+    </div>
+    <div id="register-view-card" class="login-card hidden">
+        <h2>РЕГИСТРАЦИЯ</h2>
+        <input type="text" id="regNick" class="login-input" placeholder="Придумайте Ник">
+        <input type="password" id="regPass" class="login-input" placeholder="Пароль">
+        <input type="password" id="regPassRepeat" class="login-input" placeholder="Повторите пароль">
+        <button class="btn-login-action btn-register" onclick="handleRegister()">СОЗДАТЬ АККАУНТ</button>
+        <button class="btn-login-action btn-back" onclick="switchAuthView('login')">НАЗАД</button>
+        <div id="regError" class="error-msg"></div>
+    </div>
+</div>
+
+<div id="networkStatus" class="network-badge status-offline" style="display:none;">⏳</div>
+
+<button class="menu-toggle" onclick="toggleSidebar()">
+    ☰ <span id="mobileStatusDot" class="status-dot"></span>
+</button>
+
+<div class="sidebar" id="sidebar">
+    <button class="close-menu-btn" onclick="toggleSidebar()">✕</button>
+    <div class="sidebar-logo">
+        <img src="./logo.png" alt="Лого">
+        <div class="user-info-container">
+            <div class="display-name-row">
+                <span id="menuDisplayName">Гость</span>
+                <span class="edit-icon" onclick="editNickname()">✏️</span>
+                <span id="desktopStatusDot" class="status-dot"></span>
+            </div>
+            <div class="login-name-row" id="menuLoginName">@...</div>
+        </div>
+    </div>
+    <button id="btn-nav-game" class="nav-btn active" onclick="showView('game')">🎲 Игровой стол</button>
+    <button id="btn-nav-chat" class="nav-btn" onclick="showView('chat')">
+    💬 Чат <span id="chatBadge" class="notification-badge">0</span>
+    </button>
+    <button id="btn-nav-journal" class="nav-btn" onclick="showView('journal')">📜 Журнал архива</button>
+    
+    <button class="nav-btn" onclick="logout()" style="margin-top: 20px;">🚪 ВЫЙТИ</button>
+    
+    <button class="btn-extreme-reset" onclick="extremeReset()">☢️ СБРОСИТЬ ВСЁ</button>
+</div>
+
+<div class="main-content">
+    <div id="view-game">
+        <div class="brand-container">
+            <h1 class="header-title">Игорный клуб "Созвездие орла"</h1>
+        </div>
+        <div class="center-wrap">
+            <div id="onlineCounter" class="online-counter">👁️ Онлайн: ...</div>
+        </div>
+        <div class="date-section">
+            <label>📅 Дата игры:</label>
+            <input type="date" id="gameDate">
+        </div>
+        <div class="controls">
+            <button class="btn-add" onclick="createNewPlayer()">+ Игрок</button>
+            <button class="btn-newday" onclick="startNewDay()">🌅 Новый день</button>
+            <button class="btn-journal-add" onclick="addToJournal()">💾 В Журнал</button>
+        </div>
+        <table id="scoreTable">
+            <thead>
+                <tr>
+                    <th style="width: 20%;">Имя</th>
+                    <th style="width: 15%;">Статус</th> <th style="width: 25%;">Действия</th>
+                    <th style="width: 10%;">Итог</th>
+                    <th style="width: 25%;">История</th>
+                    <th style="width: 5%;"></th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+        
+        <div class="grand-total-panel">
+            <div class="gt-label">ОБЩИЙ БАНК</div>
+            <div id="grandTotal" class="gt-value">0</div>
+        </div>
+
+    </div>
+
+    <div id="view-chat" class="hidden chat-wrapper">
+        <div class="brand-container">
+            <h1 class="header-title">Комната общения</h1>
+        </div>
+        
+        <div id="chatListPanel" class="chat-list-panel">
+            <div onclick="loadChat('general', 'Общий чат')" class="chat-list-item">
+                <div class="chat-avatar">#</div>
+                <div class="chat-info">
+                    <span class="chat-name">📢 ОБЩИЙ ЧАТ</span>
+                    <span class="chat-preview">Нажмите, чтобы войти...</span>
+                </div>
+            </div>
+            <div id="privateChatsList">
+                </div>
+        </div>
+
+        <div id="chatConversationPanel" class="hidden" style="display:flex; flex-direction:column; height:100%;">
+            <div id="privateChatHeader" class="chat-header-private">
+                <button class="btn-back-general" onclick="showChatList()">⬅</button>
+                <button id="btnTransfer" class="btn-money-transfer hidden" onclick="openTransferModal()">💸 Перевод</button>
+                <span id="privateChatTitle" style="flex:1; text-align:right;">Чат</span>
+            </div>
+
+            <div id="chatMessages" class="chat-messages"></div>
+            
+            <div class="chat-input-bar">
+                <button id="btnCancelEdit" class="btn-delete hidden" style="border-radius: 4px; margin-right:5px; width:40px;" onclick="cancelEditMode()" title="Отменить">✕</button>
+                <input type="text" id="chatInput" class="chat-input" placeholder="Написать сообщение...">
+                <button id="btnSendChat" class="btn-send" onclick="sendMessage()">➤</button>
+            </div>
+        </div>
+        <div id="transferModal" class="hidden">
+            <div class="transfer-card">
+                <h3 style="margin-top:0; color:#8b4513;">ПЕРЕВОД СРЕДСТВ</h3>
+                <p>Ваш баланс:</p>
+                <div id="myCurrentBalance" class="balance-display">0</div>
+                <input type="number" id="transferAmount" class="login-input" placeholder="Сумма" style="text-align:center;">
+                <button class="btn-login-action" onclick="confirmTransfer()">ОТПРАВИТЬ</button>
+                <button class="btn-cancel-role" onclick="document.getElementById('transferModal').classList.add('hidden')">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-journal" class="hidden">
+        <div class="brand-container">
+            <h1 class="header-title">Архив Журнала</h1>
+        </div>
+        <div id="journalList" class="journal-list">
+            <div style="text-align:center;">Загрузка архива...</div>
+        </div>
+    </div>
+
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v74.0 (Final)</div>
+    
+    <div id="roleModal" class="modal-overlay role-hidden">
+        <div class="modal-card">
+            <h3 style="margin-top:0; color:#8b4513; font-family:'Rye', cursive;">НАЗНАЧИТЬ РОЛЬ</h3>
+            <p id="roleTargetName" style="font-weight:bold; font-size:1.2em; margin-bottom:15px;">...</p>
+            
+            <div class="role-buttons-list">
+                <button class="role-select-btn btn-admin" onclick="setRole('admin')">👑 АДМИН</button>
+                <button class="role-select-btn btn-trusted" onclick="setRole('trusted')">🛡️ ДОВЕРЕННОЕ ЛИЦО</button>
+                <button class="role-select-btn btn-player" onclick="setRole('player')">👤 ИГРОК</button>
+            </div>
+
+            <button class="btn-cancel-role" onclick="closeRoleModal()">Отмена</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.forceUpdate = async function() {
+        if (!confirm("Обновить приложение?")) return;
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (let registration of registrations) { await registration.unregister(); }
+        }
+        caches.keys().then(async function(names) {
+            await Promise.all(names.map(name => caches.delete(name)));
+            window.location.reload(true);
+        });
+    }
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js?v=74').then(reg => {
+                reg.update();
+                reg.onupdatefound = () => {
+                    const newWorker = reg.installing;
+                    newWorker.onstatechange = () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            window.location.reload();
+                        }
+                    };
+                };
+            });
+            navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
+        });
+    }
+</script>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue, push, set, remove, update, get, query, limitToLast, orderByKey, runTransaction, onDisconnect, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD9E8XsdjGx275Es6HwdCo5jy2l0kJoNXg",
+        authDomain: "orelpoker-cd9d4.firebaseapp.com",
+        databaseURL: "https://orelpoker-cd9d4-default-rtdb.firebaseio.com",
+        projectId: "orelpoker-cd9d4",
+        storageBucket: "orelpoker-cd9d4.firebasestorage.app",
+        messagingSenderId: "913271365234",
+        appId: "1:913271365234:web:b48f717e011eea4847eceb"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const playersRef = ref(db, 'players');
+    const journalRef = ref(db, 'journal');
+    const usersRef = ref(db, 'users');
+    const chatRef = ref(db, 'chat');
+    const connectedRef = ref(db, ".info/connected");
+    const onlineUsersRef = ref(db, "online_users");
+    let currentConnectionRef = null;
+    let onlineNicknames = new Set();
+
+    // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+    function updateMenuUI(displayName, loginName) {
+        const nameEl = document.getElementById('menuDisplayName');
+        const loginEl = document.getElementById('menuLoginName');
+        if (nameEl) nameEl.innerText = displayName || "Гость";
+        if (loginEl) loginEl.innerText = loginName ? "@" + loginName : "@...";
+    }
+
+    function addEnterTrigger(inputId, actionFunction) {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    actionFunction();
+                }
+            });
+        }
+    }
+    
+    // --- ИНИЦИАЛИЗАЦИЯ ---
+    document.addEventListener("DOMContentLoaded", () => {
+        addEnterTrigger('chatInput', sendMessage);
+        addEnterTrigger('loginNick', handleLogin);
+        addEnterTrigger('loginPass', handleLogin);
+        addEnterTrigger('regNick', handleRegister);
+        addEnterTrigger('regPass', handleRegister);
+        addEnterTrigger('regPassRepeat', handleRegister);
+
+        // Дата
+        const dateField = document.getElementById('gameDate');
+        if (dateField) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            dateField.value = `${yyyy}-${mm}-${dd}`;
+        }
+
+        // Авто-вход (Офлайн/Онлайн)
+        const savedUser = localStorage.getItem('op_user');
+        if(savedUser) {
+            try {
+                const user = JSON.parse(savedUser);
+                if (user.nick && user.pass) {
+                    checkLogin(user.nick, user.pass, true, true);
+                }
+            } catch(e) { console.error("Cache error", e); }
+            return;
+        }
+        
+        const sessionUser = sessionStorage.getItem('op_session_user');
+        if(sessionUser) {
+            try {
+                const user = JSON.parse(sessionUser);
+                checkLogin(user.nick, user.pass, true, false);
+            } catch(e) {}
+        }
+        
+        if(navigator.onLine) syncUsersToTable();
+        // Убрали принудительный openGeneralChat(), так как теперь есть список
+    });
+
+    // =========================================================
+    // НОВАЯ СИСТЕМА ЧАТОВ (СПИСОК + ЛИЧКА)
+    // =========================================================
+    
+    let currentChatId = null;
+    let currentChatPartner = null; // Логин того, с кем переписываемся
+    let chatListener = null;
+    let editingMsgId = null;
+
+    // 1. ПОКАЗАТЬ СПИСОК ЧАТОВ (ГЛАВНАЯ СТРАНИЦА ЧАТА)
+    window.showChatList = function() {
+        document.getElementById('chatListPanel').classList.remove('hidden');
+        document.getElementById('chatConversationPanel').classList.add('hidden');
+        currentChatId = null;
+        renderPrivateChatsList();
+    }
+
+    // Рендер списка личных чатов
+    function renderPrivateChatsList() {
+        const listContainer = document.getElementById('privateChatsList');
+        listContainer.innerHTML = '<div style="text-align:center; font-size:0.8em; opacity:0.5;">Загрузка чатов...</div>';
+        
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (!sessionUser) return;
+        const myLogin = sessionUser.nick;
+
+        // Получаем все приватные чаты
+        get(ref(db, 'private_chats')).then((snapshot) => {
+            listContainer.innerHTML = ''; // Очищаем
+            
+            if (!snapshot.exists()) {
+                listContainer.innerHTML = '<div style="text-align:center; padding:10px;">Личных переписок пока нет</div>';
+                return;
+            }
+
+            let foundCount = 0;
+            snapshot.forEach((child) => {
+                const chatKey = child.key; 
+                const participants = chatKey.split('_');
+                if (participants.includes(myLogin)) {
+                    foundCount++;
+                    const otherLogin = participants[0] === myLogin ? participants[1] : participants[0];
+                    const item = document.createElement('div');
+                    item.className = 'chat-list-item';
+                    item.onclick = () => loadChat(chatKey, '@' + otherLogin);
+                    item.innerHTML = `
+                        <div class="chat-avatar" style="background-color:#fff8e1; color:#e65100;">👤</div>
+                        <div class="chat-info">
+                            <span class="chat-name">@${otherLogin}</span>
+                            <span class="chat-preview">Личная переписка</span>
+                        </div>
+                    `;
+                    listContainer.appendChild(item);
+                }
+            });
+
+            if (foundCount === 0) {
+                listContainer.innerHTML = '<div style="text-align:center; padding:10px;">Личных переписок пока нет</div>';
+            }
+        });
+    }
+    
+    // 2. ЗАГРУЗКА КОНКРЕТНОГО ЧАТА
+    window.loadChat = function(chatId, title) {
+        currentChatId = chatId;
+        
+        document.getElementById('chatListPanel').classList.add('hidden');
+        document.getElementById('chatConversationPanel').classList.remove('hidden'); 
+        
+        const titleEl = document.getElementById('privateChatTitle');
+        const container = document.getElementById('chatMessages');
+        const btnTransfer = document.getElementById('btnTransfer');
+
+        container.innerHTML = '<div style="text-align:center; padding:20px;">Загрузка сообщений...</div>';
+        
+        // Логика определения партнера для перевода
+        if (chatId === 'general') {
+            currentChatPartner = null;
+            btnTransfer.classList.add('hidden'); // В общем чате нельзя переводить (кому?)
+            titleEl.innerText = "Общий чат";
+        } else {
+            // Извлекаем имя собеседника из title (мы передавали "@Nick") или парсим ID
+            // Проще всего: title уже содержит "@Nick"
+            titleEl.innerText = title;
+            currentChatPartner = title.replace('@', ''); // Убираем собачку
+            btnTransfer.classList.remove('hidden'); // Показываем кнопку
+        }
+
+        const path = chatId === 'general' ? 'chat' : `private_chats/${chatId}`;
+        const targetRef = ref(db, path);
+
+        onValue(targetRef, (snapshot) => {
+            if (currentChatId === chatId) {
+                renderChatMessages(snapshot);
+            }
+        });
+    }
+
+    // 3. ОТПРАВКА СООБЩЕНИЯ (ВОССТАНОВЛЕНО)
+    window.sendMessage = function() {
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const nameEl = document.getElementById('menuDisplayName');
+        const senderName = nameEl ? nameEl.innerText : "Гость";
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || {};
+        const userLogin = sessionUser.nick || "anon";
+
+        const path = currentChatId === 'general' ? 'chat' : `private_chats/${currentChatId}`;
+
+        if (editingMsgId) {
+            update(ref(db, `${path}/${editingMsgId}`), {
+                text: text,
+                isEdited: true
+            }).then(() => cancelEditMode());
+        } else {
+            push(ref(db, path), {
+                sender: senderName,
+                senderLogin: userLogin,
+                text: text,
+                timestamp: Date.now()
+            });
+        }
+        input.value = '';
+        input.focus();
+    }
+
+    // 4. ОТРИСОВКА СООБЩЕНИЙ (ВОССТАНОВЛЕНО)
+    function renderChatMessages(snapshot) {
+        const container = document.getElementById('chatMessages');
+        container.innerHTML = '';
+        
+        if (!snapshot.exists()) {
+            container.innerHTML = '<div style="text-align:center; opacity:0.5; margin-top:20px;">Здесь пока пусто...</div>';
+            return;
+        }
+
+        const messages = [];
+        snapshot.forEach(child => {
+            messages.push({ key: child.key, ...child.val() });
+        });
+        messages.sort((a, b) => a.timestamp - b.timestamp);
+
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || {};
+        const myLogin = sessionUser.nick;
+        const now = Date.now();
+        const oneDay = 24 * 60 * 60 * 1000;
+
+        messages.forEach(msg => {
+            const bubble = document.createElement('div');
+            const isMine = (msg.senderLogin === myLogin);
+            
+            const d = new Date(msg.timestamp);
+            const dateStr = d.toLocaleDateString() === new Date().toLocaleDateString() 
+                ? d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                : d.toLocaleString([], {day: 'numeric', month:'numeric', hour: '2-digit', minute:'2-digit'});
+
+            bubble.className = `message-bubble ${isMine ? 'my-message' : 'other-message'}`;
+            
+            let actionsHtml = '';
+            if (isMine && (now - msg.timestamp < oneDay)) {
+                const safeText = msg.text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                actionsHtml = `
+                <span class="msg-actions">
+                    <button class="msg-btn" onclick="startEditMessage('${msg.key}', '${safeText}', ${msg.timestamp})">✏️</button>
+                    <button class="msg-btn" onclick="deleteChatMessage('${msg.key}', ${msg.timestamp})">🗑</button>
+                </span>`;
+            }
+
+            const editedMark = msg.isEdited ? `<span class="edited-label">(ред.)</span>` : '';
+
+            bubble.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                    <span class="message-sender">${msg.sender}</span>
+                    <span class="msg-meta">${dateStr}</span>
+                </div>
+                <div>${msg.text} ${editedMark} ${actionsHtml}</div>
+            `;
+            container.appendChild(bubble);
+        });
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // Вспомогательные функции чата (ВОССТАНОВЛЕНО)
+    window.startEditMessage = function(key, oldText, timestamp) {
+        if (Date.now() - timestamp > 86400000) { alert("Время вышло."); return; }
+        const input = document.getElementById('chatInput');
+        editingMsgId = key;
+        input.value = oldText;
+        input.focus();
+        input.classList.add('editing-mode');
+        document.getElementById('btnSendChat').innerText = "💾";
+        document.getElementById('btnCancelEdit').classList.remove('hidden');
+    }
+
+    window.cancelEditMode = function() {
+        const input = document.getElementById('chatInput');
+        editingMsgId = null;
+        input.value = '';
+        input.classList.remove('editing-mode');
+        document.getElementById('btnSendChat').innerText = "➤";
+        document.getElementById('btnCancelEdit').classList.add('hidden');
+    }
+
+    window.deleteChatMessage = function(key, timestamp) {
+        if (Date.now() - timestamp > 86400000) { alert("Время вышло."); return; }
+        if (confirm("Удалить?")) {
+            const path = currentChatId === 'general' ? 'chat' : `private_chats/${currentChatId}`;
+            remove(ref(db, `${path}/${key}`));
+            if (editingMsgId === key) cancelEditMode();
+        }
+    }
+
+    // =========================================================
+    // ОБНОВЛЕННАЯ ТАБЛИЦА (С кнопкой ЛС)
+    // =========================================================
+
+    function renderPlayerRow(id, player) {
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || { role: 'player' };
+        const myRole = sessionUser.role;
+        const myLogin = sessionUser.nick; // Для проверки "не я ли это"
+
+        const tableBody = document.getElementById('tableBody');
+        const newRow = tableBody.insertRow();
+        const { total, historyArray } = calculatePlayerStats(player);
+
+        // 1. ИМЯ
+        const cellName = newRow.insertCell(0);
+        const nameWrapper = document.createElement('div');
+        nameWrapper.className = 'name-wrapper';
+        
+        const statusDot = document.createElement('div');
+        statusDot.className = 'player-status-indicator';
+        if(player.login) statusDot.setAttribute('data-player-login', player.login);
+        const keyToCheck = player.login || player.name;
+        if (onlineNicknames.has(keyToCheck)) statusDot.classList.add('is-online');
+        
+        // --- КНОПКА ЛИЧКИ (НОВОЕ) ---
+        // Если игрок зарегистрирован (есть логин) и это не я сам
+        if (player.login && player.login !== myLogin) {
+            const btnDM = document.createElement('span');
+            btnDM.innerText = '✉️';
+            btnDM.className = 'btn-start-dm';
+            btnDM.title = 'Написать личное сообщение';
+            btnDM.onclick = () => openPrivateChat(player.login);
+            nameWrapper.appendChild(btnDM);
+        }
+
+        const roleBadge = document.createElement('span');
+        roleBadge.className = 'role-badge';
+        if (!player.login) { roleBadge.innerText = '👽'; roleBadge.title = 'Гость'; } 
+        else if (player.login === 'Zagonskiy') { roleBadge.innerText = '👑'; roleBadge.title = 'Создатель'; }
+        else {
+            roleBadge.innerText = '⏳';
+            get(child(ref(db), 'users/' + player.login + '/role')).then((snap) => {
+                const r = snap.val();
+                if (r === 'admin') { roleBadge.innerText = '👑'; roleBadge.title = 'Админ'; }
+                else if (r === 'trusted') { roleBadge.innerText = '🛡️'; roleBadge.title = 'Доверенный'; }
+                else { roleBadge.innerText = '👤'; roleBadge.title = 'Игрок'; }
+            });
+        }
+
+        const inputName = document.createElement('input');
+        inputName.type = 'text'; 
+        inputName.className = 'player-name'; 
+        inputName.value = player.name || "";
+        inputName.readOnly = true;
+        
+        // КЛИКИ (Смена ранга/имени)
+        if (myRole === 'admin' && player.login) {
+            inputName.style.cursor = "pointer";
+            inputName.style.textDecoration = "underline";
+            inputName.onclick = () => changeRankDialog(player.login, player.name);
+        }
+        else if ((myRole === 'admin' || myRole === 'trusted') && !player.login) {
+            inputName.style.cursor = "pointer";
+            inputName.style.borderBottom = "1px dashed var(--accent-brown)";
+            inputName.onclick = () => {
+                const newName = prompt("Переименовать гостя:", player.name);
+                if (newName && newName.trim() !== "") update(ref(db, 'players/' + id), { name: newName.trim() });
+            };
+        }
+
+        nameWrapper.appendChild(statusDot); 
+        nameWrapper.appendChild(roleBadge);
+        nameWrapper.appendChild(inputName); 
+
+        // ЗАМЕТКИ
+        const uniqueKey = player.login || player.name; 
+        const localNotes = JSON.parse(localStorage.getItem('op_local_notes') || '{}');
+        const noteText = localNotes[uniqueKey];
+
+        if (myRole === 'admin') {
+            const btnNote = document.createElement('span');
+            btnNote.innerText = '📝';
+            btnNote.className = 'btn-local-note';
+            if(noteText) btnNote.classList.add('has-note');
+            btnNote.onclick = () => setLocalNote(uniqueKey);
+            nameWrapper.appendChild(btnNote);
+        }
+
+        cellName.appendChild(nameWrapper);
+        if (noteText && myRole === 'admin') {
+            const noteDiv = document.createElement('div');
+            noteDiv.className = 'player-note-text';
+            noteDiv.innerText = noteText;
+            cellName.appendChild(noteDiv);
+        }
+
+        // 2. СТАТУС
+        const cellStatus = newRow.insertCell(1);
+        cellStatus.className = 'status-cell';
+        
+        let statusText = "Дворник";
+        let statusClass = "st-dvornik";
+
+        if (total >= 50000) { statusText = "Читак ебаный"; statusClass = "st-cheat"; }
+        else if (total >= 10000) { statusText = "Донатер"; statusClass = "st-donate"; }
+        else if (total >= 5000) { statusText = "Богач"; statusClass = "st-rich"; }
+        else if (total >= 2000) { statusText = "Средняк"; statusClass = "st-mid"; }
+        else if (total >= 1000) { statusText = "Новобранец"; statusClass = "st-novo"; }
+        else if (total === 0)   { statusText = "Банкрот"; statusClass = "st-bankrot"; } // <--- НОВОЕ УСЛОВИЕ
+        
+        cellStatus.innerText = statusText;
+        cellStatus.classList.add(statusClass);
+
+        // 3. ДЕЙСТВИЯ
+        const cellAction = newRow.insertCell(2);
+        if (myRole !== 'player') {
+            const inputNum = document.createElement('input');
+            inputNum.type = 'number'; 
+            inputNum.className = 'input-val'; 
+            inputNum.placeholder = '0';
+            inputNum.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleScore(id, inputNum, 1);
+                }
+            });
+            cellAction.append(
+                inputNum, 
+                createBtn('+', 'btn-calc', () => handleScore(id, inputNum, 1)),
+                createBtn('-', 'btn-calc', () => handleScore(id, inputNum, -1)),
+                createBtn('↩', 'btn-undo', () => undoLast(id)),
+                createBtn('↪', 'btn-redo', () => redoLast(id))
+            );
+        } else {
+            cellAction.innerText = "—";
+        }
+
+        // 4. ИТОГ
+        const cellTotal = newRow.insertCell(3);
+        cellTotal.className = 'score-cell';
+        cellTotal.innerText = total;
+
+        // 5. ИСТОРИЯ
+        const cellHistory = newRow.insertCell(4);
+        cellHistory.className = 'history-log';
+        cellHistory.innerText = historyArray.length > 0 ? historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ') : 'Пусто';
+
+        // 6. УДАЛЕНИЕ
+        const cellDelete = newRow.insertCell(5);
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
+        
+        if (myRole === 'admin') {
+             wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
+             if (player.login) {
+                 wrapper.appendChild(createBtn('✕', 'btn-delete', () => safeDeletePlayer(id, player.login)));
+             } else {
+                 wrapper.appendChild(createBtn('✕', 'btn-delete', () => { if(confirm("Удалить гостя навсегда?")) remove(ref(db, 'players/' + id)); }));
+             }
+        }
+        cellDelete.appendChild(wrapper);
+    }
+
+    // --- ЛОКАЛЬНЫЕ ЗАМЕТКИ ---
+    window.setLocalNote = function(key) {
+        // Загружаем текущие заметки
+        const notes = JSON.parse(localStorage.getItem('op_local_notes') || '{}');
+        const current = notes[key] || "";
+        
+        const newNote = prompt("Заметка об игроке (видна только вам):", current);
+        
+        if (newNote === null) return; // Отмена
+        
+        if (newNote.trim() === "") {
+            delete notes[key]; // Если пусто — удаляем
+        } else {
+            notes[key] = newNote.trim(); // Сохраняем
+        }
+        
+        localStorage.setItem('op_local_notes', JSON.stringify(notes));
+        
+        // Обновляем таблицу
+        const savedData = JSON.parse(localStorage.getItem('poker_data_v74'));
+        renderTable(savedData);
+    }
+
+    // --- ТАБЛИЦА ---
+    window.refreshTable = async function() {
+        const pass = prompt("Для обновления введите код доступа:");
+        if (pass !== "108020") { if(pass !== null) alert("Ошибка доступа"); return; }
+        try { await syncUsersToTable(); alert("Таблица синхронизирована!"); } catch(e) { alert("Ошибка: " + e.message); }
+    }
+
+    async function syncUsersToTable(currentDisplayName) {
+        try {
+            const usersSnap = await get(usersRef);
+            const playersSnap = await get(playersRef);
+            const users = usersSnap.val() || {};
+            const players = playersSnap.val() || {};
+            
+            const existingLogins = new Set();
+            for(let id in players) { 
+                const pLogin = players[id].login || players[id].name; 
+                existingLogins.add(pLogin); 
+            }
+            
+            const updates = {};
+            let hasUpdates = false;
+            
+            for(let login in users) {
+                if(!existingLogins.has(login)) {
+                    const userData = users[login];
+                    const dispName = userData.displayName || login;
+                    const newKey = push(ref(db, 'players')).key;
+                    
+                    // Восстановление истории при возврате
+                    let historyToRestore = { 'start_bonus': 1000 }; 
+                    if (userData.saved_history) {
+                        historyToRestore = userData.saved_history; 
+                    }
+
+                    updates['players/' + newKey] = { 
+                        name: dispName, 
+                        login: login, 
+                        history: historyToRestore 
+                    };
+                    hasUpdates = true;
+                }
+            }
+            if(hasUpdates) { await update(ref(db), updates); }
+        } catch(e) { console.error("Sync error", e); }
+    }
+
+    window.editNickname = async function() {
+        let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (!sessionUser) sessionUser = JSON.parse(localStorage.getItem('op_user'));
+        if (!sessionUser) return;
+        const oldDisplayName = sessionUser.displayName || sessionUser.nick;
+        const newName = prompt("Новое имя:", oldDisplayName);
+        if(!newName || newName.trim() === "") return;
+        const trimmedName = newName.trim();
+        try {
+            await update(ref(db, 'users/' + sessionUser.nick), { displayName: trimmedName });
+            sessionUser.displayName = trimmedName;
+            sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
+            if(localStorage.getItem('op_user')) {
+                let local = JSON.parse(localStorage.getItem('op_user'));
+                local.displayName = trimmedName;
+                localStorage.setItem('op_user', JSON.stringify(local));
+            }
+            updateMenuUI(trimmedName, sessionUser.nick);
+            const playersSnap = await get(playersRef);
+            playersSnap.forEach(child => {
+                const p = child.val();
+                if (p.login === sessionUser.nick || p.name === oldDisplayName) {
+                       update(ref(db, 'players/' + child.key), { name: trimmedName, login: sessionUser.nick });
+                }
+            });
+        } catch(e) { alert("Error: " + e.message); }
+    }
+
+    window.switchAuthView = function(view) {
+        document.getElementById('loginError').innerText = "";
+        document.getElementById('regError').innerText = "";
+        if(view === 'register') {
+            document.getElementById('login-view-card').classList.add('hidden');
+            document.getElementById('register-view-card').classList.remove('hidden');
+        } else {
+            document.getElementById('register-view-card').classList.add('hidden');
+            document.getElementById('login-view-card').classList.remove('hidden');
+        }
+    }
+
+    // БЕЗОПАСНОЕ УДАЛЕНИЕ
+    window.safeDeletePlayer = async function(id, login) {
+        if(!confirm("Убрать игрока со стола? (Баланс сохранится)")) return;
+        const snapshot = await get(ref(db, 'players/' + id));
+        const data = snapshot.val();
+        if (data && login) {
+            if (data.history) {
+                await update(ref(db, 'users/' + login), { saved_history: data.history });
+            }
+        }
+        remove(ref(db, 'players/' + id));
+    }
+
+    // =========================================================
+    // АВТОРИЗАЦИЯ
+    // =========================================================
+
+    // 1. РЕГИСТРАЦИЯ
+    window.handleRegister = function() {
+        const nick = document.getElementById('regNick').value.trim();
+        const pass = document.getElementById('regPass').value.trim();
+        const passRepeat = document.getElementById('regPassRepeat').value.trim();
+
+        if(!nick || !pass) { document.getElementById('regError').innerText = "Заполните все поля"; return; }
+        if(pass !== passRepeat) { document.getElementById('regError').innerText = "Пароли не совпадают!"; return; }
+
+        get(child(ref(db), `users/${nick}`)).then((snapshot) => {
+            if (snapshot.exists()) { 
+                document.getElementById('regError').innerText = "Ник занят!"; 
+            } else {
+                set(ref(db, 'users/' + nick), { 
+                    pass: pass, 
+                    created: Date.now(), 
+                    displayName: nick,
+                    role: 'player' 
+                }).then(() => {
+                    const newPlayerRef = push(ref(db, 'players'));
+                    return set(newPlayerRef, { name: nick, login: nick, history: { 'start_bonus': 1000 } });
+                }).then(() => {
+                    alert("Аккаунт создан! Входите.");
+                    switchAuthView('login');
+                    document.getElementById('loginNick').value = nick;
+                    document.getElementById('loginPass').value = pass;
+                });
+            }
+        });
+    }
+
+    // 2. ВХОД
+    window.handleLogin = function() {
+        const nick = document.getElementById('loginNick').value.trim();
+        const pass = document.getElementById('loginPass').value.trim();
+        const remember = document.getElementById('rememberMe').checked;
+        
+        if(!nick || !pass) { 
+            document.getElementById('loginError').innerText = "Введите данные"; 
+            return; 
+        }
+        checkLogin(nick, pass, false, remember);
+    }
+
+    async function checkLogin(nick, pass, isAuto, remember = false) {
+        // Офлайн-вход через кэш
+        const tryLocalLogin = () => {
+            const knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
+            if (knownUsers[nick] && knownUsers[nick] === pass) {
+                const cachedUser = JSON.parse(localStorage.getItem('op_user') || '{}');
+                // Если кэш пользователя совпадает с введенным ником
+                if (cachedUser.nick === nick) {
+                    const savedRole = cachedUser.role || 'player'; 
+                    // Важно: берем имя из кэша ИЛИ используем ник
+                    const name = cachedUser.displayName || nick;
+                    performLogin(nick, pass, remember || isAuto, name, savedRole);
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        if (!navigator.onLine) {
+            if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Нет сети";
+            return;
+        }
+
+        try {
+            const snapshot = await get(child(ref(db), `users/${nick}`));
+            if (snapshot.exists()) {
+                const userData = snapshot.val();
+                if(userData.pass === pass) {
+                    // Сохраняем пароль в известные
+                    let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
+                    knownUsers[nick] = pass;
+                    localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
+                    
+                    const dispName = userData.displayName || nick;
+                    const dbRole = userData.role || 'player';
+                    
+                    // Обновляем полный кэш пользователя
+                    const userObj = { nick, pass, displayName: dispName, role: dbRole };
+                    localStorage.setItem('op_user', JSON.stringify(userObj));
+
+                    performLogin(nick, pass, remember || isAuto, dispName, dbRole);
+                } else {
+                    if(!isAuto) document.getElementById('loginError').innerText = "Неверный пароль";
+                    if(isAuto) { localStorage.removeItem('op_user'); sessionStorage.removeItem('op_session_user'); }
+                }
+            } else {
+                if(!isAuto) document.getElementById('loginError').innerText = "Пользователь не найден";
+            }
+        } catch (error) {
+            if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Ошибка сети";
+        }
+    }
+
+    function performLogin(nick, pass, remember, displayName, loadedRole) {
+        document.getElementById('login-overlay').style.display = 'none';
+        
+        // Гарантируем, что имя не пустое
+        const finalName = displayName || nick;
+        
+        // Обновляем UI СРАЗУ
+        updateMenuUI(finalName, nick);
+        
+        let role = loadedRole || 'player';
+        if (nick === 'Zagonskiy') {
+            role = 'admin';
+        } 
+        
+        const userObj = { nick, pass, displayName: finalName, role: role };
+        
+        sessionStorage.setItem('op_session_user', JSON.stringify(userObj));
+        if(remember) localStorage.setItem('op_user', JSON.stringify(userObj));
+        
+        setOnlineStatus(nick);
+        fetchUserRole(nick); 
+        applyRoleUI();
+    }
+
+    function fetchUserRole(nick) {
+        if (nick === 'Zagonskiy') return; 
+        
+        get(child(ref(db), `users/${nick}/role`)).then((snap) => {
+            let role = snap.val() || 'player';
+            let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+            if(sessionUser) {
+                if (sessionUser.role !== role) {
+                    sessionUser.role = role;
+                    sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
+                    applyRoleUI();
+                }
+            }
+        });
+    }
+
+    // --- ИНТЕРФЕЙС И КНОПКИ ---
+    window.applyRoleUI = function() {
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        const role = sessionUser ? sessionUser.role : 'player';
+
+        const controlsDiv = document.querySelector('.controls');
+        // Удаляем старую кнопку восстановления, чтобы не дублировать
+        const oldRestore = document.getElementById('btnRestore');
+        if(oldRestore) oldRestore.remove();
+
+        const extremeResetBtn = document.querySelector('.btn-extreme-reset');
+        
+        if (role === 'player') {
+            if(controlsDiv) controlsDiv.classList.add('role-hidden');
+            if(extremeResetBtn) extremeResetBtn.classList.add('role-hidden');
+        } else {
+            // Если Админ или Доверенный - показываем управление
+            if(controlsDiv) {
+                controlsDiv.classList.remove('role-hidden');
+                
+                // Добавляем кнопку Восстановления
+                if (!document.getElementById('btnRestore')) {
+                    const btnRestore = document.createElement('button');
+                    btnRestore.id = 'btnRestore';
+                    btnRestore.className = 'btn-refresh';
+                    btnRestore.innerText = '♻️ Восстановить';
+                    btnRestore.onclick = window.restorePlayers;
+                    
+                    const btnAdd = document.querySelector('.btn-add');
+                    if(btnAdd && btnAdd.parentNode) btnAdd.parentNode.insertBefore(btnRestore, btnAdd.nextSibling);
+                }
+            }
+            
+            if (role === 'admin') {
+                if(extremeResetBtn) extremeResetBtn.classList.remove('role-hidden');
+            } else {
+                if(extremeResetBtn) extremeResetBtn.classList.add('role-hidden');
+            }
+        }
+
+        const savedData = JSON.parse(localStorage.getItem('poker_data_v74'));
+        if (savedData) renderTable(savedData);
+    }
+
+    // Умное восстановление
+    window.restorePlayers = async function() {
+        if(!confirm("Вернуть всех зарегистрированных игроков за стол?")) return;
+        await syncUsersToTable();
+        alert("Список синхронизирован!");
+    }
+
+    window.logout = function() {
+        if(confirm("Выйти?")) {
+            if (currentConnectionRef) remove(currentConnectionRef);
+            localStorage.removeItem('op_user');
+            sessionStorage.removeItem('op_session_user');
+            location.reload();
+        }
+    }
+
+    function setOnlineStatus(nickname) {
+        const myUserRef = ref(db, `online_users/${nickname}`);
+        currentConnectionRef = push(myUserRef);
+        onDisconnect(currentConnectionRef).remove();
+        set(currentConnectionRef, true);
+    }
+
+    onValue(connectedRef, (snap) => {
+        const dotMobile = document.getElementById('mobileStatusDot');
+        const dotDesktop = document.getElementById('desktopStatusDot');
+        const statusEl = document.getElementById('networkStatus');
+        if(statusEl) statusEl.style.display = 'none';
+        if (snap.val() === true) {
+            dotMobile.classList.add('online'); dotDesktop.classList.add('online');
+        } else {
+            dotMobile.classList.remove('online'); dotDesktop.classList.remove('online');
+        }
+    });
+
+    onValue(onlineUsersRef, (snap) => {
+        const countDisplay = document.getElementById('onlineCounter');
+        onlineNicknames.clear();
+        if (snap.exists()) {
+            const data = snap.val();
+            Object.keys(data).forEach(n => onlineNicknames.add(n));
+            countDisplay.innerText = `👁️ Онлайн: ${onlineNicknames.size}`;
+        } else { countDisplay.innerText = `👁️ Онлайн: 0`; }
+        updateTableStatusDots();
+    });
+
+    function updateTableStatusDots() {
+        document.querySelectorAll('.player-status-indicator').forEach(dot => {
+            const name = dot.getAttribute('data-player-name');
+            const login = dot.getAttribute('data-player-login');
+            const keyToCheck = login || name;
+            if (onlineNicknames.has(keyToCheck)) dot.classList.add('is-online');
+            else dot.classList.remove('is-online');
+        });
+    }
+
+    onValue(playersRef, (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+        localStorage.setItem('poker_data_v74', JSON.stringify(data));
+        renderTable(data);
+    });
+
+    function renderTable(data) {
+        if (document.activeElement.tagName === 'INPUT') return; 
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = '';
+        for (let id in data) { renderPlayerRow(id, data[id]); }
+        recalculateGrandTotal();
+        updateTableStatusDots();
+    }
+
+    function recalculateGrandTotal() {
+        const scoreCells = document.querySelectorAll('.score-cell');
+        let totalSum = 0;
+        scoreCells.forEach(cell => totalSum += parseFloat(cell.innerText || 0));
+        document.getElementById('grandTotal').innerText = totalSum;
+    }
+
+    function calculatePlayerStats(player) {
+        let historyArray = [];
+        let total = 0;
+        if (player.history) {
+            if (typeof player.history === 'object' && !Array.isArray(player.history)) {
+                historyArray = Object.values(player.history);
+            } else if (Array.isArray(player.history)) {
+                historyArray = player.history;
+            }
+        }
+        historyArray.forEach(val => total += val);
+        return { total, historyArray };
+    }
+
+    function createBtn(text, cls, onClick) {
+        const btn = document.createElement('button');
+        btn.innerText = text; btn.className = cls; btn.onclick = onClick;
+        return btn;
+    }
+
+    window.handleScore = function(id, inputElem, multiplier) {
+        let val = parseFloat(inputElem.value);
+        if (isNaN(val)) return;
+        let change = val * multiplier;
+        push(ref(db, 'players/' + id + '/history'), change);
+        set(ref(db, 'players/' + id + '/redoStack'), null);
+        const row = inputElem.closest('tr');
+        const totalCell = row.querySelector('.score-cell');
+        const historyCell = row.querySelector('.history-log');
+        let currentTotal = parseFloat(totalCell.innerText || 0);
+        totalCell.innerText = currentTotal + change;
+        let text = historyCell.innerText;
+        let newEntry = (change >= 0 ? `+${change}` : change);
+        if (text === 'Пусто') historyCell.innerText = newEntry;
+        else historyCell.innerText = text + ' ' + newEntry;
+        inputElem.value = ''; inputElem.focus();
+        recalculateGrandTotal();
+    }
+
+    window.undoLast = async function(id) {
+        const historyRef = ref(db, 'players/' + id + '/history');
+        const lastItemQuery = query(historyRef, orderByKey(), limitToLast(1));
+        const snapshot = await get(lastItemQuery);
+        snapshot.forEach((child) => {
+            const val = child.val();
+            remove(child.ref);
+            push(ref(db, 'players/' + id + '/redoStack'), val);
+        });
+    }
+
+    window.redoLast = async function(id) {
+        const redoRef = ref(db, 'players/' + id + '/redoStack');
+        const lastRedoQuery = query(redoRef, orderByKey(), limitToLast(1));
+        const snapshot = await get(lastRedoQuery);
+        snapshot.forEach((child) => {
+            const val = child.val();
+            remove(child.ref);
+            push(ref(db, 'players/' + id + '/history'), val);
+        });
+    }
+
+    window.createNewPlayer = function() {
+        let guestName = prompt("Введите имя гостя:", "Гость");
+        // Если нажали "Отмена", ничего не создаем
+        if (guestName === null) return;
+        
+        // Если оставили пустым, называем "Гость"
+        if (guestName.trim() === "") guestName = "Гость";
+        
+        push(playersRef, { 
+            name: guestName.trim(), 
+            history: {} 
+        });
+    }
+    window.resetPlayer = (id) => { if (prompt("Сбросить игрока (Код)?") === "108020") update(ref(db, 'players/' + id), { history: null, redoStack: null }); else alert("Ошибка"); };
+    window.extremeReset = async () => { if (prompt("ПОЛНЫЙ СБРОС (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { updates['players/' + child.key + '/history'] = null; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); } };
+    window.startNewDay = async () => { if (prompt("НОВЫЙ ДЕНЬ (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { const { total } = calculatePlayerStats(child.val()); const key1 = push(ref(db)).key; const key2 = push(ref(db)).key; const newHistory = {}; newHistory[key1] = total; newHistory[key2] = 500; updates['players/' + child.key + '/history'] = newHistory; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); alert("День начат! +500"); } };
+    
+    // ЖУРНАЛ
+    window.addToJournal=async function(){if(!confirm("Сохранить итоги в Журнал?"))return;const dv=document.getElementById('gameDate').value;if(!dv){alert("Ошибка даты!");return;}const[y,m,d]=dv.split('-');const fd=`${d}.${m}.${y}`;const s=await get(playersRef);const dt=s.val();if(!dt)return;let gt=0;const sp=[];for(let i in dt){const p=dt[i];const{total,historyArray}=calculatePlayerStats(p);gt+=total;sp.push({name:p.name||"Без имени",total:total,history:historyArray.join(' ')})}push(journalRef,{date:fd+' '+new Date().toLocaleTimeString().slice(0,5),timestamp:Date.now(),grandTotal:gt,players:sp});alert("Сохранено за "+fd+"!");};
+
+    window.deleteJournalEntry = function(id) { 
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (sessionUser.role === 'admin' || sessionUser.role === 'trusted') {
+             if(confirm("Удалить запись?")) remove(ref(db, 'journal/' + id));
+        } else {
+             alert("Нет прав!");
+        }
+    }
+
+    onValue(journalRef, (snapshot) => {
+        const listDiv = document.getElementById('journalList');
+        listDiv.innerHTML = '';
+        const data = snapshot.val();
+        
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || { role: 'player' };
+        const canDelete = (sessionUser.role === 'admin' || sessionUser.role === 'trusted');
+
+        if (!data) {
+            listDiv.innerHTML = '<div style="text-align:center;">Пусто</div>';
+            return;
+        }
+
+        const entries = Object.entries(data).sort((a, b) => b[1].timestamp - a[1].timestamp);
+
+        entries.forEach(([id, entry]) => {
+            const card = document.createElement('div');
+            card.className = 'journal-card';
+            const header = document.createElement('div');
+            header.className = 'journal-header';
+
+            let deleteBtnHtml = '';
+            if (canDelete) {
+                deleteBtnHtml = `<button class="btn-journal-delete" onclick="event.stopPropagation(); deleteJournalEntry('${id}')">🗑️</button>`;
+            }
+
+            header.innerHTML = `<div style="display:flex; align-items:center;"><span>📅 ${entry.date}</span>${deleteBtnHtml}</div><span class="journal-total">Банк: ${entry.grandTotal}</span>`;
+            const details = document.createElement('div');
+            details.className = 'journal-details';
+            let detailsHtml = `<div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px; display:flex; justify-content:space-between;"><span>Игрок</span><span>Итог</span></div>`;
+            
+            if (entry.players) {
+                entry.players.forEach(p => {
+                    detailsHtml += `<div class="detail-row"><span style="font-weight:bold;">${p.name}</span><span style="color:${p.total >= 0 ? 'green' : 'red'}">${p.total}</span></div><div style="font-size:0.8em; color:#666; margin-bottom:5px;">${p.history}</div>`;
+                });
+            }
+            details.innerHTML = detailsHtml;
+            card.appendChild(header);
+            card.appendChild(details);
+            card.onclick = () => card.classList.toggle('open');
+            listDiv.appendChild(card);
+        });
+    });
+
+    // --- УПРАВЛЕНИЕ РОЛЯМИ ---
+    let currentRankLogin = null;
+
+    window.changeRankDialog = function(login, currentName) {
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (!sessionUser || sessionUser.role !== 'admin') return;
+        if (login === 'Zagonskiy') { alert("Нельзя менять ранг Создателя!"); return; }
+        currentRankLogin = login;
+        document.getElementById('roleTargetName').innerText = currentName;
+        document.getElementById('roleModal').classList.remove('role-hidden');
+    }
+
+    window.setRole = function(newRole) {
+        if (!currentRankLogin) return;
+        update(ref(db, 'users/' + currentRankLogin), { role: newRole })
+            .then(() => {
+                alert(`Роль успешно изменена!`);
+                closeRoleModal();
+            })
+            .catch(e => alert("Ошибка: " + e));
+    }
+
+    window.closeRoleModal = function() {
+        document.getElementById('roleModal').classList.add('role-hidden');
+        currentRankLogin = null;
+    }
+
+    window.toggleSidebar = function() {
+        document.getElementById('sidebar').classList.toggle('open');
+    }
+
+    window.showView = function(viewName) {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('view-game').classList.add('hidden');
+        document.getElementById('view-journal').classList.add('hidden');
+        document.getElementById('view-chat').classList.add('hidden');
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+
+        if (viewName === 'game') {
+            document.getElementById('view-game').classList.remove('hidden');
+            document.getElementById('btn-nav-game').classList.add('active');
+        } else if (viewName === 'chat') {
+            document.getElementById('view-chat').classList.remove('hidden');
+            document.getElementById('btn-nav-chat').classList.add('active');
+            
+            // Если чат не выбран, показываем список. Если выбран - остаемся в переписке.
+            if (!currentChatId) {
+                showChatList();
+            } else {
+                 const container = document.getElementById('chatMessages');
+                 setTimeout(() => container.scrollTop = container.scrollHeight, 100);
+            }
+        } else if (viewName === 'journal') {
+            document.getElementById('view-journal').classList.remove('hidden');
+            document.getElementById('btn-nav-journal').classList.add('active');
+        }
+    }
+
+    window.downloadCSV = function() { const rows = document.querySelectorAll('#scoreTable tbody tr'); if (rows.length === 0) { alert("Пусто!"); return; } const selectedDate = document.getElementById('gameDate').value; let formattedDate = selectedDate; if(selectedDate) { const parts = selectedDate.split('-'); formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`; } let csvContent = `Дата выписки:;${formattedDate}\n\n`; csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n"; rows.forEach(row => { let name = row.querySelector('.player-name').value.trim(); if (!name) name = "Без имени"; let total = row.querySelector('.score-cell').innerText; let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); csvContent += `"${name}";${total};${opsString}\n`; }); let grandTotal = document.getElementById('grandTotal').innerText; csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`; const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `Выписка за ${formattedDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+    // --- СИСТЕМА ПЕРЕВОДОВ ---
+    
+    // 1. Открыть окно
+    window.openTransferModal = async function() {
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (!sessionUser) return;
+        
+        // Ищем баланс отправителя
+        const myId = await findPlayerIdByLogin(sessionUser.nick);
+        
+        if (!myId) {
+            alert("Вы не сидите за столом! Сначала создайте игрока.");
+            return;
+        }
+        
+        // Получаем актуальный баланс
+        const snap = await get(ref(db, 'players/' + myId));
+        const player = snap.val();
+        const { total } = calculatePlayerStats(player);
+        
+        document.getElementById('myCurrentBalance').innerText = total;
+        document.getElementById('transferAmount').value = '';
+        document.getElementById('transferModal').classList.remove('hidden');
+    }
+
+    // 2. Подтвердить перевод
+    window.confirmTransfer = async function() {
+        const amount = parseFloat(document.getElementById('transferAmount').value);
+        if (isNaN(amount) || amount <= 0) { alert("Некорректная сумма"); return; }
+        
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        const myLogin = sessionUser.nick;
+        const targetLogin = currentChatPartner;
+
+        if (!targetLogin) return;
+
+        // 1. Находим ID обоих игроков
+        const myId = await findPlayerIdByLogin(myLogin);
+        const targetId = await findPlayerIdByLogin(targetLogin);
+
+        if (!myId) { alert("Ошибка: Вы не за столом."); return; }
+        if (!targetId) { alert("Ошибка: Получатель не за столом."); return; }
+
+        // 2. Проверяем баланс (ещё раз для надежности)
+        const snap = await get(ref(db, 'players/' + myId));
+        const { total } = calculatePlayerStats(snap.val());
+
+        if (total < amount) {
+            alert("Недостаточно средств!");
+            return;
+        }
+
+        if (!confirm(`Перевести ${amount} игроку @${targetLogin}?`)) return;
+
+        // 3. Выполняем транзакцию
+        const updates = {};
+        // Снимаем у меня
+        const pushKey1 = push(ref(db, 'players/' + myId + '/history')).key;
+        updates['players/' + myId + '/history/' + pushKey1] = -amount;
+        
+        // Добавляем ему
+        const pushKey2 = push(ref(db, 'players/' + targetId + '/history')).key;
+        updates['players/' + targetId + '/history/' + pushKey2] = amount;
+
+        await update(ref(db), updates);
+
+        // 4. Пишем в чат автоматически
+        const path = `private_chats/${currentChatId}`;
+        push(ref(db, path), {
+            sender: "Система",
+            senderLogin: "system",
+            text: `💸 ПЕРЕВОД: ${sessionUser.displayName} отправил ${amount} монет.`,
+            timestamp: Date.now()
+        });
+
+        document.getElementById('transferModal').classList.add('hidden');
+        alert("Перевод выполнен!");
+    }
+
+    // Вспомогательная: Найти ID игрока в таблице по логину
+    async function findPlayerIdByLogin(loginTarget) {
+        const snap = await get(playersRef);
+        const data = snap.val();
+        if (!data) return null;
+        
+        for (let id in data) {
+            // Проверяем поле login или поле name (для старых записей)
+            if (data[id].login === loginTarget || data[id].name === loginTarget) {
+                return id;
+            }
+        }
+        return null;
+    }
+</script>
+
+</body>
+</html>
+
+
 
