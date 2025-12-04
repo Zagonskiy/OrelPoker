@@ -1664,58 +1664,45 @@
     }
 
     async function checkLogin(nick, pass, isAuto, remember = false) {
-        // Офлайн-вход через кэш
-        const tryLocalLogin = () => {
-            const knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
-            if (knownUsers[nick] && knownUsers[nick] === pass) {
-                const cachedUser = JSON.parse(localStorage.getItem('op_user') || '{}');
-                // Если кэш пользователя совпадает с введенным ником
-                if (cachedUser.nick === nick) {
-                    const savedRole = cachedUser.role || 'player'; 
-                    // Важно: берем имя из кэша ИЛИ используем ник
-                    const name = cachedUser.displayName || nick;
-                    performLogin(nick, pass, remember || isAuto, name, savedRole);
-                    return true;
-                }
-            }
-            return false;
-        };
-
-        if (!navigator.onLine) {
-            if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Нет сети";
-            return;
-        }
-
         try {
-            const snapshot = await get(child(ref(db), `users/${nick}`));
-            if (snapshot.exists()) {
-                const userData = snapshot.val();
-                if(userData.pass === pass) {
-                    // Сохраняем пароль в известные
-                    let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
-                    knownUsers[nick] = pass;
-                    localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
+            if (navigator.onLine) {
+                const snapshot = await get(child(ref(db), `users/${nick}`));
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
                     
-                    const dispName = userData.displayName || nick;
-                    const dbRole = userData.role || 'player';
+                    // --- ДИАГНОСТИКА ---
+                    console.log("В базе:", userData.pass, "Тип:", typeof userData.pass);
+                    console.log("Введено:", pass, "Тип:", typeof pass);
                     
-                    // Обновляем полный кэш пользователя
-                    const userObj = { nick, pass, displayName: dispName, role: dbRole };
-                    localStorage.setItem('op_user', JSON.stringify(userObj));
-
-                    performLogin(nick, pass, remember || isAuto, dispName, dbRole);
+                    // Превращаем оба значения в строки перед сравнением (исправляет ошибку типов)
+                    if(String(userData.pass) === String(pass)) {
+                        // ... успешный вход ...
+                        let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}');
+                        knownUsers[nick] = pass;
+                        localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
+                        
+                        const dispName = userData.displayName || nick;
+                        const dbRole = userData.role || 'player';
+                        
+                        const userObj = { nick, pass, displayName: dispName, role: dbRole };
+                        localStorage.setItem('op_user', JSON.stringify(userObj));
+                        performLogin(nick, pass, remember || isAuto, dispName, dbRole);
+                        return;
+                    } else {
+                        if(!isAuto) alert(`ОШИБКА ПАРОЛЯ!\nВ базе: "${userData.pass}"\nВы ввели: "${pass}"`);
+                        if(isAuto) { localStorage.removeItem('op_user'); sessionStorage.removeItem('op_session_user'); }
+                        return;
+                    }
                 } else {
-                    if(!isAuto) document.getElementById('loginError').innerText = "Неверный пароль";
-                    if(isAuto) { localStorage.removeItem('op_user'); sessionStorage.removeItem('op_session_user'); }
+                    if(!isAuto) alert("Пользователь с таким ником не найден в базе!");
+                    return;
                 }
-            } else {
-                if(!isAuto) document.getElementById('loginError').innerText = "Пользователь не найден";
             }
+            // ... (остальной код без изменений)
         } catch (error) {
-            if (!tryLocalLogin() && !isAuto) document.getElementById('loginError').innerText = "Ошибка сети";
+             if(!isAuto) alert("Критическая ошибка: " + error.message);
         }
     }
-
     function performLogin(nick, pass, remember, displayName, loadedRole) {
         document.getElementById('login-overlay').style.display = 'none';
         
@@ -2169,6 +2156,7 @@
 
 </body>
 </html>
+
 
 
 
