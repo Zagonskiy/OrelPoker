@@ -1944,7 +1944,64 @@
     window.startNewDay = async () => { if (prompt("НОВЫЙ ДЕНЬ (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { const { total } = calculatePlayerStats(child.val()); const key1 = push(ref(db)).key; const key2 = push(ref(db)).key; const newHistory = {}; newHistory[key1] = total; newHistory[key2] = 500; updates['players/' + child.key + '/history'] = newHistory; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); alert("День начат! +500"); } };
     
     // ЖУРНАЛ
-    window.addToJournal=async function(){if(!confirm("Сохранить итоги в Журнал?"))return;const dv=document.getElementById('gameDate').value;if(!dv){alert("Ошибка даты!");return;}const[y,m,d]=dv.split('-');const fd=`${d}.${m}.${y}`;const s=await get(playersRef);const dt=s.val();if(!dt)return;let gt=0;const sp=[];for(let i in dt){const p=dt[i];const{total,historyArray}=calculatePlayerStats(p);gt+=total;sp.push({name:p.name||"Без имени",total:total,history:historyArray.join(' ')})}push(journalRef,{date:fd+' '+new Date().toLocaleTimeString().slice(0,5),timestamp:Date.now(),grandTotal:gt,players:sp});alert("Сохранено за "+fd+"!");};
+    window.addToJournal = async function() {
+        if (!confirm("Сохранить итоги в Журнал и СБРОСИТЬ историю операций?")) return;
+
+        const dv = document.getElementById('gameDate').value;
+        if (!dv) {
+            alert("Ошибка даты!");
+            return;
+        }
+        const [y, m, d] = dv.split('-');
+        const fd = `${d}.${m}.${y}`;
+
+        const s = await get(playersRef);
+        const dt = s.val();
+        if (!dt) return;
+
+        let gt = 0;
+        const sp = [];
+        const updates = {}; // Объект для массового обновления базы
+
+        for (let i in dt) {
+            const p = dt[i];
+            const { total, historyArray } = calculatePlayerStats(p);
+            
+            // 1. Данные для архива (сохраняем как было)
+            gt += total;
+            sp.push({
+                name: p.name || "Без имени",
+                total: total,
+                history: historyArray.join(' ')
+            });
+
+            // 2. Данные для очистки таблицы
+            // Генерируем новый уникальный ключ для записи
+            const newHistoryKey = push(ref(db)).key;
+            
+            // Создаем новую историю, где есть только ОДНА запись — текущий итог
+            // Если итог 0, можно записать 0 или оставить пустым (здесь пишем 0 для наглядности)
+            const newHistory = {};
+            newHistory[newHistoryKey] = total;
+
+            // Записываем обновление в список изменений
+            updates['players/' + i + '/history'] = newHistory;
+            updates['players/' + i + '/redoStack'] = null; // Очищаем стек отмены (Ctrl+Z)
+        }
+
+        // Сначала сохраняем в журнал
+        await push(journalRef, {
+            date: fd + ' ' + new Date().toLocaleTimeString().slice(0, 5),
+            timestamp: Date.now(),
+            grandTotal: gt,
+            players: sp
+        });
+
+        // Затем применяем изменения к таблице (очистка строк)
+        await update(ref(db), updates);
+
+        alert("Сохранено в журнал. Таблица обновлена (балансы перенесены).");
+    };
 
     window.deleteJournalEntry = function(id) { 
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
@@ -2155,6 +2212,7 @@
 
 </body>
 </html>
+
 
 
 
