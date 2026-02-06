@@ -1850,10 +1850,33 @@
     });
 
     function renderTable(data) {
+        // Если курсор стоит в поле ввода, не перерисовываем таблицу, 
+        // чтобы не сбивать ввод текста
         if (document.activeElement.tagName === 'INPUT') return; 
+
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
-        for (let id in data) { renderPlayerRow(id, data[id]); }
+
+        // 1. Превращаем объект данных в массив, чтобы его можно было сортировать
+        const sortedPlayers = Object.keys(data).map(key => {
+            const player = data[key];
+            // Считаем текущий баланс игрока
+            const { total } = calculatePlayerStats(player); 
+            return {
+                id: key,
+                playerData: player,
+                total: total
+            };
+        });
+
+        // 2. Сортируем: от большего к меньшему (b - a)
+        sortedPlayers.sort((a, b) => b.total - a.total);
+
+        // 3. Отрисовываем строки уже в правильном порядке
+        sortedPlayers.forEach(item => {
+            renderPlayerRow(item.id, item.playerData);
+        });
+
         recalculateGrandTotal();
         updateTableStatusDots();
     }
@@ -2212,6 +2235,7 @@
 
 </body>
 </html>
+
 
 
 
