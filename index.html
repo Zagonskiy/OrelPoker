@@ -1850,29 +1850,25 @@
     });
 
     function renderTable(data) {
-        // Если курсор стоит в поле ввода, не перерисовываем таблицу, 
-        // чтобы не сбивать ввод текста
-        if (document.activeElement.tagName === 'INPUT') return; 
+        if (document.activeElement.tagName === 'INPUT') return;
 
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
 
-        // 1. Превращаем объект данных в массив, чтобы его можно было сортировать
         const sortedPlayers = Object.keys(data).map(key => {
             const player = data[key];
-            // Считаем текущий баланс игрока
-            const { total } = calculatePlayerStats(player); 
             return {
                 id: key,
                 playerData: player,
-                total: total
+                // Берем сохраненный порядок сортировки. 
+                // Если его нет (новый игрок), ставим 9999 (в конец списка)
+                sortOrder: (player.sortOrder !== undefined) ? player.sortOrder : 9999
             };
         });
 
-        // 2. Сортируем: от большего к меньшему (b - a)
-        sortedPlayers.sort((a, b) => b.total - a.total);
+        // Сортируем по sortOrder (от 0 и выше)
+        sortedPlayers.sort((a, b) => a.sortOrder - b.sortOrder);
 
-        // 3. Отрисовываем строки уже в правильном порядке
         sortedPlayers.forEach(item => {
             renderPlayerRow(item.id, item.playerData);
         });
@@ -1967,14 +1963,12 @@
     window.startNewDay = async () => { if (prompt("НОВЫЙ ДЕНЬ (Код)?") === "108020") { const snap = await get(playersRef); const updates = {}; snap.forEach(child => { const { total } = calculatePlayerStats(child.val()); const key1 = push(ref(db)).key; const key2 = push(ref(db)).key; const newHistory = {}; newHistory[key1] = total; newHistory[key2] = 500; updates['players/' + child.key + '/history'] = newHistory; updates['players/' + child.key + '/redoStack'] = null; }); await update(ref(db), updates); alert("День начат! +500"); } };
     
     // ЖУРНАЛ
+    // ЖУРНАЛ (Сортировка + Сброс)
     window.addToJournal = async function() {
-        if (!confirm("Сохранить итоги в Журнал и СБРОСИТЬ историю операций?")) return;
+        if (!confirm("Сохранить итоги, ОТСОРТИРОВАТЬ таблицу и сбросить историю?")) return;
 
         const dv = document.getElementById('gameDate').value;
-        if (!dv) {
-            alert("Ошибка даты!");
-            return;
-        }
+        if (!dv) { alert("Ошибка даты!"); return; }
         const [y, m, d] = dv.split('-');
         const fd = `${d}.${m}.${y}`;
 
@@ -1982,48 +1976,65 @@
         const dt = s.val();
         if (!dt) return;
 
+        // 1. Подготовка данных для сортировки
+        let playersArray = [];
         let gt = 0;
-        const sp = [];
-        const updates = {}; // Объект для массового обновления базы
 
-        for (let i in dt) {
-            const p = dt[i];
+        // Превращаем объект игроков в массив
+        for (let key in dt) {
+            const p = dt[key];
             const { total, historyArray } = calculatePlayerStats(p);
-            
-            // 1. Данные для архива (сохраняем как было)
             gt += total;
-            sp.push({
+            playersArray.push({
+                key: key,
                 name: p.name || "Без имени",
                 total: total,
-                history: historyArray.join(' ')
+                historyString: historyArray.join(' ')
             });
-
-            // 2. Данные для очистки таблицы
-            // Генерируем новый уникальный ключ для записи
-            const newHistoryKey = push(ref(db)).key;
-            
-            // Создаем новую историю, где есть только ОДНА запись — текущий итог
-            // Если итог 0, можно записать 0 или оставить пустым (здесь пишем 0 для наглядности)
-            const newHistory = {};
-            newHistory[newHistoryKey] = total;
-
-            // Записываем обновление в список изменений
-            updates['players/' + i + '/history'] = newHistory;
-            updates['players/' + i + '/redoStack'] = null; // Очищаем стек отмены (Ctrl+Z)
         }
 
-        // Сначала сохраняем в журнал
+        // 2. Сортируем массив: от большего баланса к меньшему
+        playersArray.sort((a, b) => b.total - a.total);
+
+        // 3. Формируем список обновлений для базы
+        const updates = {};
+        const journalPlayers = [];
+
+        playersArray.forEach((p, index) => {
+            // Данные для архива журнала
+            journalPlayers.push({
+                name: p.name,
+                total: p.total,
+                history: p.historyString
+            });
+
+            // Генерируем новый ключ для единственной записи в истории
+            const newHistoryKey = push(ref(db)).key;
+            const newHistory = {};
+            newHistory[newHistoryKey] = p.total;
+
+            // --- ГЛАВНОЕ ИЗМЕНЕНИЕ ---
+            // Мы присваиваем игроку порядковый номер (sortOrder)
+            // index 0 - это топ-1, index 1 - топ-2 и т.д.
+            updates['players/' + p.key + '/sortOrder'] = index; 
+            
+            // Сброс истории (как и было раньше)
+            updates['players/' + p.key + '/history'] = newHistory;
+            updates['players/' + p.key + '/redoStack'] = null;
+        });
+
+        // Сначала сохраняем в архив журнала
         await push(journalRef, {
             date: fd + ' ' + new Date().toLocaleTimeString().slice(0, 5),
             timestamp: Date.now(),
             grandTotal: gt,
-            players: sp
+            players: journalPlayers
         });
 
-        // Затем применяем изменения к таблице (очистка строк)
+        // Затем обновляем таблицу (сортировка + сброс истории)
         await update(ref(db), updates);
 
-        alert("Сохранено в журнал. Таблица обновлена (балансы перенесены).");
+        alert("Готово! Таблица отсортирована по лидерам.");
     };
 
     window.deleteJournalEntry = function(id) { 
@@ -2235,6 +2246,7 @@
 
 </body>
 </html>
+
 
 
 
