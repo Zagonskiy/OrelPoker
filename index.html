@@ -827,6 +827,89 @@
             cursor: pointer;
             font-size: 1.1em;
         }
+
+        /* --- КОМПАКТНАЯ ТАБЛИЦА (ТОЛЬКО ПК) --- */
+        @media screen and (min-width: 769px) {
+            /* Сужаем отступы */
+            th, td { padding: 8px 4px; }
+            
+            /* Уменьшаем поля ввода и кнопки */
+            input[type="number"] { width: 50px; font-size: 1em; }
+            .btn-calc, .btn-undo, .btn-redo { width: 32px; height: 32px; font-size: 1.2em; }
+            .btn-delete, .btn-reset-player { width: 24px; height: 24px; font-size: 0.8em; }
+            
+            /* Чуть уменьшаем шрифт в таблице, чтобы влезало */
+            #scoreTable { font-size: 0.95em; }
+        }
+
+        /* --- СТИЛИ ДЛЯ ФОНОВ ПРОФИЛЯ --- */
+        .custom-bg-row {
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: #fff !important; /* Белый текст */
+            text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; /* Жирная обводка */
+            font-weight: bold;
+            border: 2px solid #fff;
+        }
+
+        /* Чтобы инпуты читались на фоне картинки */
+        .custom-bg-row input {
+            color: #fff !important;
+            border-bottom: 2px solid #fff !important;
+            background: rgba(0,0,0,0.4) !important; /* Полупрозрачный фон под текстом */
+            text-shadow: 1px 1px 0 #000;
+        }
+        
+        .custom-bg-row .status-cell {
+             text-shadow: 2px 2px 0 #000; /* Чтобы статус тоже читался */
+        }
+
+        /* Карточки выбора фона */
+        .bg-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .bg-card {
+            border: 2px solid var(--accent-brown);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            background: #000;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .bg-card img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            display: block;
+            opacity: 0.5; /* По умолчанию затемнено (закрыто) */
+        }
+        .bg-card.unlocked img {
+            opacity: 1; /* Если открыто - ярко */
+        }
+        .bg-card.unlocked:hover {
+            transform: scale(1.05);
+            border-color: var(--accent-gold);
+        }
+        .lock-overlay {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2em;
+            color: #fff;
+            text-shadow: 0 0 5px #000;
+        }
+        .bg-name {
+            background: var(--accent-brown);
+            color: var(--accent-gold);
+            padding: 5px;
+            font-size: 0.8em;
+            font-family: 'Rye', cursive;
+        }
     </style>
 </head>
 <body>
@@ -882,6 +965,8 @@
     💬 Чат <span id="chatBadge" class="notification-badge">0</span>
     </button>
     <button id="btn-nav-journal" class="nav-btn" onclick="showView('journal')">📜 Журнал архива</button>
+
+    <button id="btn-nav-settings" class="nav-btn" onclick="showView('settings')">⚙️ Настройки</button>
     
     <button class="nav-btn" onclick="logout()" style="margin-top: 20px;">🚪 ВЫЙТИ</button>
     
@@ -978,6 +1063,23 @@
         </div>
     </div>
 
+    <div id="view-settings" class="hidden">
+        <div class="brand-container">
+            <h1 class="header-title">Настройки</h1>
+        </div>
+
+        <div class="center-wrap">
+            <h3 style="color: var(--accent-brown); font-family: 'Rye';">Персонализация</h3>
+            <button class="btn-login-action" onclick="toggleBgSelector()">🖼️ Выбрать фон профиля</button>
+
+            <div id="bgSelectorPanel" class="hidden">
+                <p style="font-family: 'Special Elite'; font-size: 0.9em;">Выберите фон для вашей строки в таблице:</p>
+                <div id="bgGrid" class="bg-grid">
+                    </div>
+            </div>
+        </div>
+    </div>
+
     <div class="version-tag" onclick="forceUpdate()">OrelPoker v74.0 (Final)</div>
     
     <div id="roleModal" class="modal-overlay role-hidden">
@@ -1051,6 +1153,14 @@
     const onlineUsersRef = ref(db, "online_users");
     let currentConnectionRef = null;
     let onlineNicknames = new Set();
+
+    // КОНФИГУРАЦИЯ ФОНОВ
+    const BACKGROUNDS_DB = [
+        { file: 'eagle.png',   owner: 'EAGLE THUNDER', name: 'Eagle' },
+        { file: 'cockeke.png', owner: 'Leosos',        name: 'Rooster' },
+        { file: 'bear.png',    owner: 'Zagonskiy',     name: 'Bear' },
+        { file: 'croco.png',   owner: 'Lacosto Holocosto', name: 'Crocodile' }
+    ];
 
     // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
     function updateMenuUI(displayName, loginName) {
@@ -1329,6 +1439,88 @@
         }
     }
 
+    // --- НАСТРОЙКИ ФОНА ---
+
+    window.toggleBgSelector = function() {
+        const panel = document.getElementById('bgSelectorPanel');
+        panel.classList.toggle('hidden');
+        if (!panel.classList.contains('hidden')) {
+            renderBackgroundsList();
+        }
+    }
+
+    window.renderBackgroundsList = function() {
+        const grid = document.getElementById('bgGrid');
+        grid.innerHTML = '';
+
+        // Получаем текущего юзера
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (!sessionUser) return;
+        
+        // Мы проверяем и ник (login), и отображаемое имя (displayName), чтобы точно совпало
+        const myName = sessionUser.displayName; 
+        const myLogin = sessionUser.nick;
+
+        BACKGROUNDS_DB.forEach(bg => {
+            const card = document.createElement('div');
+            
+            // ПРОВЕРКА: Если имя игрока совпадает с владельцем фона
+            // (Проверяем и логин, и имя на всякий случай)
+            const isUnlocked = (bg.owner === myName || bg.owner === myLogin);
+
+            card.className = `bg-card ${isUnlocked ? 'unlocked' : ''}`;
+            
+            if (isUnlocked) {
+                card.onclick = () => saveProfileBackground(bg.file);
+            } else {
+                card.onclick = () => alert("Этот фон доступен только для " + bg.owner);
+            }
+
+            card.innerHTML = `
+                <img src="./${bg.file}">
+                <div class="bg-name">${bg.name}</div>
+                ${!isUnlocked ? '<div class="lock-overlay">🔒</div>' : ''}
+            `;
+            grid.appendChild(card);
+        });
+        
+        // Добавим кнопку "Сбросить фон" (всегда доступна)
+        const resetCard = document.createElement('div');
+        resetCard.className = 'bg-card unlocked';
+        resetCard.onclick = () => saveProfileBackground(null);
+        resetCard.innerHTML = `
+            <div style="height:80px; background:#3e2b1f; display:flex; align-items:center; justify-content:center; color:#fff;">❌</div>
+            <div class="bg-name">Без фона</div>
+        `;
+        grid.appendChild(resetCard);
+    }
+
+    window.saveProfileBackground = async function(fileName) {
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (!sessionUser) return;
+
+        // Находим ID игрока в таблице players по его логину
+        const myId = await findPlayerIdByLogin(sessionUser.nick);
+        
+        if (!myId) {
+            alert("Вы не сидите за столом! Сначала создайте игрока.");
+            return;
+        }
+
+        if (fileName) {
+            if(confirm("Установить этот фон?")) {
+                update(ref(db, 'players/' + myId), { background: fileName });
+                alert("Фон установлен!");
+                showView('game'); // Вернуть в игру, чтобы увидеть красоту
+            }
+        } else {
+            if(confirm("Убрать фон?")) {
+                update(ref(db, 'players/' + myId), { background: null });
+                showView('game');
+            }
+        }
+    }
+
     // =========================================================
     // ОБНОВЛЕННАЯ ТАБЛИЦА (С кнопкой ЛС)
     // =========================================================
@@ -1340,6 +1532,10 @@
 
         const tableBody = document.getElementById('tableBody');
         const newRow = tableBody.insertRow();
+        if (player.background) {
+            newRow.style.backgroundImage = `url('./${player.background}')`;
+            newRow.classList.add('custom-bg-row');
+        }
         const { total, historyArray } = calculatePlayerStats(player);
 
         // 1. ИМЯ
@@ -2123,9 +2319,14 @@
 
     window.showView = function(viewName) {
         document.getElementById('sidebar').classList.remove('open');
+        
+        // Скрываем все
         document.getElementById('view-game').classList.add('hidden');
         document.getElementById('view-journal').classList.add('hidden');
         document.getElementById('view-chat').classList.add('hidden');
+        document.getElementById('view-settings').classList.add('hidden'); // Добавили скрытие настроек
+
+        // Сбрасываем кнопки
         document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
 
         if (viewName === 'game') {
@@ -2134,17 +2335,19 @@
         } else if (viewName === 'chat') {
             document.getElementById('view-chat').classList.remove('hidden');
             document.getElementById('btn-nav-chat').classList.add('active');
-            
-            // Если чат не выбран, показываем список. Если выбран - остаемся в переписке.
-            if (!currentChatId) {
-                showChatList();
-            } else {
+            if (!currentChatId) showChatList();
+            else {
                  const container = document.getElementById('chatMessages');
                  setTimeout(() => container.scrollTop = container.scrollHeight, 100);
             }
         } else if (viewName === 'journal') {
             document.getElementById('view-journal').classList.remove('hidden');
             document.getElementById('btn-nav-journal').classList.add('active');
+        } else if (viewName === 'settings') { // НОВОЕ
+            document.getElementById('view-settings').classList.remove('hidden');
+            // Если есть кнопка для настроек в меню, можно сделать её активной:
+            const btnSet = document.getElementById('btn-nav-settings');
+            if(btnSet) btnSet.classList.add('active');
         }
     }
 
@@ -2246,6 +2449,7 @@
 
 </body>
 </html>
+
 
 
 
