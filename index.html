@@ -853,6 +853,27 @@
             border: 2px solid #fff;
         }
 
+        /* Стили для кастомной палитры */
+        .styled-color-picker {
+            width: 100%;
+            height: 120px;
+            border: 4px solid var(--accent-brown);
+            border-radius: 8px;
+            cursor: pointer;
+            background: transparent;
+            padding: 0;
+            outline: none;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 5px 15px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+        }
+        .styled-color-picker:hover {
+            transform: scale(1.02);
+        }
+        /* Убираем дефолтные рамки внутри инпута цвета (для Chrome/Safari/Firefox) */
+        .styled-color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+        .styled-color-picker::-webkit-color-swatch { border: none; border-radius: 4px; }
+        .styled-color-picker::-moz-color-swatch { border: none; border-radius: 4px; }
+
         /* Чтобы инпуты читались на фоне картинки */
         .custom-bg-row input {
             color: #fff !important;
@@ -1095,6 +1116,21 @@
             </div>
 
             <button class="btn-cancel-role" onclick="closeRoleModal()">Отмена</button>
+        </div>
+
+    </div>
+
+    <div id="colorPickerOverlay" class="modal-overlay role-hidden">
+        <div class="modal-card" style="max-width: 320px;">
+            <h3 style="margin-top:0; color:#8b4513; font-family:'Rye', cursive;">ВЫБЕРИТЕ ЦВЕТ</h3>
+            <p style="font-family:'Special Elite', monospace; font-size:0.9em; opacity:0.8;">Нажмите на прямоугольник ниже, чтобы открыть палитру</p>
+            
+            <input type="color" id="customColorInput" class="styled-color-picker" value="#8b0000">
+            
+            <div style="display:flex; justify-content:space-between; margin-top:20px; gap:10px;">
+                <button class="btn-cancel-role" onclick="closeColorPicker()">Отмена</button>
+                <button class="btn-login-action" style="margin:0; width:auto; flex:1; display:flex; justify-content:center; align-items:center; gap:5px;" onclick="applyCustomColor()">✔️ Применить</button>
+            </div>
         </div>
     </div>
 </div>
@@ -1471,20 +1507,7 @@
             
             if (isUnlocked) {
                 if (bg.owner === 'all') {
-                    // СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ ЦВЕТА
-                    card.onclick = () => {
-                        const picker = document.getElementById('hiddenColorPicker');
-                        picker.click(); // Открываем системную палитру
-                        
-                        // Очищаем старые события, чтобы не дублировались
-                        picker.oninput = null; 
-                        
-                        // Когда цвет выбран
-                        picker.onchange = function() {
-                            const selectedColor = picker.value; // Например #ff0000
-                            saveProfileBackground(selectedColor);
-                        };
-                    };
+                    card.onclick = () => openColorPickerModal();
                 } else {
                     // ОБЫЧНАЯ ЛОГИКА ДЛЯ КАРТИНОК
                     card.onclick = () => saveProfileBackground(bg.file);
@@ -1963,6 +1986,26 @@
                 }
             }
         });
+    }
+
+    // --- ФУНКЦИИ ОКНА ВЫБОРА ЦВЕТА ---
+    window.openColorPickerModal = function() {
+        // Убираем класс role-hidden, чтобы показать окно (оно уже имеет затемнение фона)
+        document.getElementById('colorPickerOverlay').classList.remove('role-hidden');
+    }
+
+    window.closeColorPicker = function() {
+        // Прячем окно
+        document.getElementById('colorPickerOverlay').classList.add('role-hidden');
+    }
+
+    window.applyCustomColor = function() {
+        // Берем цвет, который выбрал пользователь
+        const selectedColor = document.getElementById('customColorInput').value;
+        // Передаем его в функцию сохранения
+        saveProfileBackground(selectedColor);
+        // Закрываем окно
+        closeColorPicker();
     }
     // --- ИНТЕРФЕЙС И КНОПКИ ---
     window.applyRoleUI = function() {
@@ -2475,6 +2518,7 @@
 
 </body>
 </html>
+
 
 
 
