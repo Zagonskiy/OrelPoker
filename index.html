@@ -1078,6 +1078,13 @@
                     </div>
             </div>
         </div>
+        <div class="center-wrap">
+            <h3 style="color: var(--accent-brown); font-family: 'Rye';">Персонализация</h3>
+    
+            <input type="color" id="hiddenColorPicker" style="display: none; visibility: hidden;">
+    
+            <button class="btn-login-action" onclick="toggleBgSelector()">🖼️ Выбрать фон профиля</button>
+        </div>
     </div>
 
     <div class="version-tag" onclick="forceUpdate()">OrelPoker v74.0 (Final)</div>
@@ -1159,7 +1166,8 @@
         { file: 'Eagle.png',   owner: 'EAGLE THUNDER', name: 'Орёл' },
         { file: 'cockeke.png', owner: 'Leosos',        name: 'Петух' },
         { file: 'bear.png',    owner: 'Zagonskiy',     name: 'Медведь' },
-        { file: 'Croco.png',   owner: 'Lacosto Holocosto', name: 'Крокодил' }
+        { file: 'Croco.png',   owner: 'Lacosto Holocosto', name: 'Крокодил' },
+        { file: 'rgb.png',     owner: 'all',           name: 'Свой Цвет' }
     ];
 
     // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
@@ -1453,25 +1461,40 @@
         const grid = document.getElementById('bgGrid');
         grid.innerHTML = '';
 
-        // Получаем текущего юзера
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         if (!sessionUser) return;
         
-        // Мы проверяем и ник (login), и отображаемое имя (displayName), чтобы точно совпало
         const myName = sessionUser.displayName; 
         const myLogin = sessionUser.nick;
 
         BACKGROUNDS_DB.forEach(bg => {
             const card = document.createElement('div');
             
-            // ПРОВЕРКА: Если имя игрока совпадает с владельцем фона
-            // (Проверяем и логин, и имя на всякий случай)
-            const isUnlocked = (bg.owner === myName || bg.owner === myLogin);
+            // Если 'all', то доступно всем. Иначе проверяем ник.
+            const isUnlocked = (bg.owner === 'all' || bg.owner === myName || bg.owner === myLogin);
 
             card.className = `bg-card ${isUnlocked ? 'unlocked' : ''}`;
             
             if (isUnlocked) {
-                card.onclick = () => saveProfileBackground(bg.file);
+                if (bg.owner === 'all') {
+                    // СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ ЦВЕТА
+                    card.onclick = () => {
+                        const picker = document.getElementById('hiddenColorPicker');
+                        picker.click(); // Открываем системную палитру
+                        
+                        // Очищаем старые события, чтобы не дублировались
+                        picker.oninput = null; 
+                        
+                        // Когда цвет выбран
+                        picker.onchange = function() {
+                            const selectedColor = picker.value; // Например #ff0000
+                            saveProfileBackground(selectedColor);
+                        };
+                    };
+                } else {
+                    // ОБЫЧНАЯ ЛОГИКА ДЛЯ КАРТИНОК
+                    card.onclick = () => saveProfileBackground(bg.file);
+                }
             } else {
                 card.onclick = () => alert("Этот фон доступен только для " + bg.owner);
             }
@@ -1484,7 +1507,7 @@
             grid.appendChild(card);
         });
         
-        // Добавим кнопку "Сбросить фон" (всегда доступна)
+        // Кнопка сброса
         const resetCard = document.createElement('div');
         resetCard.className = 'bg-card unlocked';
         resetCard.onclick = () => saveProfileBackground(null);
@@ -1494,7 +1517,6 @@
         `;
         grid.appendChild(resetCard);
     }
-
     window.saveProfileBackground = async function(fileName) {
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         if (!sessionUser) return;
@@ -1528,12 +1550,22 @@
     function renderPlayerRow(id, player) {
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || { role: 'player' };
         const myRole = sessionUser.role;
-        const myLogin = sessionUser.nick; // Для проверки "не я ли это"
+        const myLogin = sessionUser.nick; 
 
         const tableBody = document.getElementById('tableBody');
         const newRow = tableBody.insertRow();
+
+        // --- ЛОГИКА ФОНОВ (КАРТИНКА ИЛИ ЦВЕТ) ---
         if (player.background) {
-            newRow.style.backgroundImage = `url('./${player.background}')`;
+            // Если начинается с #, значит это цвет (HEX)
+            if (player.background.startsWith('#')) {
+                newRow.style.backgroundColor = player.background;
+                newRow.style.backgroundImage = 'none'; // Убираем картинку, если была
+            } else {
+                // Иначе это файл картинки
+                newRow.style.backgroundImage = `url('./${player.background}')`;
+                newRow.style.backgroundColor = 'transparent';
+            }
             newRow.classList.add('custom-bg-row');
         }
         const { total, historyArray } = calculatePlayerStats(player);
@@ -2449,6 +2481,7 @@
 
 </body>
 </html>
+
 
 
 
