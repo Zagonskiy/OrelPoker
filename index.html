@@ -1528,33 +1528,31 @@
         
         if (myId) {
             const snap = await get(ref(db, 'players/' + myId + '/background'));
-            currentBg = snap.val(); // Тут лежит имя файла (eagle.png) или цвет (#ff0000)
+            currentBg = snap.val(); 
         }
 
-        grid.innerHTML = ''; // Очищаем надпись загрузки
+        grid.innerHTML = ''; 
 
         BACKGROUNDS_DB.forEach(bg => {
             const card = document.createElement('div');
             
-            // Проверяем доступность
             const isUnlocked = (bg.owner === 'all' || bg.owner === myName || bg.owner === myLogin);
-            
-            // Проверяем, ПРИМЕНЕН ли этот фон сейчас
             let isApplied = false;
             
-            if (bg.owner === 'all') {
-                // Для карточки "Свой цвет" (rgb.png): 
-                // Считаем её активной, если текущий фон начинается с # (то есть это цвет)
-                if (currentBg && currentBg.startsWith('#')) isApplied = true;
-            } else {
-                // Для картинок: просто сравниваем имена файлов
-                if (currentBg === bg.file) isApplied = true;
+            // --- УЛУЧШЕННАЯ ПРОВЕРКА ---
+            if (currentBg) {
+                if (bg.owner === 'all') {
+                    // Если это палитра: активна, если текущий фон начинается с #
+                    if (currentBg.startsWith('#')) isApplied = true;
+                } else {
+                    // Если это картинка: сравниваем имена файлов
+                    if (currentBg === bg.file) isApplied = true;
+                }
             }
+            // ---------------------------
 
-            // Добавляем класс active-selected для зеленой рамки
             card.className = `bg-card ${isUnlocked ? 'unlocked' : ''} ${isApplied ? 'active-selected' : ''}`;
             
-            // КЛИКИ
             if (isUnlocked) {
                 if (bg.owner === 'all') {
                     card.onclick = () => openColorPickerModal();
@@ -1565,7 +1563,6 @@
                 card.onclick = () => alert("Этот фон доступен только для " + bg.owner);
             }
 
-            // РИСУЕМ КАРТОЧКУ (Добавили блок с лентой)
             const ribbonHtml = isApplied ? '<div class="applied-ribbon">ПРИМЕНЁН</div>' : '';
             const lockHtml = !isUnlocked ? '<div class="lock-overlay">🔒</div>' : '';
 
@@ -1578,16 +1575,14 @@
             grid.appendChild(card);
         });
         
-        // КНОПКА СБРОСА (БЕЗ ФОНА)
+        // КНОПКА СБРОСА
         const resetCard = document.createElement('div');
-        // Если фона нет вообще (null или undefined), значит выбрано "Без фона"
+        // Если currentBg пустой (null/undefined), значит фон сброшен
         const isResetActive = (!currentBg);
         
         resetCard.className = `bg-card unlocked ${isResetActive ? 'active-selected' : ''}`;
         resetCard.onclick = () => saveProfileBackground(null);
         
-        // Тут тоже можно добавить ленту, если хотите, но по запросу "лента пропадает"
-        // мы оставим просто зеленую рамку или ничего
         resetCard.innerHTML = `
             <div style="height:80px; background:#3e2b1f; display:flex; align-items:center; justify-content:center; color:#fff; font-size:2em;">❌</div>
             <div class="bg-name">Сбросить</div>
@@ -2450,13 +2445,18 @@
     window.showView = function(viewName) {
         document.getElementById('sidebar').classList.remove('open');
         
-        // Скрываем все
+        // Скрываем все основные экраны
         document.getElementById('view-game').classList.add('hidden');
         document.getElementById('view-journal').classList.add('hidden');
         document.getElementById('view-chat').classList.add('hidden');
-        document.getElementById('view-settings').classList.add('hidden'); // Добавили скрытие настроек
+        document.getElementById('view-settings').classList.add('hidden');
 
-        // Сбрасываем кнопки
+        // --- ИСПРАВЛЕНИЕ: Закрываем панель выбора фона при уходе ---
+        // Это заставит список перерисоваться заново при следующем открытии
+        document.getElementById('bgSelectorPanel').classList.add('hidden'); 
+        // -----------------------------------------------------------
+
+        // Сбрасываем кнопки навигации
         document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
 
         if (viewName === 'game') {
@@ -2473,9 +2473,8 @@
         } else if (viewName === 'journal') {
             document.getElementById('view-journal').classList.remove('hidden');
             document.getElementById('btn-nav-journal').classList.add('active');
-        } else if (viewName === 'settings') { // НОВОЕ
+        } else if (viewName === 'settings') {
             document.getElementById('view-settings').classList.remove('hidden');
-            // Если есть кнопка для настроек в меню, можно сделать её активной:
             const btnSet = document.getElementById('btn-nav-settings');
             if(btnSet) btnSet.classList.add('active');
         }
@@ -2579,6 +2578,7 @@
 
 </body>
 </html>
+
 
 
 
