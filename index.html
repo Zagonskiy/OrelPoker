@@ -1885,7 +1885,7 @@
                         performLogin(nick, pass, remember || isAuto, dispName, dbRole);
                         return;
                     } else {
-                        if(!isAuto) alert(`ОШИБКА ПАРОЛЯ!\nВ базе: "${userData.pass}"\nВы ввели: "${pass}"`);
+                        if(!isAuto) alert(`ОШИБКА ПАРОЛЯ!`);
                         if(isAuto) { localStorage.removeItem('op_user'); sessionStorage.removeItem('op_session_user'); }
                         return;
                     }
@@ -2449,6 +2449,7 @@
 
 </body>
 </html>
+
 
 
 
