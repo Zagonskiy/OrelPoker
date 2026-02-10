@@ -853,6 +853,31 @@
             border: 2px solid #fff;
         }
 
+        /* ЛЕНТА "ПРИМЕНЕНО" */
+        .applied-ribbon {
+            position: absolute;
+            top: 15px;
+            right: -28px;
+            background: var(--accent-green); /* Зеленый цвет успеха */
+            color: #fff;
+            transform: rotate(45deg); /* Поворот по диагонали */
+            padding: 5px 30px;
+            font-size: 0.7em;
+            font-family: 'Special Elite', monospace;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            z-index: 10;
+            pointer-events: none; /* Чтобы клики проходили сквозь неё */
+            border: 1px solid #fff;
+            text-transform: uppercase;
+        }
+
+        /* Если фон выбран, подсветим рамку карточки зеленым */
+        .bg-card.active-selected {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 15px rgba(46, 125, 50, 0.6);
+        }
+
         /* Стили для кастомной палитры */
         .styled-color-picker {
             width: 100%;
@@ -1487,9 +1512,9 @@
         }
     }
 
-    window.renderBackgroundsList = function() {
+    window.renderBackgroundsList = async function() {
         const grid = document.getElementById('bgGrid');
-        grid.innerHTML = '';
+        grid.innerHTML = '<div style="color:#fff; text-align:center; width:100%;">Загрузка...</div>';
 
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         if (!sessionUser) return;
@@ -1497,40 +1522,76 @@
         const myName = sessionUser.displayName; 
         const myLogin = sessionUser.nick;
 
+        // 1. Узнаем, какой фон сейчас установлен у игрока
+        const myId = await findPlayerIdByLogin(myLogin);
+        let currentBg = null;
+        
+        if (myId) {
+            const snap = await get(ref(db, 'players/' + myId + '/background'));
+            currentBg = snap.val(); // Тут лежит имя файла (eagle.png) или цвет (#ff0000)
+        }
+
+        grid.innerHTML = ''; // Очищаем надпись загрузки
+
         BACKGROUNDS_DB.forEach(bg => {
             const card = document.createElement('div');
             
-            // Если 'all', то доступно всем. Иначе проверяем ник.
+            // Проверяем доступность
             const isUnlocked = (bg.owner === 'all' || bg.owner === myName || bg.owner === myLogin);
-
-            card.className = `bg-card ${isUnlocked ? 'unlocked' : ''}`;
             
+            // Проверяем, ПРИМЕНЕН ли этот фон сейчас
+            let isApplied = false;
+            
+            if (bg.owner === 'all') {
+                // Для карточки "Свой цвет" (rgb.png): 
+                // Считаем её активной, если текущий фон начинается с # (то есть это цвет)
+                if (currentBg && currentBg.startsWith('#')) isApplied = true;
+            } else {
+                // Для картинок: просто сравниваем имена файлов
+                if (currentBg === bg.file) isApplied = true;
+            }
+
+            // Добавляем класс active-selected для зеленой рамки
+            card.className = `bg-card ${isUnlocked ? 'unlocked' : ''} ${isApplied ? 'active-selected' : ''}`;
+            
+            // КЛИКИ
             if (isUnlocked) {
                 if (bg.owner === 'all') {
                     card.onclick = () => openColorPickerModal();
                 } else {
-                    // ОБЫЧНАЯ ЛОГИКА ДЛЯ КАРТИНОК
                     card.onclick = () => saveProfileBackground(bg.file);
                 }
             } else {
                 card.onclick = () => alert("Этот фон доступен только для " + bg.owner);
             }
 
+            // РИСУЕМ КАРТОЧКУ (Добавили блок с лентой)
+            const ribbonHtml = isApplied ? '<div class="applied-ribbon">ПРИМЕНЁН</div>' : '';
+            const lockHtml = !isUnlocked ? '<div class="lock-overlay">🔒</div>' : '';
+
             card.innerHTML = `
                 <img src="./${bg.file}">
                 <div class="bg-name">${bg.name}</div>
-                ${!isUnlocked ? '<div class="lock-overlay">🔒</div>' : ''}
+                ${ribbonHtml}
+                ${lockHtml}
             `;
             grid.appendChild(card);
         });
         
-        // Кнопка сброса
+        // КНОПКА СБРОСА (БЕЗ ФОНА)
         const resetCard = document.createElement('div');
-        resetCard.className = 'bg-card unlocked';
+        // Если фона нет вообще (null или undefined), значит выбрано "Без фона"
+        const isResetActive = (!currentBg);
+        
+        resetCard.className = `bg-card unlocked ${isResetActive ? 'active-selected' : ''}`;
         resetCard.onclick = () => saveProfileBackground(null);
+        
+        // Тут тоже можно добавить ленту, если хотите, но по запросу "лента пропадает"
+        // мы оставим просто зеленую рамку или ничего
         resetCard.innerHTML = `
-            <div style="height:80px; background:#3e2b1f; display:flex; align-items:center; justify-content:center; color:#fff;">❌</div>
-            <div class="bg-name">Без фона</div>
+            <div style="height:80px; background:#3e2b1f; display:flex; align-items:center; justify-content:center; color:#fff; font-size:2em;">❌</div>
+            <div class="bg-name">Сбросить</div>
+            ${isResetActive ? '<div class="applied-ribbon" style="background:#555;">ПУСТО</div>' : ''}
         `;
         grid.appendChild(resetCard);
     }
@@ -2518,6 +2579,7 @@
 
 </body>
 </html>
+
 
 
 
