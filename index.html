@@ -828,139 +828,6 @@
             font-size: 1.1em;
         }
 
-        /* --- ПОКЕР --- */
-        .poker-header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding-bottom: 10px; border-bottom: 2px solid var(--accent-brown);
-        }
-        #pokerPotDisplay {
-            font-family: 'Rye', cursive; font-size: 1.5em; color: var(--accent-green);
-            text-shadow: 1px 1px 0 #000;
-        }
-        .poker-table-felt {
-            background-color: #35654d; /* Сукно */
-            border: 10px solid #5d4037;
-            border-radius: 50px;
-            height: 50vh;
-            position: relative;
-            margin-top: 10px;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
-            display: flex; justify-content: center; align-items: center;
-        }
-        .center-message {
-            color: rgba(255,255,255,0.3); font-family: 'Rye'; font-size: 1.5em;
-            text-align: center; pointer-events: none;
-        }
-
-        .btn-start-round {
-            position: absolute; /* Абсолютно внутри стола, а не экрана */
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: auto;
-            min-width: 180px;
-            padding: 15px 30px;
-            font-size: 1.2em;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
-            z-index: 100;
-            background: linear-gradient(45deg, #2e7d32, #1b5e20);
-            border: 2px solid #fff;
-            color: #fff;
-            font-family: 'Rye', cursive;
-            cursor: pointer;
-            border-radius: 50px;
-            animation: pulse-btn 2s infinite;
-        }
-        @keyframes pulse-btn {
-            0% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.05); }
-            100% { transform: translate(-50%, -50%) scale(1); }
-        }
-        
-        /* Игроки за столом */
-        .poker-player {
-            position: absolute;
-            width: 80px; text-align: center;
-            transition: all 0.3s;
-        }
-        /* Позиционирование игроков (упрощенно для круга) */
-        .pp-0 { bottom: -40px; left: 50%; transform: translateX(-50%); } /* Я */
-        .pp-1 { left: -20px; top: 50%; transform: translateY(-50%); }
-        .pp-2 { top: -40px; left: 50%; transform: translateX(-50%); }
-        .pp-3 { right: -20px; top: 50%; transform: translateY(-50%); }
-
-        .pp-avatar {
-            width: 50px; height: 50px; background: #2a1b0f; border: 2px solid var(--accent-gold);
-            border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center;
-            color: var(--accent-gold); font-weight: bold; position: relative;
-        }
-        .pp-avatar.active-turn { box-shadow: 0 0 15px gold; border-color: #fff; }
-        .pp-info {
-            background: rgba(0,0,0,0.85); 
-            border: 1px solid var(--accent-brown);
-            color: #fff; 
-            padding: 4px 8px; 
-            border-radius: 8px;
-            font-size: 0.8em; 
-            margin-top: 5px; 
-            position: relative; 
-            z-index: 5;
-            min-width: 90px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-        }
-        .pp-balance {
-            color: var(--accent-green);
-            font-weight: bold;
-            display: block;
-            border-top: 1px dotted #555;
-            margin-top: 2px;
-            padding-top: 2px;
-        }
-        .pp-cards {
-            display: flex; justify-content: center; margin-top: 5px;
-        }
-        .mini-card {
-            width: 15px; height: 22px; background: #fff; border-radius: 2px; margin: 0 1px;
-            border: 1px solid #000;
-        }
-        .mini-card.back { background: repeating-linear-gradient(45deg, #b71c1c, #b71c1c 2px, #fff 2px, #fff 4px); }
-
-        /* Мои карты и кнопки */
-        .poker-controls {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            background: rgba(0,0,0,0.9); padding: 10px; z-index: 3900;
-            display: flex; flex-direction: column; align-items: center;
-            border-top: 2px solid var(--accent-gold);
-        }
-        .my-hand { display: flex; gap: 10px; margin-bottom: 10px; }
-        .poker-card {
-            width: 60px; height: 90px; background: #fff; border-radius: 6px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-family: 'Courier New', monospace; font-weight: bold; font-size: 1.2em;
-            border: 1px solid #999; box-shadow: 2px 2px 5px #000; cursor: pointer;
-        }
-        .poker-card.red { color: red; }
-        .poker-card.black { color: black; }
-        .poker-card.selected { transform: translateY(-10px); border: 2px solid gold; }
-
-        #view-poker-table.hidden + #pokerControls, /* Если стол скрыт... */
-        body:not(:has(#view-poker-table:not(.hidden))) #pokerControls { 
-            display: none !important; 
-        }
-        
-        .action-buttons { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
-        .btn-poker-action {
-            padding: 10px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer;
-            font-family: 'Special Elite'; color: #fff;
-        }
-        .btn-fold { background: #b71c1c; }
-        .btn-check { background: #2e7d32; }
-        .btn-raise { background: #8e24aa; border: 1px solid #da70d6; }
-        .btn-allin { background: #f57f17; color: #000; }
-        .btn-swap { background: #0277bd; width: 100%; }
-
-        /* Зеленая подсветка в истории (добавь к существующим стилям) */
-        .history-log span.poker-win { color: #00e676; font-weight: bold; background: rgba(0,255,0,0.1); padding: 0 4px; }
-
         /* --- КОМПАКТНАЯ ТАБЛИЦА (ТОЛЬКО ПК) --- */
         @media screen and (min-width: 769px) {
             /* Сужаем отступы */
@@ -1089,6 +956,67 @@
             font-size: 0.8em;
             font-family: 'Rye', cursive;
         }
+
+        /* --- ИСПРАВЛЕНИЯ ПОКЕРА --- */
+        
+        /* 1. Кнопка "Начать раздачу" - теперь по центру и красивая */
+        .btn-start-round {
+            position: absolute; /* Абсолютно внутри стола, а не экрана */
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: auto;
+            min-width: 180px;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+            z-index: 100;
+            background: linear-gradient(45deg, #2e7d32, #1b5e20);
+            border: 2px solid #fff;
+            color: #fff;
+            font-family: 'Rye', cursive;
+            cursor: pointer;
+            border-radius: 50px;
+            animation: pulse-btn 2s infinite;
+        }
+        @keyframes pulse-btn {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* 2. Игроки и Баланс */
+        .pp-info {
+            background: rgba(0,0,0,0.85); 
+            border: 1px solid var(--accent-brown);
+            color: #fff; 
+            padding: 4px 8px; 
+            border-radius: 8px;
+            font-size: 0.8em; 
+            margin-top: 5px; 
+            position: relative; 
+            z-index: 5;
+            min-width: 90px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        .pp-balance {
+            color: var(--accent-green);
+            font-weight: bold;
+            display: block;
+            border-top: 1px dotted #555;
+            margin-top: 2px;
+            padding-top: 2px;
+        }
+
+        /* 3. Кнопка Рейз */
+        .btn-raise { background: #8e24aa; border: 1px solid #da70d6; } /* Фиолетовая */
+
+        /* 4. Скрытие меню при выходе */
+        /* Важно: это скрывает панель карт, если мы не в режиме покера */
+        #view-poker-table.hidden + #pokerControls, /* Если стол скрыт... */
+        body:not(:has(#view-poker-table:not(.hidden))) #pokerControls { 
+            display: none !important; 
+        }
+        .force-hide { display: none !important; }
     </style>
 </head>
 <body>
@@ -1300,7 +1228,7 @@
         </div>
     </div>
 
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v74.0 (Final)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v76.0 (PokerFix)</div>
     
     <div id="roleModal" class="modal-overlay role-hidden">
         <div class="modal-card">
@@ -1348,7 +1276,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=74').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=76').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -1459,7 +1387,22 @@
         }
         
         if(navigator.onLine) syncUsersToTable();
-        // Убрали принудительный openGeneralChat(), так как теперь есть список
+        // --- ВСТАВИТЬ ЭТО ВНУТРЬ "DOMContentLoaded", В САМЫЙ КОНЕЦ ---
+
+        // ПРЕДЗАГРУЗКА ИЗОБРАЖЕНИЙ
+        setTimeout(() => {
+            const imagesToPreload = BACKGROUNDS_DB
+                .filter(bg => bg.owner !== 'all') 
+                .map(bg => bg.file);
+            
+            imagesToPreload.push('logo.png', 'rgb.png');
+
+            imagesToPreload.forEach(file => {
+                const img = new Image();
+                img.src = './' + file;
+            });
+            console.log("📸 Все картинки загружены в память!");
+        }, 1500);
     });
 
     // =========================================================
@@ -1860,7 +1803,7 @@
         inputName.readOnly = true;
         
         // КЛИКИ (Смена ранга/имени)
-        if (myRole === 'admin' && player.login) {
+        if (myRole === 'admin') {
             inputName.style.cursor = "pointer";
             inputName.style.textDecoration = "underline";
             inputName.onclick = () => changeRankDialog(player.login, player.name);
@@ -2624,14 +2567,14 @@
         document.getElementById('view-journal').classList.add('hidden');
         document.getElementById('view-chat').classList.add('hidden');
         document.getElementById('view-settings').classList.add('hidden');
-        document.getElementById('pokerControls').classList.add('hidden');
+        document.getElementById('view-poker-lobby').classList.add('hidden');
+        document.getElementById('view-poker-table').classList.add('hidden');
+        
+        // --- ДОБАВЛЕНО: ПРЯЧЕМ КАРТЫ И КНОПКИ ПОКЕРА ---
+        document.getElementById('pokerControls').classList.add('hidden'); 
+        // -----------------------------------------------
 
-        // --- ИСПРАВЛЕНИЕ: Закрываем панель выбора фона при уходе ---
-        // Это заставит список перерисоваться заново при следующем открытии
         document.getElementById('bgSelectorPanel').classList.add('hidden'); 
-        // -----------------------------------------------------------
-
-        // Сбрасываем кнопки навигации
         document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
 
         if (viewName === 'game') {
@@ -2652,9 +2595,8 @@
             document.getElementById('view-settings').classList.remove('hidden');
             const btnSet = document.getElementById('btn-nav-settings');
             if(btnSet) btnSet.classList.add('active');
-        }else if (viewName === 'poker-lobby') {
+        } else if (viewName === 'poker-lobby') {
             document.getElementById('view-poker-lobby').classList.remove('hidden');
-            // Кнопки в меню может и не быть id, если не добавил, проверь
             const btnP = document.getElementById('btn-nav-poker');
             if(btnP) btnP.classList.add('active');
         } else if (viewName === 'poker-table') {
@@ -2762,24 +2704,3 @@
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
