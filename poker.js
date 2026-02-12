@@ -253,6 +253,9 @@ function renderTableState(table, globalPlayers) {
 // --- 3. ЛОГИКА ИГРЫ ---
 
 window.poker.startGame = async function() {
+    // Защита от двойного клика
+    if(currentGameState && currentGameState.status !== 'waiting') return;
+
     const table = currentGameState;
     const updates = {};
     let pot = 0;
@@ -439,6 +442,9 @@ async function endGameLogic(winners, table, msgPrefix) {
             resetUpdates[`poker_tables/${currentTableId}/players/${nick}/cards`] = false;
             resetUpdates[`poker_tables/${currentTableId}/players/${nick}/hand`] = null;
             resetUpdates[`poker_tables/${currentTableId}/players/${nick}/lastAction`] = "";
+            resetUpdates[`poker_tables/${currentTableId}/players/${nick}/swapped`] = false;
+            resetUpdates[`poker_tables/${currentTableId}/players/${nick}/folded`] = false;
+            resetUpdates[`poker_tables/${currentTableId}/players/${nick}/cardsVisible`] = false;
         }
         update(ref(db), resetUpdates);
     }, 6000);
