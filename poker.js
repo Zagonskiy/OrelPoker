@@ -60,11 +60,17 @@ onValue(ref(db, 'poker_tables'), (snap) => {
     list.innerHTML = '';
     const data = snap.val();
     
+    const user = JSON.parse(sessionStorage.getItem('op_session_user'));
+    
     if(data) {
         for(let key in data) {
             const t = data[key];
             const count = t.players ? Object.keys(t.players).length : 0;
             const div = document.createElement('div');
+            
+            // Кнопка удаления для админа или владельца
+            const isOwner = (user && t.host === user.nick) || (user && user.role === 'admin');
+            const deleteBtn = isOwner ? `<button class="btn-delete-table" onclick="event.stopPropagation(); window.poker.deleteTable('${key}')">🗑️</button>` : '';
             
             div.className = 'chat-list-item';
             div.innerHTML = `
@@ -73,6 +79,7 @@ onValue(ref(db, 'poker_tables'), (snap) => {
                     <span class="chat-name">${t.name}</span>
                     <span class="chat-preview">Игроков: ${count} | Банк: ${t.pot}</span>
                 </div>
+                ${deleteBtn}
             `;
             div.onclick = () => window.poker.joinTable(key);
             list.appendChild(div);
@@ -81,6 +88,12 @@ onValue(ref(db, 'poker_tables'), (snap) => {
         list.innerHTML = '<div style="opacity:0.6;">Нет активных столов</div>';
     }
 });
+
+window.poker.deleteTable = async function(tableId) {
+    if(confirm("Удалить этот стол?")) {
+        await remove(ref(db, `poker_tables/${tableId}`));
+    }
+}
 
 window.poker.joinTable = async function(tableId) {
     const user = JSON.parse(sessionStorage.getItem('op_session_user'));
