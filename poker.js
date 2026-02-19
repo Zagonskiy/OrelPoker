@@ -549,39 +549,6 @@ window.poker.action = async function(act) {
 
 // --- 4. КОНЕЦ ИГРЫ И ПОБЕДИТЕЛИ ---
 
-async function checkEndGame() {
-    const tableSnap = await get(ref(db, `poker_tables/${currentTableId}`));
-    const table = tableSnap.val();
-    const players = table.players;
-    
-    const activePlayers = Object.keys(players).filter(nick => !players[nick].folded);
-    
-    if(activePlayers.length === 1 && table.status === 'playing') {
-        endGameLogic([activePlayers[0]], table, "Все сбросили. Забрал: ");
-        return;
-    }
-
-    if(table.status === 'playing') {
-        let bestScore = -1;
-        let winners = [];
-
-        for(let nick of activePlayers) {
-            const p = players[nick];
-            // Вскрываем карты активных игроков
-            update(ref(db, `poker_tables/${currentTableId}/players/${nick}/cardsVisible`), true);
-
-            const score = evaluateHand(p.hand, table.communityCards);
-            if(score > bestScore) {
-                bestScore = score;
-                winners = [nick];
-            } else if (score === bestScore) {
-                winners.push(nick);
-            }
-        }
-        endGameLogic(winners, table, "Вскрытие! Победил: ");
-    }
-}
-
 async function endGameLogic(winners, table, msgPrefix) {
     const updates = {};
     const winAmount = Math.floor(table.pot / winners.length);
