@@ -428,15 +428,34 @@
 
         .center-message { color: rgba(255,255,255,0.4); font-family: 'Rye'; font-size: 1.5em; text-align: center; pointer-events: none; }
 
+        /* Карты на столе (Флоп, Терн, Ривер) */
+        .community-cards {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            gap: 8px;
+            z-index: 20;
+        }
+        .community-cards .poker-card {
+            width: 50px; 
+            height: 75px; 
+            font-size: 1em;
+            cursor: default; /* На столе карты нажимать нельзя */
+        }
+
         .btn-start-round {
             position: absolute; 
             top: 50%; left: 50%;
-            /* Убираем старые марджины */
             margin: 0;
-            /* Центрируем через translate, чтобы не зависеть от размеров */
             transform: translate(-50%, -50%); 
             
-            width: 180px;
+            /* ИЗМЕНЕНИЯ ЗДЕСЬ: */
+            width: auto;
+            min-width: 220px; 
+            white-space: nowrap;
+            /* ---------------- */
+            
             height: 50px;
             font-size: 1.2em;
             box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
@@ -700,6 +719,7 @@
             <div class="poker-table-felt">
                 <div id="pokerPlayersContainer">
                     </div>
+                <div id="communityCards" class="community-cards"></div>
                 <div id="pokerCenterMessage" class="center-message">Ожидание...</div>
                 <button id="btnStartPoker" class="btn-start-round hidden" onclick="window.poker.startGame()">Начать раздачу</button>
             </div>
@@ -712,7 +732,6 @@
                 <button class="btn-poker-action btn-check" onclick="window.poker.action('check')">Чек/Колл</button>
                 <button class="btn-poker-action btn-raise" onclick="window.poker.action('raise')">💰 Рейз</button>
                 <button class="btn-poker-action btn-allin" onclick="window.poker.action('allin')">Ва-банк</button>
-                <button id="btnSwapCard" class="btn-poker-action btn-swap hidden" onclick="window.poker.action('swap')">🔄 Сменить 1 карту</button>
             </div>
         </div>
     </div>
@@ -2211,3 +2230,4 @@
 
 </body>
 </html>
+
