@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, onValue, push, set, remove, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -11,7 +11,14 @@ const firebaseConfig = {
     appId: "1:913271365234:web:b48f717e011eea4847eceb"
 };
 
-const app = initializeApp(firebaseConfig, "pokerApp");
+// БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ (Именно этого не хватало в вашем файле)
+const existingApps = getApps();
+let app;
+if (!existingApps.some(a => a.name === "pokerApp")) {
+    app = initializeApp(firebaseConfig, "pokerApp");
+} else {
+    app = existingApps.find(a => a.name === "pokerApp");
+}
 const db = getDatabase(app);
 
 window.poker = {};
@@ -252,6 +259,20 @@ function renderTableState(table, globalPlayers) {
         container.appendChild(div);
     });
 
+    // ОТРИСОВКА КАРТ НА СТОЛЕ
+    const commContainer = document.getElementById('communityCards');
+    if (commContainer) {
+        commContainer.innerHTML = '';
+        if (table.communityCards && table.status === 'playing') {
+            table.communityCards.forEach(card => {
+                const cDiv = document.createElement('div');
+                cDiv.className = `poker-card ${['♥','♦'].includes(card.suit) ? 'red' : 'black'}`;
+                cDiv.innerHTML = `${card.rank}<br>${card.suit}`;
+                commContainer.appendChild(cDiv);
+            });
+        }
+    }
+
     const btnStart = document.getElementById('btnStartPoker');
     if(table.host === myNick && table.status === 'waiting') {
         btnStart.classList.remove('hidden');
@@ -293,10 +314,12 @@ function renderTableState(table, globalPlayers) {
         if (isMyTurn && !myData.folded) {
             actContainer.classList.remove('hidden');
             const btnSwap = document.getElementById('btnSwapCard');
-            if(!myData.swapped) {
-                btnSwap.classList.remove('hidden');
-            } else {
-                btnSwap.classList.add('hidden');
+            if(btnSwap) {
+                if(!myData.swapped) {
+                    btnSwap.classList.remove('hidden');
+                } else {
+                    btnSwap.classList.add('hidden');
+                }
             }
         } else {
             actContainer.classList.add('hidden');
@@ -305,20 +328,6 @@ function renderTableState(table, globalPlayers) {
         // Если мы не в игре или статус 'waiting' - прячем всё
         controls.classList.add('hidden');
         actContainer.classList.add('hidden');
-    }
-
-
-    const commContainer = document.getElementById('communityCards');
-    if (commContainer) {
-        commContainer.innerHTML = '';
-        if (table.communityCards && table.status === 'playing') {
-            table.communityCards.forEach(card => {
-                const cDiv = document.createElement('div');
-                cDiv.className = `poker-card ${['♥','♦'].includes(card.suit) ? 'red' : 'black'}`;
-                cDiv.innerHTML = `${card.rank}<br>${card.suit}`;
-                commContainer.appendChild(cDiv);
-            });
-        }
     }
 }
 
@@ -348,7 +357,7 @@ window.poker.startGame = async function() {
         updates[`poker_tables/${currentTableId}/players/${nick}/cards`] = true;
         updates[`poker_tables/${currentTableId}/players/${nick}/cardsVisible`] = false;
         updates[`poker_tables/${currentTableId}/players/${nick}/lastAction`] = "Анте 10";
-        updates[`poker_tables/${currentTableId}/players/${nick}/swapped`] = false; // Будем использовать это как флаг 'сделал ход в раунде'
+        updates[`poker_tables/${currentTableId}/players/${nick}/swapped`] = false;
         updates[`poker_tables/${currentTableId}/players/${nick}/folded`] = false;
         updates[`poker_tables/${currentTableId}/players/${nick}/acted`] = false;
     }
@@ -356,8 +365,8 @@ window.poker.startGame = async function() {
     updates[`poker_tables/${currentTableId}/deck`] = deck;
     updates[`poker_tables/${currentTableId}/pot`] = pot;
     updates[`poker_tables/${currentTableId}/status`] = 'playing';
-    updates[`poker_tables/${currentTableId}/stage`] = 'preflop'; // Стадия: Префлоп (карт на столе нет)
-    updates[`poker_tables/${currentTableId}/communityCards`] = []; // Пустой стол
+    updates[`poker_tables/${currentTableId}/stage`] = 'preflop'; 
+    updates[`poker_tables/${currentTableId}/communityCards`] = []; 
     updates[`poker_tables/${currentTableId}/turnOrder`] = turnOrder;
     updates[`poker_tables/${currentTableId}/currentTurnIndex`] = 0;
     
@@ -549,6 +558,39 @@ window.poker.action = async function(act) {
 
 // --- 4. КОНЕЦ ИГРЫ И ПОБЕДИТЕЛИ ---
 
+async function checkEndGame() {
+    const tableSnap = await get(ref(db, `poker_tables/${currentTableId}`));
+    const table = tableSnap.val();
+    const players = table.players;
+    
+    const activePlayers = Object.keys(players).filter(nick => !players[nick].folded);
+    
+    if(activePlayers.length === 1 && table.status === 'playing') {
+        endGameLogic([activePlayers[0]], table, "Все сбросили. Забрал: ");
+        return;
+    }
+
+    if(table.status === 'playing') {
+        let bestScore = -1;
+        let winners = [];
+
+        for(let nick of activePlayers) {
+            const p = players[nick];
+            // Вскрываем карты активных игроков
+            update(ref(db, `poker_tables/${currentTableId}/players/${nick}/cardsVisible`), true);
+
+            const score = evaluateHand(p.hand, table.communityCards);
+            if(score > bestScore) {
+                bestScore = score;
+                winners = [nick];
+            } else if (score === bestScore) {
+                winners.push(nick);
+            }
+        }
+        endGameLogic(winners, table, "Вскрытие! Победил: ");
+    }
+}
+
 async function endGameLogic(winners, table, msgPrefix) {
     const updates = {};
     const winAmount = Math.floor(table.pot / winners.length);
@@ -590,7 +632,6 @@ async function endGameLogic(winners, table, msgPrefix) {
     }, 6000);
 }
 
-// Умный счетчик: 2 карты в руке + до 5 карт на столе
 function evaluateHand(hand, communityCards) {
     if(!hand) return 0;
     
@@ -630,171 +671,6 @@ function evaluateHand(hand, communityCards) {
     if (pairs > 1) return 3000 + highest;
     if (pairs === 1) return 2000 + highest;
     if (hasJoker) return 2000 + highest; // Джокер дает как минимум высшую пару
-    
-    return highest; // Старшая карта
-}
-
-window.poker.action = async function(act) {
-    const user = JSON.parse(sessionStorage.getItem('op_session_user'));
-    const myNick = user.nick;
-    const table = currentGameState;
-    
-    if (!table.turnOrder || table.turnOrder[table.currentTurnIndex] !== myNick) return;
-
-    const updates = {};
-
-    if (act === 'fold') {
-        updates[`poker_tables/${currentTableId}/players/${myNick}/folded`] = true;
-        updates[`poker_tables/${currentTableId}/players/${myNick}/cards`] = false;
-        updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = "Фолд";
-        updates[`poker_tables/${currentTableId}/players/${myNick}/acted`] = true;
-        await advanceTurn(table, updates);
-        return;
-    }
-
-    if (act === 'raise') {
-        const amountStr = prompt("Сколько добавить в банк?");
-        const amount = parseFloat(amountStr);
-        if(!amount || amount <= 0) return;
-
-        const pid = table.players[myNick].balanceId;
-        const txKey = push(ref(db, `players/${pid}/history`)).key;
-        updates[`players/${pid}/history/${txKey}`] = -amount;
-
-        const newPot = (table.pot || 0) + amount;
-        updates[`poker_tables/${currentTableId}/pot`] = newPot;
-        
-        updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = `Рейз +${amount}`;
-        updates[`poker_tables/${currentTableId}/players/${myNick}/acted`] = true;
-        
-        await advanceTurn(table, updates);
-        return;
-    }
-
-    if (act === 'check' || act === 'allin') {
-        updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = act === 'allin' ? "ВА-БАНК!" : "Чек/Колл";
-        updates[`poker_tables/${currentTableId}/players/${myNick}/acted`] = true;
-        
-        await advanceTurn(table, updates);
-    }
-}
-
-// --- 4. КОНЕЦ ИГРЫ ---
-
-async function checkEndGame() {
-    const tableSnap = await get(ref(db, `poker_tables/${currentTableId}`));
-    const table = tableSnap.val();
-    const players = table.players;
-    
-    const activePlayers = Object.keys(players).filter(nick => !players[nick].folded);
-    
-    if(activePlayers.length === 1 && table.status === 'playing') {
-        endGameLogic([activePlayers[0]], table, "Все сбросили. Забрал: ");
-        return;
-    }
-
-    if(table.status === 'playing') {
-        let bestScore = -1;
-        let winners = [];
-
-        for(let nick of activePlayers) {
-            const p = players[nick];
-            update(ref(db, `poker_tables/${currentTableId}/players/${nick}/cardsVisible`), true);
-
-            // ПЕРЕДАЕМ И РУКУ И КАРТЫ НА СТОЛЕ
-            const score = evaluateHand(p.hand, table.communityCards);
-            
-            if(score > bestScore) {
-                bestScore = score;
-                winners = [nick];
-            } else if (score === bestScore) {
-                winners.push(nick);
-            }
-        }
-        endGameLogic(winners, table, "Вскрытие! Победил: ");
-    }
-}
-
-async function endGameLogic(winners, table, msgPrefix) {
-    const updates = {};
-    const winAmount = Math.floor(table.pot / winners.length);
-    
-    winners.forEach(wNick => {
-        const pid = table.players[wNick].balanceId;
-        const txKey = push(ref(db, `players/${pid}/history`)).key;
-        updates[`players/${pid}/history/${txKey}`] = winAmount; 
-    });
-
-    const winnerNames = winners.map(w => table.players[w].nick).join(', ');
-    updates[`poker_tables/${currentTableId}/message`] = `${msgPrefix} ${winnerNames} (+${winAmount})`;
-    updates[`poker_tables/${currentTableId}/status`] = 'showdown';
-    updates[`poker_tables/${currentTableId}/pot`] = 0;
-
-    await update(ref(db), updates);
-
-    // ПОЛНАЯ ОЧИСТКА ЧЕРЕЗ 6 СЕКУНД ДЛЯ НОВОЙ ИГРЫ
-    setTimeout(() => {
-        const resetUpdates = {};
-        resetUpdates[`poker_tables/${currentTableId}/status`] = 'waiting';
-        resetUpdates[`poker_tables/${currentTableId}/message`] = 'Новая раздача...';
-        resetUpdates[`poker_tables/${currentTableId}/turnOrder`] = null;
-        resetUpdates[`poker_tables/${currentTableId}/currentTurnIndex`] = null;
-        resetUpdates[`poker_tables/${currentTableId}/communityCards`] = null; // Убираем карты со стола
-        resetUpdates[`poker_tables/${currentTableId}/stage`] = null;
-        resetUpdates[`poker_tables/${currentTableId}/deck`] = null;
-        
-        for(let nick in table.players) {
-            resetUpdates[`poker_tables/${currentTableId}/players/${nick}/cards`] = false;
-            resetUpdates[`poker_tables/${currentTableId}/players/${nick}/hand`] = null;
-            resetUpdates[`poker_tables/${currentTableId}/players/${nick}/lastAction`] = "";
-            resetUpdates[`poker_tables/${currentTableId}/players/${nick}/acted`] = false;
-            resetUpdates[`poker_tables/${currentTableId}/players/${nick}/folded`] = false;
-            resetUpdates[`poker_tables/${currentTableId}/players/${nick}/cardsVisible`] = false;
-        }
-        update(ref(db), resetUpdates);
-    }, 6000);
-}
-
-function evaluateHand(hand, communityCards) {
-    if(!hand) return 0;
-    
-    // Объединяем карты в руке и карты на столе
-    let allCards = [...hand];
-    if (communityCards) {
-        allCards = allCards.concat(communityCards);
-    }
-    
-    // Считаем, сколько раз встречается каждый номинал
-    let counts = {};
-    let suits = {};
-    allCards.forEach(c => {
-        counts[c.val] = (counts[c.val] || 0) + 1;
-        suits[c.suit] = (suits[c.suit] || 0) + 1;
-    });
-
-    let pairs = 0, trips = 0, quads = 0;
-    let highest = 0;
-    
-    // Определяем комбинации
-    for (let val in counts) {
-        let v = parseInt(val);
-        if (counts[val] === 4) quads = v;
-        else if (counts[val] === 3) trips = Math.max(trips, v);
-        else if (counts[val] === 2) pairs++;
-        
-        if (v > highest) highest = v;
-    }
-
-    // Проверяем на Флеш (5 карт одной масти)
-    let isFlush = Object.values(suits).some(count => count >= 5);
-
-    // Начисляем очки (очень упрощенно, но отлично работает)
-    if (quads) return 8000 + quads; // Каре
-    if (trips && pairs > 0) return 7000 + trips; // Фулл-хаус
-    if (isFlush) return 6000 + highest; // Флеш
-    if (trips) return 4000 + trips; // Сет (Тройка)
-    if (pairs > 1) return 3000 + highest; // Две пары
-    if (pairs === 1) return 2000 + highest; // Пара
     
     return highest; // Старшая карта
 }
