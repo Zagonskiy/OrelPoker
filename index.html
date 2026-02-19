@@ -1369,7 +1369,13 @@
         
         const cellHistory = newRow.insertCell(4);
         cellHistory.className = 'history-log'; 
-        cellHistory.innerText = historyArray.length > 0 ? historyArray.map(n => n >= 0 ? `+${n}` : n).join(' ') : 'Пусто';
+        // ИСПРАВЛЕНИЕ: Если в истории есть маркер 'p', делаем текст зеленым
+        cellHistory.innerHTML = historyArray.length > 0 ? historyArray.map(n => {
+            let str = String(n);
+            let num = parseFloat(str);
+            let text = num >= 0 ? `+${num}` : `${num}`;
+            return str.includes('p') ? `<span class="poker-win">${text}</span>` : text;
+        }).join(' ') : 'Пусто';
         
         const cellDelete = newRow.insertCell(5);
         const wrapper = document.createElement('div');
@@ -1810,10 +1816,10 @@
                 historyArray = player.history; 
             } 
         } 
-        historyArray.forEach(val => total += val); 
+        // ИСПРАВЛЕНИЕ: parseFloat игнорирует спецсимволы и считает правильно
+        historyArray.forEach(val => total += parseFloat(val) || 0); 
         return { total, historyArray }; 
     }
-
     function createBtn(text, cls, onClick) { 
         const btn = document.createElement('button'); 
         btn.innerText = text; 
@@ -1836,13 +1842,14 @@
         let currentTotal = parseFloat(totalCell.innerText || 0); 
         totalCell.innerText = currentTotal + change; 
         
-        let text = historyCell.innerText; 
+        // Используем innerHTML чтобы сохранить стили
+        let text = historyCell.innerHTML; 
         let newEntry = (change >= 0 ? `+${change}` : change); 
         
-        if (text === 'Пусто') {
-            historyCell.innerText = newEntry; 
+        if (historyCell.innerText === 'Пусто') {
+            historyCell.innerHTML = newEntry; 
         } else {
-            historyCell.innerText = text + ' ' + newEntry; 
+            historyCell.innerHTML = text + ' ' + newEntry; 
         }
         
         inputElem.value = ''; 
@@ -2249,5 +2256,6 @@
 
 </body>
 </html>
+
 
 
