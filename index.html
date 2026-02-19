@@ -1369,7 +1369,6 @@
         
         const cellHistory = newRow.insertCell(4);
         cellHistory.className = 'history-log'; 
-        // ИСПРАВЛЕНИЕ: Если в истории есть маркер 'p', делаем текст зеленым
         cellHistory.innerHTML = historyArray.length > 0 ? historyArray.map(n => {
             let str = String(n);
             let num = parseFloat(str);
@@ -1816,7 +1815,6 @@
                 historyArray = player.history; 
             } 
         } 
-        // ИСПРАВЛЕНИЕ: parseFloat игнорирует спецсимволы и считает правильно
         historyArray.forEach(val => total += parseFloat(val) || 0); 
         return { total, historyArray }; 
     }
@@ -1828,7 +1826,7 @@
         return btn; 
     }
 
-    window.handleScore = function(id, inputElem, multiplier) { 
+  window.handleScore = function(id, inputElem, multiplier) { 
         let val = parseFloat(inputElem.value); 
         if (isNaN(val)) return; 
         
@@ -1842,7 +1840,6 @@
         let currentTotal = parseFloat(totalCell.innerText || 0); 
         totalCell.innerText = currentTotal + change; 
         
-        // Используем innerHTML чтобы сохранить стили
         let text = historyCell.innerHTML; 
         let newEntry = (change >= 0 ? `+${change}` : change); 
         
@@ -2256,6 +2253,7 @@
 
 </body>
 </html>
+
 
 
 
