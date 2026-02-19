@@ -389,7 +389,6 @@ window.poker.startGame = async function() {
     const table = currentGameState;
     const playerNicks = Object.keys(table.players || {});
     
-    // Блокировка старта при нехватке людей
     if(playerNicks.length < 2) {
         return alert("Недостаточно игроков за столом! Нужно минимум 2 человека.");
     }
@@ -401,10 +400,6 @@ window.poker.startGame = async function() {
     
     for(let nick in table.players) {
         turnOrder.push(nick);
-        
-        const pid = table.players[nick].balanceId;
-        const txKey = push(ref(db, `players/${pid}/history`)).key;
-        updates[`players/${pid}/history/${txKey}`] = -10;
         pot += 10;
         
         const hand = [deck.pop(), deck.pop()];
@@ -416,9 +411,9 @@ window.poker.startGame = async function() {
         updates[`poker_tables/${currentTableId}/players/${nick}/folded`] = false;
         updates[`poker_tables/${currentTableId}/players/${nick}/acted`] = false;
         updates[`poker_tables/${currentTableId}/players/${nick}/roundBet`] = 0;
-        updates[`poker_tables/${currentTableId}/players/${nick}/invested`] = 10; 
         
-        // Все наблюдатели становятся активными игроками
+        // НОВОЕ: Запоминаем ставку, но НЕ списываем деньги с баланса
+        updates[`poker_tables/${currentTableId}/players/${nick}/invested`] = 10; 
         updates[`poker_tables/${currentTableId}/players/${nick}/isSpectator`] = false; 
     }
 
@@ -426,13 +421,13 @@ window.poker.startGame = async function() {
     updates[`poker_tables/${currentTableId}/pot`] = pot;
     updates[`poker_tables/${currentTableId}/status`] = 'playing';
     updates[`poker_tables/${currentTableId}/stage`] = 'preflop'; 
-    
-    // СРАЗУ ВЫКЛАДЫВАЕМ 2 КАРТЫ (как просили)
     updates[`poker_tables/${currentTableId}/communityCards`] = [deck.pop(), deck.pop()]; 
-    
     updates[`poker_tables/${currentTableId}/turnOrder`] = turnOrder;
     updates[`poker_tables/${currentTableId}/currentTurnIndex`] = 0;
     updates[`poker_tables/${currentTableId}/currentBet`] = 0; 
+    
+    // ИСПРАВЛЕНИЕ: Очищаем зависший сигнал конца игры от прошлой раздачи
+    updates[`poker_tables/${currentTableId}/triggerEnd`] = null;
     
     if (turnOrder.length > 0) {
         const firstPlayerNick = table.players[turnOrder[0]].nick;
@@ -441,7 +436,6 @@ window.poker.startGame = async function() {
 
     await update(ref(db), updates);
 }
-
 function createDeck() {
     let d = [];
     SUITS.forEach(s => {
@@ -552,7 +546,6 @@ window.poker.action = async function(act) {
     if (!table.turnOrder || table.turnOrder[table.currentTurnIndex] !== myNick) return;
 
     const updates = {};
-    
     let currentBet = table.currentBet || 0; 
     let myRoundBet = table.players[myNick].roundBet || 0; 
     let callAmount = currentBet - myRoundBet; 
@@ -571,9 +564,7 @@ window.poker.action = async function(act) {
         const deck = table.deck || [];
         const swapIdx = hand.findIndex(c => c.selected);
         
-        if(swapIdx === -1) {
-            return alert("Выберите карту для обмена (нажмите на неё)!");
-        }
+        if(swapIdx === -1) return alert("Выберите карту для обмена (нажмите на неё)!");
         
         const newCard = deck.pop();
         hand[swapIdx] = newCard;
@@ -594,6 +585,7 @@ window.poker.action = async function(act) {
 
         let totalPay = callAmount + raiseAmount; 
 
+        // Только внутренний учет, базу игроков не трогаем!
         let currentInvested = table.players[myNick].invested || 0;
         updates[`poker_tables/${currentTableId}/players/${myNick}/invested`] = currentInvested + totalPay;
 
@@ -630,7 +622,6 @@ window.poker.action = async function(act) {
         await advanceTurn(table, updates);
     }
 }
-
 // --- 4. КОНЕЦ ИГРЫ И ПОБЕДИТЕЛИ ---
 
 async function checkEndGame() {
@@ -676,18 +667,20 @@ async function endGameLogic(winners, table, msgPrefix) {
     const updates = {};
     const winAmount = Math.floor(table.pot / winners.length);
     
+    // НОВОЕ: Подбиваем итоги игры и делаем одну запись
     for (let nick in table.players) {
         let p = table.players[nick];
-        if (p.invested === undefined) continue; 
+        if (p.invested === undefined || p.isSpectator) continue; 
 
-        let net = -p.invested; 
+        let net = -p.invested; // Ушел в минус на то, что поставил
         if (winners.includes(nick)) {
-            net += winAmount; 
+            net += winAmount; // Победители плюсуют выигрыш
         }
 
         if (net !== 0) {
             const pid = p.balanceId;
             const txKey = push(ref(db, `players/${pid}/history`)).key;
+            // Добавляем букву 'p' для зеленого цвета в таблице
             updates[`players/${pid}/history/${txKey}`] = net + "p"; 
         }
     }
@@ -709,6 +702,7 @@ async function endGameLogic(winners, table, msgPrefix) {
         resetUpdates[`poker_tables/${currentTableId}/stage`] = null;
         resetUpdates[`poker_tables/${currentTableId}/deck`] = null;
         resetUpdates[`poker_tables/${currentTableId}/currentBet`] = null;
+        resetUpdates[`poker_tables/${currentTableId}/triggerEnd`] = null; 
         
         for(let nick in table.players) {
             resetUpdates[`poker_tables/${currentTableId}/players/${nick}/cards`] = false;
@@ -720,7 +714,6 @@ async function endGameLogic(winners, table, msgPrefix) {
             resetUpdates[`poker_tables/${currentTableId}/players/${nick}/roundBet`] = 0;
             resetUpdates[`poker_tables/${currentTableId}/players/${nick}/invested`] = null;
             
-            // Если игрок был наблюдателем, мы делаем его активным для следующей раздачи
             if (table.players[nick].isSpectator) {
                 resetUpdates[`poker_tables/${currentTableId}/players/${nick}/isSpectator`] = false;
                 resetUpdates[`poker_tables/${currentTableId}/players/${nick}/lastAction`] = "Готов играть";
