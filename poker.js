@@ -358,10 +358,6 @@ window.poker.startGame = async function() {
     
     for(let nick in table.players) {
         turnOrder.push(nick);
-        
-        const pid = table.players[nick].balanceId;
-        const txKey = push(ref(db, `players/${pid}/history`)).key;
-        updates[`players/${pid}/history/${txKey}`] = -10;
         pot += 10;
         
         const hand = [deck.pop(), deck.pop()];
@@ -372,7 +368,10 @@ window.poker.startGame = async function() {
         updates[`poker_tables/${currentTableId}/players/${nick}/swapped`] = false; 
         updates[`poker_tables/${currentTableId}/players/${nick}/folded`] = false;
         updates[`poker_tables/${currentTableId}/players/${nick}/acted`] = false;
-        updates[`poker_tables/${currentTableId}/players/${nick}/roundBet`] = 0; // Для подсчета колла
+        updates[`poker_tables/${currentTableId}/players/${nick}/roundBet`] = 0;
+        
+        // НОВОЕ: Запоминаем вложения, но не трогаем баланс напрямую
+        updates[`poker_tables/${currentTableId}/players/${nick}/invested`] = 10; 
     }
 
     updates[`poker_tables/${currentTableId}/deck`] = deck;
@@ -382,7 +381,7 @@ window.poker.startGame = async function() {
     updates[`poker_tables/${currentTableId}/communityCards`] = []; 
     updates[`poker_tables/${currentTableId}/turnOrder`] = turnOrder;
     updates[`poker_tables/${currentTableId}/currentTurnIndex`] = 0;
-    updates[`poker_tables/${currentTableId}/currentBet`] = 0; // Максимальная ставка в раунде
+    updates[`poker_tables/${currentTableId}/currentBet`] = 0; 
     
     if (turnOrder.length > 0) {
         const firstPlayerNick = table.players[turnOrder[0]].nick;
@@ -500,7 +499,6 @@ window.poker.action = async function(act) {
 
     const updates = {};
     
-    // Вычисляем, сколько нужно докинуть для Колла
     let currentBet = table.currentBet || 0; 
     let myRoundBet = table.players[myNick].roundBet || 0; 
     let callAmount = currentBet - myRoundBet; 
@@ -540,11 +538,11 @@ window.poker.action = async function(act) {
         const raiseAmount = parseFloat(amountStr);
         if(isNaN(raiseAmount) || raiseAmount <= 0) return;
 
-        let totalPay = callAmount + raiseAmount; // Покрываем долг + ставим сверху
+        let totalPay = callAmount + raiseAmount; 
 
-        const pid = table.players[myNick].balanceId;
-        const txKey = push(ref(db, `players/${pid}/history`)).key;
-        updates[`players/${pid}/history/${txKey}`] = -totalPay;
+        // НОВОЕ: Запоминаем вложения, деньги со стола не снимаем
+        let currentInvested = table.players[myNick].invested || 0;
+        updates[`poker_tables/${currentTableId}/players/${myNick}/invested`] = currentInvested + totalPay;
 
         updates[`poker_tables/${currentTableId}/pot`] = (table.pot || 0) + totalPay;
         updates[`poker_tables/${currentTableId}/currentBet`] = currentBet + raiseAmount;
@@ -553,7 +551,6 @@ window.poker.action = async function(act) {
         updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = `Рейз +${raiseAmount}`;
         updates[`poker_tables/${currentTableId}/players/${myNick}/acted`] = true;
         
-        // Заставляем остальных ответить на повышение
         table.turnOrder.forEach(nick => {
             if (nick !== myNick && !table.players[nick].folded) {
                 updates[`poker_tables/${currentTableId}/players/${nick}/acted`] = false;
@@ -565,11 +562,10 @@ window.poker.action = async function(act) {
     }
 
     if (act === 'check' || act === 'allin') {
-        // Если есть долг - это Колл. Иначе это Чек.
         if (callAmount > 0) {
-            const pid = table.players[myNick].balanceId;
-            const txKey = push(ref(db, `players/${pid}/history`)).key;
-            updates[`players/${pid}/history/${txKey}`] = -callAmount;
+            // НОВОЕ: Запоминаем вложения, деньги со стола не снимаем
+            let currentInvested = table.players[myNick].invested || 0;
+            updates[`poker_tables/${currentTableId}/players/${myNick}/invested`] = currentInvested + callAmount;
             
             updates[`poker_tables/${currentTableId}/pot`] = (table.pot || 0) + callAmount;
             updates[`poker_tables/${currentTableId}/players/${myNick}/roundBet`] = myRoundBet + callAmount;
@@ -582,7 +578,6 @@ window.poker.action = async function(act) {
         await advanceTurn(table, updates);
     }
 }
-
 // --- 4. КОНЕЦ ИГРЫ И ПОБЕДИТЕЛИ ---
 
 async function checkEndGame() {
@@ -629,11 +624,23 @@ async function endGameLogic(winners, table, msgPrefix) {
     const updates = {};
     const winAmount = Math.floor(table.pot / winners.length);
     
-    winners.forEach(wNick => {
-        const pid = table.players[wNick].balanceId;
-        const txKey = push(ref(db, `players/${pid}/history`)).key;
-        updates[`players/${pid}/history/${txKey}`] = winAmount; 
-    });
+    // НОВОЕ: Считаем кто сколько проиграл и заработал (1 запись в историю на человека)
+    for (let nick in table.players) {
+        let p = table.players[nick];
+        if (p.invested === undefined) continue; 
+
+        let net = -p.invested; // Ушел в минус на то, что поставил
+        if (winners.includes(nick)) {
+            net += winAmount; // Победители плюсуют выигрыш
+        }
+
+        if (net !== 0) {
+            const pid = p.balanceId;
+            const txKey = push(ref(db, `players/${pid}/history`)).key;
+            // Добавляем букву 'p' для зеленого цвета в таблице
+            updates[`players/${pid}/history/${txKey}`] = net + "p"; 
+        }
+    }
 
     const winnerNames = winners.map(w => table.players[w].nick).join(', ');
     updates[`poker_tables/${currentTableId}/message`] = `${msgPrefix} ${winnerNames} (+${winAmount})`;
@@ -651,6 +658,7 @@ async function endGameLogic(winners, table, msgPrefix) {
         resetUpdates[`poker_tables/${currentTableId}/communityCards`] = null; 
         resetUpdates[`poker_tables/${currentTableId}/stage`] = null;
         resetUpdates[`poker_tables/${currentTableId}/deck`] = null;
+        resetUpdates[`poker_tables/${currentTableId}/currentBet`] = null;
         
         for(let nick in table.players) {
             resetUpdates[`poker_tables/${currentTableId}/players/${nick}/cards`] = false;
@@ -660,6 +668,8 @@ async function endGameLogic(winners, table, msgPrefix) {
             resetUpdates[`poker_tables/${currentTableId}/players/${nick}/folded`] = false;
             resetUpdates[`poker_tables/${currentTableId}/players/${nick}/cardsVisible`] = false;
             resetUpdates[`poker_tables/${currentTableId}/players/${nick}/acted`] = false;
+            resetUpdates[`poker_tables/${currentTableId}/players/${nick}/roundBet`] = 0;
+            resetUpdates[`poker_tables/${currentTableId}/players/${nick}/invested`] = null;
         }
         update(ref(db), resetUpdates);
     }, 6000);
