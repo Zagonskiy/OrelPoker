@@ -329,6 +329,14 @@ function renderTableState(table, globalPlayers) {
         controls.classList.add('hidden');
         actContainer.classList.add('hidden');
     }
+    if (table.triggerEnd && table.status === 'playing') {
+        if (table.host === myNick) {
+            // Хост удаляет триггер (чтобы не зациклилось) и подводит итоги
+            update(ref(db, `poker_tables/${currentTableId}`), { triggerEnd: null }).then(() => {
+                checkEndGame();
+            });
+        }
+    }
 }
 
 // --- 3. ЛОГИКА ИГРЫ ---
@@ -398,6 +406,7 @@ function toggleCardSelection(idx) {
 
 // Продвижение хода по кругу
 // Продвижение хода по кругу
+// Продвижение хода по кругу
 async function advanceTurn(tableData, updatesObj) {
     let allActed = true;
     
@@ -436,9 +445,9 @@ async function advanceTurn(tableData, updatesObj) {
         
         // Если все скинули, кроме одного
         if (activePlayers.length <= 1) {
-            updatesObj[`poker_tables/${currentTableId}/currentTurnIndex`] = -1; // Прячем кнопки
+            updatesObj[`poker_tables/${currentTableId}/currentTurnIndex`] = -1;
+            updatesObj[`poker_tables/${currentTableId}/triggerEnd`] = true; // СИГНАЛ ХОСТУ!
             await update(ref(db), updatesObj);
-            setTimeout(() => checkEndGame(), 500);
             return;
         }
 
@@ -458,9 +467,9 @@ async function advanceTurn(tableData, updatesObj) {
             commCards.push(deck.pop()); 
         } else if (tableData.stage === 'river') {
             // КОНЕЦ ИГРЫ (Ривер сыгран)
-            updatesObj[`poker_tables/${currentTableId}/currentTurnIndex`] = -1; // Прячем кнопки
+            updatesObj[`poker_tables/${currentTableId}/currentTurnIndex`] = -1;
+            updatesObj[`poker_tables/${currentTableId}/triggerEnd`] = true; // СИГНАЛ ХОСТУ!
             await update(ref(db), updatesObj);
-            setTimeout(() => checkEndGame(), 500); 
             return;
         }
 
@@ -561,18 +570,14 @@ window.poker.action = async function(act) {
 
 // --- 4. КОНЕЦ ИГРЫ И ПОБЕДИТЕЛИ ---
 
-// --- 4. КОНЕЦ ИГРЫ И ПОБЕДИТЕЛИ ---
-
 async function checkEndGame() {
     const tableSnap = await get(ref(db, `poker_tables/${currentTableId}`));
     const table = tableSnap.val();
     const players = table.players;
     
-    // ВАЖНО: Только создатель стола (хост) вычисляет победителя,
-    // чтобы все устройства не начали одновременно менять банк.
-    const user = JSON.parse(sessionStorage.getItem('op_session_user'));
-    if(table.host !== user.nick) return;
-
+    // Выкидываем отсюда жесткую проверку на хоста (мы сделали её в renderTableState)
+    // чтобы функция выполнялась гарантированно, когда её вызовут.
+    
     const activePlayers = Object.keys(players).filter(nick => !players[nick].folded);
     
     if(activePlayers.length === 1 && table.status === 'playing') {
@@ -583,12 +588,12 @@ async function checkEndGame() {
     if(table.status === 'playing') {
         let bestScore = -1;
         let winners = [];
-        const updates = {}; // Создаем пакет обновлений для БД
+        const updates = {}; // Собираем открытия карт в один пакет
 
         for(let nick of activePlayers) {
             const p = players[nick];
             
-            // ИСПРАВЛЕНИЕ: Правильная команда для открытия карт игрока
+            // Вскрываем карты активных игроков
             updates[`poker_tables/${currentTableId}/players/${nick}/cardsVisible`] = true;
 
             const score = evaluateHand(p.hand, table.communityCards);
@@ -600,10 +605,10 @@ async function checkEndGame() {
             }
         }
         
-        // Отправляем команду на вскрытие карт в базу
+        // Обновляем видимость карт в базе
         await update(ref(db), updates);
         
-        // Запускаем начисление выигрыша
+        // Выдаем деньги победителям
         endGameLogic(winners, table, "Вскрытие! Победил: ");
     }
 }
