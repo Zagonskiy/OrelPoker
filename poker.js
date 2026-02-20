@@ -12,7 +12,12 @@ const firebaseConfig = {
 };
 
 const existingApps = getApps();
-const app = existingApps.find(a => a.name === "pokerApp") || initializeApp(firebaseConfig, "pokerApp");
+let app;
+if (!existingApps.some(a => a.name === "pokerApp")) {
+    app = initializeApp(firebaseConfig, "pokerApp");
+} else {
+    app = existingApps.find(a => a.name === "pokerApp");
+}
 const db = getDatabase(app);
 
 window.poker = {};
@@ -20,11 +25,10 @@ window.poker = {};
 let currentTableId = null;
 let tableListener = null;
 let currentGameState = null;
-let myCachedBalance = 0; // Сохраняем баланс для расчетов ставок
+let myCachedBalance = 0;
 
 window.poker.getCurrentTableId = () => currentTableId;
 
-// 52 карты
 const SUITS = ['♠', '♥', '♦', '♣'];
 const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 
@@ -130,14 +134,10 @@ window.poker.joinTable = async function(tableId) {
     subscribeToTable(tableId);
 }
 
-// Вызов окошка перед выходом
-window.poker.leaveTable = function() {
-    document.getElementById('exitPokerModal').classList.remove('hidden');
-}
-
-// Истинный выход с потерей денег (если в игре)
-window.poker.confirmLeave = async function() {
-    document.getElementById('exitPokerModal').classList.add('hidden');
+// НОВЫЙ ВЫХОД ИЗ ИГРЫ (Один клик + моментальное удаление)
+window.poker.leaveTable = async function() {
+    if(!confirm("Вы точно хотите выйти? Если вы в игре, ваши вложенные деньги сгорят!")) return;
+    
     document.getElementById('pokerControls').classList.add('hidden');
     document.getElementById('actionButtonsContainer').classList.add('hidden');
     document.getElementById('myHand').innerHTML = '';
@@ -147,16 +147,15 @@ window.poker.confirmLeave = async function() {
         const tId = currentTableId;
         currentTableId = null; 
 
-        // СТРОГИЙ ШТРАФ: Если игрок вложил деньги и сбегает
         const tSnap = await get(ref(db, `poker_tables/${tId}`));
         const tblData = tSnap.val();
         
-        if (tblData && tblData.status === 'playing' && tblData.players[user.nick]) {
+        // Штраф
+        if (tblData && tblData.status === 'playing' && tblData.players && tblData.players[user.nick]) {
             const invested = tblData.players[user.nick].invested || 0;
             if (invested > 0 && !tblData.players[user.nick].isSpectator) {
                 const balId = tblData.players[user.nick].balanceId;
                 const txKey = push(ref(db, `players/${balId}/history`)).key;
-                // Списываем штраф с меткой покера
                 await update(ref(db, `players/${balId}/history/${txKey}`), -invested + "p");
             }
         }
@@ -178,10 +177,11 @@ window.poker.confirmLeave = async function() {
     window.showView('poker-lobby');
 }
 
-// Восстановление UI при возврате на вкладку
+// Восстановление при переключении вкладок
 window.poker.forceRender = function() {
     if (currentGameState) {
-        let globalPlayers = {};
+        // Вызываем рендер сразу, чтобы UI появился моментально
+        renderTableState(currentGameState, {}); 
         get(ref(db, 'players')).then(s => {
             renderTableState(currentGameState, s.val() || {});
         });
@@ -197,8 +197,16 @@ function subscribeToTable(tableId) {
 
     tableListener = onValue(ref(db, `poker_tables/${tableId}`), async (snap) => {
         const table = snap.val();
+        
+        // Если стол удалили - принудительно выкидываем игрока
         if(!table) { 
-            if(currentTableId) { alert("Стол был расформирован."); window.showView('poker-lobby'); currentTableId=null; }
+            if(currentTableId) { 
+                alert("Стол был расформирован."); 
+                document.getElementById('pokerControls').classList.add('hidden');
+                document.getElementById('actionButtonsContainer').classList.add('hidden');
+                currentTableId = null;
+                window.showView('poker-lobby'); 
+            }
             return; 
         }
         
@@ -207,7 +215,6 @@ function subscribeToTable(tableId) {
         globalPlayers = pSnap.val() || {};
         renderTableState(table, globalPlayers);
 
-        // ХОСТ МОНИТОР (Автопобеда если все вышли)
         const user = JSON.parse(sessionStorage.getItem('op_session_user'));
         if (table.status === 'playing' && table.host === user.nick) {
             if (table.turnOrder) {
@@ -217,13 +224,12 @@ function subscribeToTable(tableId) {
                 } else if (activePlayers.length > 1 && !table.triggerEnd) {
                     const currentTurnNick = table.turnOrder[table.currentTurnIndex];
                     if (!table.players[currentTurnNick]) {
-                        advanceTurn(table, {}); // Пропуск отключившегося
+                        advanceTurn(table, {}); 
                     }
                 }
             }
         }
         
-        // ХОСТ МОНИТОР ДЖОКЕРОВ
         if (table.stage === 'joker_pick' && table.host === user.nick) {
             checkJokersReady(table);
         }
@@ -253,7 +259,7 @@ function renderTableState(table, globalPlayers) {
             else if (Array.isArray(hist)) hist = hist;
             else hist = [];
             balance = hist.reduce((a,b) => parseFloat(a)+parseFloat(parseFloat(b)||0), 0);
-            if (pNick === myNick) myCachedBalance = balance; // Запоминаем свой баланс
+            if (pNick === myNick) myCachedBalance = balance; 
         }
 
         let visualIdx = (myIdx !== -1) ? (i - myIdx + 6) % 6 : i;
@@ -300,20 +306,10 @@ function renderTableState(table, globalPlayers) {
     }
 
     const btnStart = document.getElementById('btnStartPoker');
-    const btnContinue = document.getElementById('btnContinuePoker');
-    const btnShowCards = document.getElementById('btnShowCards');
-    
-    btnStart.classList.add('hidden');
-    btnContinue.classList.add('hidden');
-    btnShowCards.classList.add('hidden');
-
-    if(table.host === myNick) {
-        if(table.status === 'waiting') btnStart.classList.remove('hidden');
-        if(table.status === 'showdown') btnContinue.classList.remove('hidden');
-    }
-    if (table.status === 'showdown_folded' && table.players[myNick] && !table.players[myNick].folded && !table.players[myNick].cardsVisible) {
-        btnShowCards.classList.remove('hidden');
-        if(table.host === myNick) btnContinue.classList.remove('hidden');
+    if(table.host === myNick && table.status === 'waiting') {
+        btnStart.classList.remove('hidden');
+    } else {
+        btnStart.classList.add('hidden');
     }
 
     const controls = document.getElementById('pokerControls');
@@ -321,9 +317,22 @@ function renderTableState(table, globalPlayers) {
     const myData = table.players[myNick];
     const myHandDiv = document.getElementById('myHand');
     
+    // Получаем все кнопки
+    const btnFold = document.querySelector('.btn-fold');
+    const btnCheck = document.querySelector('.btn-check');
+    const btnRaise = document.querySelector('.btn-raise');
+    const btnAllin = document.querySelector('.btn-allin');
+    const btnSwap = document.getElementById('btnSwapCard');
+    const btnShowCards = document.getElementById('btnShowCards');
+    const btnContinue = document.getElementById('btnContinuePoker');
+
+    // Скрываем все кнопки действий по умолчанию
+    [btnFold, btnCheck, btnRaise, btnAllin, btnSwap, btnShowCards, btnContinue].forEach(b => {
+        if(b) b.classList.add('hidden');
+    });
+
     const isMyTurn = (table.status === 'playing' && table.turnOrder && table.turnOrder[table.currentTurnIndex] === myNick);
     
-    // ПАНЕЛЬ КАРТ
     if(myData && myData.hand && (table.status === 'playing' || table.status === 'showdown' || table.status === 'showdown_folded' || table.stage === 'joker_pick') && !myData.isSpectator) {
         controls.classList.remove('hidden');
         myHandDiv.innerHTML = '';
@@ -337,14 +346,19 @@ function renderTableState(table, globalPlayers) {
             myHandDiv.appendChild(cDiv);
         });
 
-        if (isMyTurn && !myData.folded && !myData.isAllIn) {
-            actContainer.classList.remove('hidden');
-            const btnCheck = document.querySelector('.btn-check');
-            let currentBet = table.currentBet || 0;
-            let myRoundBet = myData.roundBet || 0;
-            let callAmount = currentBet - myRoundBet;
+        // ЛОГИКА ОТОБРАЖЕНИЯ НОВЫХ КНОПОК
+        if (table.status === 'playing') {
+            if (isMyTurn && !myData.folded && !myData.isAllIn) {
+                actContainer.classList.remove('hidden');
+                btnFold.classList.remove('hidden');
+                btnCheck.classList.remove('hidden');
+                btnRaise.classList.remove('hidden');
+                btnAllin.classList.remove('hidden');
+                
+                let currentBet = table.currentBet || 0;
+                let myRoundBet = myData.roundBet || 0;
+                let callAmount = currentBet - myRoundBet;
 
-            if (btnCheck) {
                 if (callAmount > 0) {
                     btnCheck.innerText = `Колл ${callAmount}`;
                     btnCheck.style.background = '#0277bd'; 
@@ -352,22 +366,28 @@ function renderTableState(table, globalPlayers) {
                     btnCheck.innerText = `Чек`;
                     btnCheck.style.background = '#2e7d32'; 
                 }
-            }
 
-            const btnSwap = document.getElementById('btnSwapCard');
-            if(btnSwap) {
-                if(!myData.swapped && table.stage === 'preflop') btnSwap.classList.remove('hidden');
-                else btnSwap.classList.add('hidden');
+                if(btnSwap && !myData.swapped && table.stage === 'preflop') {
+                    btnSwap.classList.remove('hidden');
+                }
+            } else {
+                actContainer.classList.add('hidden');
             }
-        } else {
-            actContainer.classList.add('hidden');
+        } else if (table.status === 'showdown' || table.status === 'showdown_folded') {
+            actContainer.classList.remove('hidden'); // Показываем контейнер для кнопок финала
+            
+            if (table.status === 'showdown_folded' && !myData.folded && !myData.cardsVisible) {
+                btnShowCards.classList.remove('hidden');
+            }
+            if (table.host === myNick) {
+                btnContinue.classList.remove('hidden');
+            }
         }
     } else {
         controls.classList.add('hidden');
         actContainer.classList.add('hidden');
     }
 
-    // ТРИГГЕРЫ ХОСТА
     if (table.triggerEnd && table.status === 'playing') {
         if (table.host === myNick) {
             update(ref(db, `poker_tables/${currentTableId}`), { triggerEnd: null }).then(() => {
@@ -376,28 +396,18 @@ function renderTableState(table, globalPlayers) {
         }
     }
 
-    // ВЫЗОВ МОДАЛКИ ДЖОКЕРА
     if (table.stage === 'joker_pick' && myData && !myData.folded && !myData.isSpectator) {
-        // Проверяем, нужно ли нам выбирать
         let needPick = false;
         let jokerColor = null;
         
-        // Джокер на столе?
         const tableJoker = (table.communityCards || []).find(c => c.rank === 'Jr');
-        if (tableJoker && !myData.jokerTablePick) {
-            needPick = true; jokerColor = tableJoker.color;
-        }
-        // Джокер в руке?
+        if (tableJoker && !myData.jokerTablePick) { needPick = true; jokerColor = tableJoker.color; }
+        
         const handJoker = (myData.hand || []).find(c => c.rank === 'Jr');
-        if (handJoker && !myData.jokerHandPick) {
-            needPick = true; jokerColor = handJoker.color;
-        }
+        if (handJoker && !myData.jokerHandPick) { needPick = true; jokerColor = handJoker.color; }
 
-        if (needPick) {
-            showJokerSelection(jokerColor, table);
-        } else {
-            document.getElementById('jokerModal').classList.add('hidden');
-        }
+        if (needPick) showJokerSelection(jokerColor, table);
+        else document.getElementById('jokerModal').classList.add('hidden');
     } else {
         document.getElementById('jokerModal').classList.add('hidden');
     }
@@ -408,11 +418,9 @@ function renderTableState(table, globalPlayers) {
 function createDeck() {
     let d = [];
     SUITS.forEach(s => { RANKS.forEach(r => { d.push({ suit: s, rank: r, val: RANKS.indexOf(r) + 2 }); }); });
-    // ДВА Джокера
     d.push({ suit: '★', rank: 'Jr', val: 99, color: 'red' }); 
     d.push({ suit: '★', rank: 'Jr', val: 99, color: 'black' }); 
     
-    // Тусование Фишера-Йетса
     for (let i = d.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [d[i], d[j]] = [d[j], d[i]];
@@ -458,7 +466,6 @@ window.poker.startGame = async function() {
     updates[`poker_tables/${currentTableId}/pot`] = pot;
     updates[`poker_tables/${currentTableId}/status`] = 'playing';
     updates[`poker_tables/${currentTableId}/stage`] = 'preflop'; 
-    // ВЫКЛАДЫВАЕМ 2 КАРТЫ СРАЗУ
     updates[`poker_tables/${currentTableId}/communityCards`] = [deck.pop(), deck.pop()]; 
     updates[`poker_tables/${currentTableId}/turnOrder`] = turnOrder;
     updates[`poker_tables/${currentTableId}/currentTurnIndex`] = 0;
@@ -485,15 +492,18 @@ async function advanceTurn(tableData, updatesObj) {
     let playersTemp = JSON.parse(JSON.stringify(tableData.players || {}));
     for (let key in updatesObj) {
         let match = key.match(/players\/(.+)\/acted/);
-        if (match) playersTemp[match[1]].acted = updatesObj[key];
+        if (match) {
+            if(playersTemp[match[1]]) playersTemp[match[1]].acted = updatesObj[key];
+        }
         
         let matchFold = key.match(/players\/(.+)\/folded/);
-        if (matchFold) playersTemp[matchFold[1]].folded = updatesObj[key];
+        if (matchFold) {
+            if(playersTemp[matchFold[1]]) playersTemp[matchFold[1]].folded = updatesObj[key];
+        }
     }
 
     tableData.turnOrder.forEach(nick => {
         const p = playersTemp[nick];
-        // Если игрок в игре, не упал и НЕ в олл-ине - он должен сходить
         if (p && !p.folded && !p.isAllIn && !p.acted) {
             allActed = false;
         }
@@ -501,7 +511,9 @@ async function advanceTurn(tableData, updatesObj) {
 
     if (!allActed) {
         let nextIdx = (tableData.currentTurnIndex + 1) % tableData.turnOrder.length;
-        while(true) {
+        let attempts = 0;
+        
+        while(attempts < tableData.turnOrder.length) {
             const nextNick = tableData.turnOrder[nextIdx];
             const p = playersTemp[nextNick];
             if (p && !p.folded && !p.isAllIn && !p.acted) {
@@ -510,6 +522,7 @@ async function advanceTurn(tableData, updatesObj) {
                 break;
             }
             nextIdx = (nextIdx + 1) % tableData.turnOrder.length;
+            attempts++;
         }
         await update(ref(db), updatesObj);
     } else {
@@ -527,11 +540,11 @@ async function advanceTurn(tableData, updatesObj) {
         let nextStage = tableData.stage;
 
         if (tableData.stage === 'preflop') {
-            nextStage = 'flop'; commCards.push(deck.pop()); // Было 2, стало 3
+            nextStage = 'flop'; commCards.push(deck.pop()); 
         } else if (tableData.stage === 'flop') {
-            nextStage = 'turn'; commCards.push(deck.pop()); // 4
+            nextStage = 'turn'; commCards.push(deck.pop()); 
         } else if (tableData.stage === 'turn') {
-            nextStage = 'river'; commCards.push(deck.pop()); // 5
+            nextStage = 'river'; commCards.push(deck.pop()); 
         } else if (tableData.stage === 'river') {
             updatesObj[`poker_tables/${currentTableId}/currentTurnIndex`] = -1;
             updatesObj[`poker_tables/${currentTableId}/triggerEnd`] = true;
@@ -549,18 +562,22 @@ async function advanceTurn(tableData, updatesObj) {
             updatesObj[`poker_tables/${currentTableId}/players/${nick}/roundBet`] = 0;
         });
         
+        // Надежный поиск следующего живого игрока
         let startIdx = 0;
-        while(playersTemp[tableData.turnOrder[startIdx]] && (playersTemp[tableData.turnOrder[startIdx]].folded || playersTemp[tableData.turnOrder[startIdx]].isAllIn)) {
-            startIdx++;
-            if (startIdx >= tableData.turnOrder.length) break;
+        while(startIdx < tableData.turnOrder.length) {
+            let p = playersTemp[tableData.turnOrder[startIdx]];
+            if (!p || p.folded || p.isAllIn) {
+                startIdx++;
+            } else {
+                break;
+            }
         }
         
         if (startIdx < tableData.turnOrder.length) {
             updatesObj[`poker_tables/${currentTableId}/currentTurnIndex`] = startIdx;
             updatesObj[`poker_tables/${currentTableId}/message`] = `Раунд: ${nextStage}. Ход: ${playersTemp[tableData.turnOrder[startIdx]].nick}`;
         } else {
-            // Все в олл-ине! Пропускаем до Ривера
-             updatesObj[`poker_tables/${currentTableId}/triggerEnd`] = true;
+            updatesObj[`poker_tables/${currentTableId}/triggerEnd`] = true;
         }
         
         await update(ref(db), updatesObj);
@@ -634,7 +651,6 @@ window.poker.action = async function(act) {
         updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = `Рейз +${raiseAmount}`;
         updates[`poker_tables/${currentTableId}/players/${myNick}/acted`] = true;
         
-        // Сброс acted у остальных
         table.turnOrder.forEach(nick => {
             if (nick !== myNick && table.players[nick] && !table.players[nick].folded && !table.players[nick].isAllIn) {
                 updates[`poker_tables/${currentTableId}/players/${nick}/acted`] = false;
@@ -652,7 +668,6 @@ window.poker.action = async function(act) {
         updates[`poker_tables/${currentTableId}/players/${myNick}/invested`] = currentInvested + totalPay;
         updates[`poker_tables/${currentTableId}/pot`] = (table.pot || 0) + totalPay;
         
-        // Если его ва-банк больше текущей ставки - это рейз!
         if (totalPay > callAmount) {
             let extraRaise = totalPay - callAmount;
             updates[`poker_tables/${currentTableId}/currentBet`] = currentBet + extraRaise;
@@ -667,7 +682,7 @@ window.poker.action = async function(act) {
         updates[`poker_tables/${currentTableId}/players/${myNick}/roundBet`] = myRoundBet + totalPay;
         updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = `ВА-БАНК (${totalPay})`;
         updates[`poker_tables/${currentTableId}/players/${myNick}/acted`] = true;
-        updates[`poker_tables/${currentTableId}/players/${myNick}/isAllIn`] = true; // Важно!
+        updates[`poker_tables/${currentTableId}/players/${myNick}/isAllIn`] = true; 
         
         await advanceTurn(table, updates);
         return;
@@ -698,22 +713,25 @@ async function checkEndGame() {
     const tableSnap = await get(ref(db, `poker_tables/${currentTableId}`));
     const table = tableSnap.val();
     const user = JSON.parse(sessionStorage.getItem('op_session_user'));
-    if(table.host !== user.nick) return;
-
+    
     const players = table.players || {};
     const activePlayers = table.turnOrder.filter(nick => players[nick] && !players[nick].folded);
     
-    // Если остался один
     if(activePlayers.length === 1 && table.status === 'playing') {
         update(ref(db, `poker_tables/${currentTableId}`), { 
             status: 'showdown_folded', 
-            message: `Все сбросили. Забрал: ${table.players[activePlayers[0]].nick}`
+            message: `Все сбросили. Победил: ${table.players[activePlayers[0]].nick}`,
+            triggerEnd: null
         });
+        
+        // Отдаем деньги сразу
+        if(table.host === user.nick) {
+            endGameLogic([activePlayers[0]], table, "Все сбросили. Победил: ");
+        }
         return;
     }
 
     if(table.status === 'playing') {
-        // Проверяем, есть ли Джокеры
         let hasJokers = false;
         if (table.communityCards && table.communityCards.some(c => c.rank === 'Jr')) hasJokers = true;
         activePlayers.forEach(nick => {
@@ -726,18 +744,16 @@ async function checkEndGame() {
                 message: 'МАГИЯ ДЖОКЕРА: Игроки выбирают карты!'
             });
         } else {
-            finishShowdown(table, activePlayers);
+            if(table.host === user.nick) finishShowdown(table, activePlayers);
         }
     }
 }
 
-// Показ окна выбора масти для джокера
 function showJokerSelection(color, table) {
     const modal = document.getElementById('jokerModal');
     const grid = document.getElementById('jokerCardsGrid');
     grid.innerHTML = '';
     
-    // Собираем все карты, которые уже лежат на столе или у меня в руке (нельзя дублировать)
     let usedCards = new Set();
     if(table.communityCards) table.communityCards.forEach(c => usedCards.add(c.rank+c.suit));
     const myHand = table.players[JSON.parse(sessionStorage.getItem('op_session_user')).nick].hand || [];
@@ -771,7 +787,6 @@ async function submitJokerPick(card, table) {
     await update(ref(db), updates);
 }
 
-// Хост проверяет, все ли выбрали Джокеров
 function checkJokersReady(table) {
     const activePlayers = table.turnOrder.filter(nick => table.players[nick] && !table.players[nick].folded);
     const tableJoker = (table.communityCards || []).find(c => c.rank === 'Jr');
@@ -795,7 +810,6 @@ async function finishShowdown(table, activePlayers) {
         const p = table.players[nick];
         updates[`poker_tables/${currentTableId}/players/${nick}/cardsVisible`] = true;
 
-        // Собираем итоговую руку с учетом джокеров
         let finalHand = [...p.hand];
         let finalComm = [...(table.communityCards || [])];
 
@@ -804,10 +818,9 @@ async function finishShowdown(table, activePlayers) {
             if(jIdx !== -1) finalHand[jIdx] = p.jokerHandPick;
         }
         if (p.jokerTablePick) {
-            // Джокер со стола идет 3-й картой в руку!
             finalHand.push(p.jokerTablePick);
             const cIdx = finalComm.findIndex(c => c.rank === 'Jr');
-            if(cIdx !== -1) finalComm.splice(cIdx, 1); // Убираем со стола
+            if(cIdx !== -1) finalComm.splice(cIdx, 1); 
         }
 
         const score = evaluateHand(finalHand, finalComm);
@@ -819,16 +832,21 @@ async function finishShowdown(table, activePlayers) {
         }
     }
     
+    await update(ref(db), updates);
+    endGameLogic(winners, table, "Вскрытие! Победил: ");
+}
+
+async function endGameLogic(winners, table, msgPrefix) {
+    const updates = {};
     const winAmount = Math.floor(table.pot / winners.length);
+    
     for (let nick in table.players) {
         let p = table.players[nick];
         if (p.invested === undefined || p.isSpectator) continue; 
         let net = -p.invested; 
         
-        // Лимит выигрыша Ва-банка (упрощенный сайдпот)
         if (winners.includes(nick)) {
             if (p.isAllIn) {
-                // Получает только (своя ставка * кол-во игроков), остаток сгорает (казино забирает)
                 let maxWin = p.invested * Object.keys(table.players).length;
                 net += Math.min(winAmount, maxWin);
             } else {
@@ -843,19 +861,23 @@ async function finishShowdown(table, activePlayers) {
     }
 
     const winnerNames = winners.map(w => table.players[w].nick).join(', ');
-    updates[`poker_tables/${currentTableId}/message`] = `Вскрытие! Победил: ${winnerNames}`;
-    updates[`poker_tables/${currentTableId}/status`] = 'showdown';
-    
+    updates[`poker_tables/${currentTableId}/message`] = `${msgPrefix} ${winnerNames} (+${winAmount})`;
+    // Если статус не был изменен на folded_showdown, ставим обычный
+    if (table.status !== 'showdown_folded') {
+        updates[`poker_tables/${currentTableId}/status`] = 'showdown';
+    }
+    updates[`poker_tables/${currentTableId}/pot`] = 0;
+
     await update(ref(db), updates);
 }
 
-// Кнопка для хоста (запускает новую после просмотра карт)
 window.poker.nextRound = async function() {
     const updates = {};
     updates[`poker_tables/${currentTableId}/status`] = 'waiting';
     updates[`poker_tables/${currentTableId}/message`] = 'Ожидание новой раздачи...';
     updates[`poker_tables/${currentTableId}/pot`] = 0;
     updates[`poker_tables/${currentTableId}/communityCards`] = null; 
+    updates[`poker_tables/${currentTableId}/triggerEnd`] = null;
     
     const tableSnap = await get(ref(db, `poker_tables/${currentTableId}`));
     const table = tableSnap.val();
@@ -873,14 +895,12 @@ window.poker.nextRound = async function() {
     update(ref(db), updates);
 }
 
-// Если все фолд, оставшийся может показать карты
 window.poker.showMyCards = function() {
     const user = JSON.parse(sessionStorage.getItem('op_session_user'));
     update(ref(db, `poker_tables/${currentTableId}/players/${user.nick}/cardsVisible`), true);
     document.getElementById('btnShowCards').classList.add('hidden');
 }
 
-// Точный калькулятор Холдема (7 карт)
 function evaluateHand(hand, communityCards) {
     if(!hand) return 0;
     let allCards = [...hand];
@@ -906,7 +926,6 @@ function evaluateHand(hand, communityCards) {
     trips.sort((a,b) => b - a);
     pairs.sort((a,b) => b - a);
 
-    // Флеш
     let isFlush = false;
     let flushSuit = Object.keys(suits).find(key => suits[key] >= 5);
     let flushHigh = 0;
@@ -915,11 +934,9 @@ function evaluateHand(hand, communityCards) {
         flushHigh = allCards.find(c => c.suit === flushSuit).val;
     }
 
-    // Стрит
     let isStraight = false;
     let straightHigh = 0;
     let uniqueVals = [...new Set(allCards.map(c => c.val))];
-    // Проверка колеса A-2-3-4-5 (Туз = 14, но может быть 1)
     if (uniqueVals.includes(14)) uniqueVals.push(1); 
     uniqueVals.sort((a, b) => b - a);
     
@@ -937,10 +954,8 @@ function evaluateHand(hand, communityCards) {
         }
     }
 
-    // Стрит Флеш (базовая проверка)
     if (isStraight && isFlush) return 900000 + straightHigh;
 
-    // Кикеры (5 лучших карт)
     let kickerScore = 0;
     for (let i = 0; i < Math.min(5, allCards.length); i++) {
         kickerScore += allCards[i].val * Math.pow(100, 4 - i);
