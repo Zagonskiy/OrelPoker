@@ -552,6 +552,32 @@
         .btn-delete-table:hover { opacity: 1; transform: scale(1.2); }
 
         .history-log span.poker-win { color: #00e676; font-weight: bold; background: rgba(0,255,0,0.1); padding: 0 4px; }
+
+
+        /* --- НОВЫЕ СТИЛИ ПОКЕРА --- */
+        .btn-continue-host {
+            position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%);
+            padding: 15px 30px; font-size: 1.2em; background: #e65100; color: #fff;
+            border: 2px solid #fff; border-radius: 50px; cursor: pointer; z-index: 100;
+            box-shadow: 0 0 20px rgba(230, 81, 0, 0.8); font-family: 'Rye', cursive;
+        }
+        
+        .joker-modal {
+            background: #2a1b0f; border: 4px solid var(--accent-gold); padding: 20px;
+            text-align: center; max-height: 80vh; overflow-y: auto; max-width: 400px;
+        }
+        .joker-cards-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px;
+        }
+        .joker-pick-card {
+            background: #fff; border-radius: 4px; padding: 10px 5px; font-family: monospace;
+            font-size: 1.2em; font-weight: bold; cursor: pointer; border: 1px solid #000;
+        }
+        .joker-pick-card.red { color: red; }
+        .joker-pick-card.black { color: black; }
+        .joker-pick-card:hover { transform: scale(1.1); box-shadow: 0 0 10px gold; }
+
+        
     </style>
 </head>
 <body>
@@ -735,11 +761,13 @@
         
         <div class="poker-table-wrapper">
             <div class="poker-table-felt">
-                <div id="pokerPlayersContainer">
-                    </div>
+                <div id="pokerPlayersContainer"></div>
                 <div id="communityCards" class="community-cards"></div>
                 <div id="pokerCenterMessage" class="center-message">Ожидание...</div>
                 <button id="btnStartPoker" class="btn-start-round hidden" onclick="window.poker.startGame()">Начать раздачу</button>
+                
+                <button id="btnContinuePoker" class="btn-continue-host hidden" onclick="window.poker.nextRound()">▶ Продолжить игру</button>
+                <button id="btnShowCards" class="btn-continue-host hidden" style="background:#0277bd;" onclick="window.poker.showMyCards()">👀 Показать карты</button>
             </div>
         </div>
 
@@ -749,11 +777,29 @@
                 <button class="btn-poker-action btn-fold" onclick="window.poker.action('fold')">Фолд</button>
                 <button class="btn-poker-action btn-check" onclick="window.poker.action('check')">Чек/Колл</button>
                 <button class="btn-poker-action btn-raise" onclick="window.poker.action('raise')">💰 Рейз</button>
-                <button id="btnSwapCard" class="btn-poker-action btn-swap hidden" onclick="window.poker.action('swap')">🔄 Сменить 1 карту</button>
                 <button class="btn-poker-action btn-allin" onclick="window.poker.action('allin')">Ва-банк</button>
+                <button id="btnSwapCard" class="btn-poker-action btn-swap hidden" onclick="window.poker.action('swap')">🔄 Сменить 1 карту</button>
             </div>
         </div>
-    </div>
+
+        <div id="exitPokerModal" class="modal-overlay hidden" style="z-index: 6000;">
+            <div class="modal-card">
+                <h3 style="color:#8b0000; font-family:'Rye';">ВЫЙТИ ИЗ ИГРЫ?</h3>
+                <p>Если вы выйдете во время раздачи, ваши вложенные деньги сгорят!</p>
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button class="btn-login-action" style="background:#b71c1c;" onclick="window.poker.confirmLeave()">Да, выйти</button>
+                    <button class="btn-login-action" style="background:#2e7d32;" onclick="document.getElementById('exitPokerModal').classList.add('hidden')">Остаться</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="jokerModal" class="modal-overlay hidden" style="z-index: 5500;">
+            <div class="modal-card joker-modal">
+                <h3 style="color:var(--accent-gold); font-family:'Rye';">МАГИЯ ДЖОКЕРА</h3>
+                <p style="color:#fff; font-size:0.9em;" id="jokerModalText">Выберите карту нужного цвета:</p>
+                <div id="jokerCardsGrid" class="joker-cards-grid"></div>
+            </div>
+        </div>
 
     <div class="version-tag" onclick="forceUpdate()">OrelPoker v79.0 (NoJump)</div>
     
@@ -2092,7 +2138,16 @@
         if (viewName === 'game') {
             document.getElementById('view-game').classList.remove('hidden');
             document.getElementById('btn-nav-game').classList.add('active');
-        } else if (viewName === 'chat') {
+        }else if (viewName === 'poker-table') {
+            document.getElementById('view-poker-table').classList.remove('hidden');
+            const btnP = document.getElementById('btn-nav-poker');
+            if(btnP) btnP.classList.add('active');
+            
+            // ВОССТАНАВЛИВАЕМ КАРТЫ ПРИ ВОЗВРАТЕ НА ВКЛАДКУ
+            if (window.poker && window.poker.forceRender) {
+                window.poker.forceRender();
+            } 
+        }else if (viewName === 'chat') {
             document.getElementById('view-chat').classList.remove('hidden');
             document.getElementById('btn-nav-chat').classList.add('active');
             if (!currentChatId) {
@@ -2253,6 +2308,7 @@
 
 </body>
 </html>
+
 
 
 
