@@ -1153,7 +1153,26 @@
         .community-cards { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; gap: 8px; z-index: 20; }
         .community-cards .poker-card { width: 50px; height: 75px; font-size: 1em; cursor: default; }
 
-        .poker-controls { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95); padding: 15px; z-index: 3900; display: flex; flex-direction: column; align-items: center; border-top: 3px solid var(--accent-gold); }
+        .poker-controls { 
+            position: fixed; 
+            bottom: 0; 
+            left: var(--sidebar-width); 
+            width: calc(100% - var(--sidebar-width)); 
+            background: rgba(0,0,0,0.95); 
+            padding: 15px; 
+            z-index: 3900; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            border-top: 3px solid var(--accent-gold); 
+        }
+
+        @media screen and (max-width: 768px) {
+            .poker-controls {
+                left: 0;
+                width: 100%;
+            }
+        }
         .my-hand { display: flex; gap: 10px; margin-bottom: 10px; }
         .poker-card { width: 60px; height: 90px; background: #fff; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Courier New', monospace; font-weight: bold; font-size: 1.2em; border: 1px solid #999; box-shadow: 2px 2px 5px #000; cursor: pointer; transition: 0.2s; }
         .poker-card.red { color: red; }
@@ -2316,7 +2335,20 @@
     window.closeRoleModal = function() { document.getElementById('roleModal').classList.add('role-hidden'); currentRankLogin = null; }
     window.toggleSidebar = function() { document.getElementById('sidebar').classList.toggle('open'); }
 
-    window.showView = function(viewName) {
+    window.showView = function(viewName, forceSkipConfirm = false) {
+        // Умная проверка: уходит ли игрок с экрана покера на другие вкладки
+        const isAtPokerTable = !document.getElementById('view-poker-table').classList.contains('hidden');
+        const isGoingToNonPoker = viewName !== 'poker-table' && viewName !== 'poker-lobby';
+
+        if (!forceSkipConfirm && isAtPokerTable && isGoingToNonPoker) {
+            if (confirm("Вы точно хотите покинуть стол? Ваши вложенные деньги сгорят, а карты будут сброшены!")) {
+                if (window.poker && window.poker.leaveTable) {
+                    window.poker.leaveTable(true, viewName); // true = пропустить второе подтверждение
+                }
+            }
+            return; // Останавливаем выполнение, leaveTable сама переключит вид
+        }
+
         document.getElementById('sidebar').classList.remove('open');
         
         document.getElementById('view-game').classList.add('hidden');
@@ -2326,7 +2358,6 @@
         document.getElementById('view-poker-lobby').classList.add('hidden');
         document.getElementById('view-poker-table').classList.add('hidden');
         
-        // Умное скрытие. Скрываем только если не возвращаемся в покер.
         if (viewName !== 'poker-table') {
             document.getElementById('pokerControls').classList.add('hidden'); 
             document.getElementById('actionButtonsContainer').classList.add('hidden');
@@ -2352,9 +2383,7 @@
         } else if (viewName === 'settings') {
             document.getElementById('view-settings').classList.remove('hidden');
             const btnSet = document.getElementById('btn-nav-settings');
-            if(btnSet) {
-                btnSet.classList.add('active');
-            }
+            if(btnSet) btnSet.classList.add('active');
         } else if (viewName === 'poker-lobby') {
             if (window.poker && window.poker.getCurrentTableId()) {
                 document.getElementById('view-poker-table').classList.remove('hidden');
@@ -2362,17 +2391,12 @@
                 document.getElementById('view-poker-lobby').classList.remove('hidden');
             }
             const btnP = document.getElementById('btn-nav-poker');
-            if(btnP) {
-                btnP.classList.add('active');
-            }
+            if(btnP) btnP.classList.add('active');
         } else if (viewName === 'poker-table') {
             document.getElementById('view-poker-table').classList.remove('hidden');
             const btnP = document.getElementById('btn-nav-poker');
-            if(btnP) {
-                btnP.classList.add('active');
-            }
+            if(btnP) btnP.classList.add('active');
             
-            // Восстанавливаем кнопки, если вернулись
             if (window.poker && window.poker.forceRender) {
                 window.poker.forceRender();
             }
@@ -2433,3 +2457,4 @@
 
 </body>
 </html>
+
