@@ -13,7 +13,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap" rel="stylesheet">
     <style>
         /* Глобальный сброс */
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
 
         :root {
             --paper-bg: #f4e4bc;
@@ -59,6 +61,7 @@
             transition: transform 0.3s ease;
             box-sizing: border-box;
         }
+
         .close-menu-btn {
             display: none;
             position: absolute;
@@ -89,10 +92,22 @@
             z-index: 3001;
         }
 
-        .sidebar-logo { text-align: center; margin-bottom: 30px; }
-        .sidebar-logo img { width: 100px; border-radius: 50%; border: 2px solid var(--accent-gold); }
+        .sidebar-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
 
-        .user-info-container { margin-top: 10px; text-align: center; }
+        .sidebar-logo img {
+            width: 100px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-gold);
+        }
+
+        .user-info-container {
+            margin-top: 10px;
+            text-align: center;
+        }
+
         .display-name-row {
             font-family: 'Rye', cursive;
             color: var(--accent-gold);
@@ -108,6 +123,7 @@
             word-break: break-word;  
             padding: 0 10px;         
         }
+
         .login-name-row {
             font-family: 'Special Elite', monospace;
             color: #d4c5a3;
@@ -115,171 +131,696 @@
             opacity: 0.6;
             margin-top: 4px;
         }
-        .edit-icon { cursor: pointer; font-size: 0.8em; opacity: 0.7; transition: 0.2s; }
-        .edit-icon:hover { opacity: 1; transform: scale(1.1); }
-        .role-badge { font-size: 1.2em; margin-right: 5px; cursor: help; text-shadow: 1px 1px 0 rgba(0,0,0,0.3); }
+
+        .edit-icon {
+            cursor: pointer;
+            font-size: 0.8em;
+            opacity: 0.7;
+            transition: 0.2s;
+        }
+
+        .edit-icon:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .role-badge {
+            font-size: 1.2em;
+            margin-right: 5px;
+            cursor: help;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+        }
 
         .nav-btn {
-            background: transparent; border: 1px solid var(--accent-brown); color: #d4c5a3;
-            padding: 15px; margin-bottom: 10px; text-align: left;
-            font-family: 'Rye', cursive; font-size: 1.1em; cursor: pointer;
-            transition: 0.2s; display: flex; align-items: center; gap: 10px;
+            background: transparent;
+            border: 1px solid var(--accent-brown);
+            color: #d4c5a3;
+            padding: 15px;
+            margin-bottom: 10px;
+            text-align: left;
+            font-family: 'Rye', cursive;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .nav-btn:hover, .nav-btn.active { background: var(--accent-brown); color: var(--accent-gold); border-color: var(--accent-gold); }
+
+        .nav-btn:hover, .nav-btn.active {
+            background: var(--accent-brown);
+            color: var(--accent-gold);
+            border-color: var(--accent-gold);
+        }
 
         .btn-money-transfer {
-            background-color: var(--accent-green); color: white; border: 1px solid #1b5e20;
-            border-radius: 4px; padding: 5px 10px; font-family: 'Rye', cursive; cursor: pointer;
-            margin-right: auto; margin-left: 10px; display: flex; align-items: center; gap: 5px;
+            background-color: var(--accent-green);
+            color: white;
+            border: 1px solid #1b5e20;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-family: 'Rye', cursive;
+            cursor: pointer;
+            margin-right: auto;
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
-        .btn-money-transfer:hover { background-color: #388e3c; }
+
+        .btn-money-transfer:hover {
+            background-color: #388e3c;
+        }
 
         #transferModal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 4000;
-            display: flex; justify-content: center; align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 4000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        #transferModal.hidden { display: none !important; }
+
+        #transferModal.hidden {
+            display: none !important;
+        }
 
         .transfer-card {
-            background: var(--paper-bg); border: 4px double var(--accent-brown); padding: 20px;
-            text-align: center; width: 280px; border-radius: 8px;
+            background: var(--paper-bg);
+            border: 4px double var(--accent-brown);
+            padding: 20px;
+            text-align: center;
+            width: 280px;
+            border-radius: 8px;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
         }
-        .balance-display { font-size: 1.5em; color: var(--accent-green); font-weight: bold; margin: 10px 0; font-family: 'Special Elite', monospace; }
+
+        .balance-display {
+            font-size: 1.5em;
+            color: var(--accent-green);
+            font-weight: bold;
+            margin: 10px 0;
+            font-family: 'Special Elite', monospace;
+        }
 
         .notification-badge {
-            background-color: #ff0000; color: white; border-radius: 50%; padding: 2px 6px;
-            font-size: 0.8em; margin-left: auto; font-family: sans-serif;
-            border: 1px solid #fff; box-shadow: 0 0 8px rgba(255, 0, 0, 0.8);
-            display: none; animation: pulse-red 2s infinite;
+            background-color: #ff0000;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.8em;
+            margin-left: auto;
+            font-family: sans-serif;
+            border: 1px solid #fff;
+            box-shadow: 0 0 8px rgba(255, 0, 0, 0.8);
+            display: none;
+            animation: pulse-red 2s infinite;
         }
-        .notification-badge.visible { display: inline-block; }
+
+        .notification-badge.visible {
+            display: inline-block;
+        }
+
         @keyframes pulse-red {
             0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
             70% { box-shadow: 0 0 0 6px rgba(255, 0, 0, 0); }
             100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
         }
 
-        .chat-list-panel { display: flex; flex-direction: column; gap: 10px; }
+        .chat-list-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
         .chat-list-item {
-            background: rgba(255, 255, 255, 0.6); border: 2px solid var(--accent-brown); padding: 15px;
-            border-radius: 8px; cursor: pointer; display: flex; align-items: center;
-            transition: all 0.2s; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.6);
+            border: 2px solid var(--accent-brown);
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
         }
-        .chat-list-item:hover { background: rgba(255, 255, 255, 0.9); transform: translateX(5px); }
+
+        .chat-list-item:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateX(5px);
+        }
+
         .chat-avatar {
-            width: 40px; height: 40px; border-radius: 50%; background-color: var(--accent-brown);
-            color: var(--accent-gold); display: flex; justify-content: center; align-items: center;
-            font-size: 1.2em; margin-right: 15px; border: 2px solid var(--accent-gold); font-family: 'Rye', cursive;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--accent-brown);
+            color: var(--accent-gold);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2em;
+            margin-right: 15px;
+            border: 2px solid var(--accent-gold);
+            font-family: 'Rye', cursive;
         }
-        .chat-info { display: flex; flex-direction: column; flex: 1; }
-        .chat-name { font-family: 'Rye', cursive; color: var(--accent-brown); font-size: 1.1em; }
-        .chat-preview { font-size: 0.8em; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+
+        .chat-info {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .chat-name {
+            font-family: 'Rye', cursive;
+            color: var(--accent-brown);
+            font-size: 1.1em;
+        }
+
+        .chat-preview {
+            font-size: 0.8em;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
         
-        .chat-conversation-panel.hidden { display: none; }
+        .chat-conversation-panel.hidden {
+            display: none;
+        }
 
         .btn-extreme-reset {
-            margin-top: auto; background-color: #500000; color: #ffcccc; border: 2px solid #ff0000;
-            padding: 12px; font-family: 'Special Elite', monospace; font-weight: bold; font-size: 0.9em;
-            cursor: pointer; width: 100%; border-radius: 4px; transition: all 0.2s; text-align: center;
+            margin-top: auto;
+            background-color: #500000;
+            color: #ffcccc;
+            border: 2px solid #ff0000;
+            padding: 12px;
+            font-family: 'Special Elite', monospace;
+            font-weight: bold;
+            font-size: 0.9em;
+            cursor: pointer;
+            width: 100%;
+            border-radius: 4px;
+            transition: all 0.2s;
+            text-align: center;
         }
-        .btn-extreme-reset:hover { background-color: #ff0000; color: white; box-shadow: 0 0 15px rgba(255, 0, 0, 0.5); }
+
+        .btn-extreme-reset:hover {
+            background-color: #ff0000;
+            color: white;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+        }
 
         .main-content {
-            margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width));
-            min-height: 100vh; padding: 20px; background-image: var(--paper-texture);
-            background-color: var(--paper-bg); padding-bottom: 60px; position: relative;
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            min-height: 100vh;
+            padding: 20px;
+            background-image: var(--paper-texture);
+            background-color: var(--paper-bg);
+            padding-bottom: 60px;
+            position: relative;
         }
 
         .brand-container {
-            display: flex; align-items: center; justify-content: center; margin-bottom: 20px;
-            border-bottom: none; padding-bottom: 15px; flex-wrap: wrap; text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            border-bottom: none;
+            padding-bottom: 15px;
+            flex-wrap: wrap;
+            text-align: center;
         }
+
         .header-title {
-            font-family: 'Rye', cursive; text-align: center; color: var(--accent-brown);
-            font-size: 2.2em; margin: 0; text-shadow: 2px 2px 0px var(--paper-bg), 4px 4px 0px rgba(0,0,0,0.2);
-            text-transform: uppercase; letter-spacing: 2px; line-height: 1.2; width: 100%;
+            font-family: 'Rye', cursive;
+            text-align: center;
+            color: var(--accent-brown);
+            font-size: 2.2em;
+            margin: 0;
+            text-shadow: 2px 2px 0px var(--paper-bg), 4px 4px 0px rgba(0,0,0,0.2);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            line-height: 1.2;
+            width: 100%;
         }
+
         .online-counter {
-            text-align: center; font-family: 'Special Elite', monospace; font-size: 1.1em;
-            color: var(--accent-green); background: rgba(46, 125, 50, 0.1);
-            padding: 5px 15px; border-radius: 20px; border: 1px solid var(--accent-green);
-            display: inline-block; margin: 0 auto 15px auto; font-weight: bold;
+            text-align: center;
+            font-family: 'Special Elite', monospace;
+            font-size: 1.1em;
+            color: var(--accent-green);
+            background: rgba(46, 125, 50, 0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 1px solid var(--accent-green);
+            display: inline-block;
+            margin: 0 auto 15px auto;
+            font-weight: bold;
         }
-        .center-wrap { text-align: center; }
+
+        .center-wrap {
+            text-align: center;
+        }
 
         .status-dot {
-            display: inline-block; width: 12px; height: 12px; border-radius: 50%;
-            background-color: #d32f2f; border: 2px solid rgba(0,0,0,0.3);
-            box-shadow: 0 0 5px rgba(0,0,0,0.5); transition: all 0.3s ease;
-            vertical-align: middle; margin-left: 8px;
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #d32f2f;
+            border: 2px solid rgba(0,0,0,0.3);
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+            vertical-align: middle;
+            margin-left: 8px;
         }
-        .status-dot.online { background-color: #00e676; box-shadow: 0 0 8px #00e676; border-color: #1b5e20; }
+
+        .status-dot.online {
+            background-color: #00e676;
+            box-shadow: 0 0 8px #00e676;
+            border-color: #1b5e20;
+        }
 
         /* --- LOGIN OVERLAY --- */
-        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2a1b0f; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
-        .login-card { background-image: var(--paper-texture); background-color: var(--paper-bg); padding: 30px; border: 4px solid var(--accent-brown); border-radius: 8px; text-align: center; width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-        .login-card h2 { font-family: 'Rye', cursive; color: var(--accent-brown); margin-bottom: 20px; border-bottom: 2px double var(--accent-brown); }
-        .login-input { width: 100%; padding: 10px; margin-bottom: 15px; border: 2px solid var(--accent-brown); background: rgba(255,255,255,0.5); font-family: 'Special Elite', monospace; font-size: 1.1em; box-sizing: border-box; }
-        .login-checkbox { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; font-size: 0.9em; color: var(--accent-brown); }
-        .btn-login-action { width: 100%; padding: 12px; margin-bottom: 10px; background: var(--accent-green); color: white; border: 2px solid #1b5e20; font-family: 'Rye', cursive; cursor: pointer; font-size: 1.1em; border-radius: 4px; }
-        .btn-register { background: var(--accent-brown); border-color: #5d4037; }
-        .btn-register-link { background: transparent; border: none; color: var(--accent-gold); font-family: 'Rye', cursive; font-size: 1em; cursor: pointer; text-decoration: underline; margin-top: 10px; }
-        .btn-back { background: var(--accent-red); border-color: #b71c1c; }
-        .error-msg { color: red; margin-top: 10px; font-weight: bold; min-height: 1.2em; }
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #2a1b0f;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
 
-        .version-tag { position: fixed; bottom: 5px; right: 10px; font-size: 0.7em; color: #5a3a22; font-family: 'Special Elite', monospace; z-index: 2000; background: rgba(244, 228, 188, 0.9); padding: 2px 6px; border-radius: 4px; border: 1px solid #8b4513; pointer-events: none; opacity: 0.8; cursor: pointer; text-decoration: underline; }
-        
-        .network-badge { position: fixed; top: 15px; right: 15px; padding: 8px 15px; font-family: 'Rye', cursive; font-size: 0.9em; border-radius: 4px; z-index: 1000; box-shadow: 2px 2px 5px rgba(0,0,0,0.7); border: 2px solid #3e2b1f; transition: all 0.3s; text-transform: uppercase; }
-        .status-online { background-color: var(--accent-green); color: #fff; border-color: #1b5e20; }
-        .status-offline { background-color: #d32f2f; color: #fff; border-color: #b71c1c; animation: pulse 2s infinite; }
+        .login-card {
+            background-image: var(--paper-texture);
+            background-color: var(--paper-bg);
+            padding: 30px;
+            border: 4px solid var(--accent-brown);
+            border-radius: 8px;
+            text-align: center;
+            width: 300px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
 
-        .date-section { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px auto 20px auto; padding: 5px; }
-        .date-section label { font-family: 'Rye', cursive; color: var(--accent-brown); font-size: 1.2em; }
-        input[type="date"] { background: rgba(255, 255, 255, 0.6); border: 2px solid var(--accent-brown); border-radius: 4px; padding: 8px 12px; font-family: 'Special Elite', monospace; font-size: 1.1em; color: #3e2b1f; outline: none; cursor: pointer; box-shadow: inset 0 0 5px rgba(0,0,0,0.1); }
+        .login-card h2 {
+            font-family: 'Rye', cursive;
+            color: var(--accent-brown);
+            margin-bottom: 20px;
+            border-bottom: 2px double var(--accent-brown);
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 2px solid var(--accent-brown);
+            background: rgba(255,255,255,0.5);
+            font-family: 'Special Elite', monospace;
+            font-size: 1.1em;
+            box-sizing: border-box;
+        }
+
+        .login-checkbox {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            color: var(--accent-brown);
+        }
+
+        .btn-login-action {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: var(--accent-green);
+            color: white;
+            border: 2px solid #1b5e20;
+            font-family: 'Rye', cursive;
+            cursor: pointer;
+            font-size: 1.1em;
+            border-radius: 4px;
+        }
+
+        .btn-register {
+            background: var(--accent-brown);
+            border-color: #5d4037;
+        }
+
+        .btn-register-link {
+            background: transparent;
+            border: none;
+            color: var(--accent-gold);
+            font-family: 'Rye', cursive;
+            font-size: 1em;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 10px;
+        }
+
+        .btn-back {
+            background: var(--accent-red);
+            border-color: #b71c1c;
+        }
+
+        .error-msg {
+            color: red;
+            margin-top: 10px;
+            font-weight: bold;
+            min-height: 1.2em;
+        }
+
+        .version-tag {
+            position: fixed;
+            bottom: 5px;
+            right: 10px;
+            font-size: 0.7em;
+            color: #5a3a22;
+            font-family: 'Special Elite', monospace;
+            z-index: 2000;
+            background: rgba(244, 228, 188, 0.9);
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #8b4513;
+            pointer-events: none;
+            opacity: 0.8;
+            cursor: pointer;
+            text-decoration: underline;
+        }
         
-        .controls { margin-bottom: 25px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; padding-bottom: 20px; border-bottom: 2px solid var(--accent-brown); }
-        button { padding: 12px 20px; border: 2px solid rgba(0,0,0,0.3); border-radius: 3px; cursor: pointer; font-size: 15px; font-family: 'Rye', cursive; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; box-shadow: inset 0 0 10px rgba(255,255,255,0.2), 2px 2px 3px rgba(0,0,0,0.3); text-shadow: 1px 1px 1px rgba(0,0,0,0.5); position: relative; top: 0; }
-        button:active { top: 2px; box-shadow: inset 0 0 5px rgba(0,0,0,0.4); }
+        .network-badge {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            padding: 8px 15px;
+            font-family: 'Rye', cursive;
+            font-size: 0.9em;
+            border-radius: 4px;
+            z-index: 1000;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.7);
+            border: 2px solid #3e2b1f;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .status-online {
+            background-color: var(--accent-green);
+            color: #fff;
+            border-color: #1b5e20;
+        }
+
+        .status-offline {
+            background-color: #d32f2f;
+            color: #fff;
+            border-color: #b71c1c;
+            animation: pulse 2s infinite;
+        }
+
+        .date-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px auto 20px auto;
+            padding: 5px;
+        }
+
+        .date-section label {
+            font-family: 'Rye', cursive;
+            color: var(--accent-brown);
+            font-size: 1.2em;
+        }
+
+        input[type="date"] {
+            background: rgba(255, 255, 255, 0.6);
+            border: 2px solid var(--accent-brown);
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-family: 'Special Elite', monospace;
+            font-size: 1.1em;
+            color: #3e2b1f;
+            outline: none;
+            cursor: pointer;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            margin-bottom: 25px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--accent-brown);
+        }
+
+        button {
+            padding: 12px 20px;
+            border: 2px solid rgba(0,0,0,0.3);
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 15px;
+            font-family: 'Rye', cursive;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.2), 2px 2px 3px rgba(0,0,0,0.3);
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+            position: relative;
+            top: 0;
+        }
+
+        button:active {
+            top: 2px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
+        }
+
         .btn-add { background-color: var(--accent-green); color: #f4e4bc; border-color: #3a4a20; }
         .btn-download { background-color: var(--accent-brown); color: var(--accent-gold); border-color: #5c300e; }
         .btn-newday { background-color: var(--accent-purple); color: #fff; border-color: #4b0082; }
         .btn-newday:hover { background-color: #5a0a94; }
         .btn-refresh { background-color: var(--accent-teal); color: white; border-color: #00796b; }
         .btn-refresh:hover { background-color: #00796b; }
-        .btn-calc, .btn-undo, .btn-redo { width: 40px; height: 40px; padding: 0; font-family: 'Special Elite', monospace; font-weight: bold; font-size: 1.5em; border-radius: 50%; border: 2px solid #3e2b1f; display: inline-flex; align-items: center; justify-content: center; margin: 0 2px; }
+
+        .btn-calc, .btn-undo, .btn-redo {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            font-family: 'Special Elite', monospace;
+            font-weight: bold;
+            font-size: 1.5em;
+            border-radius: 50%;
+            border: 2px solid #3e2b1f;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 2px;
+        }
+
         .btn-calc { background-color: #6b523d; color: var(--accent-gold); }
         .btn-undo { background-color: var(--accent-undo); color: #3e2b1f; font-size: 1.2em; }
         .btn-redo { background-color: var(--accent-redo); color: #fff; font-size: 1.2em; }
         .btn-redo:hover { background-color: #00aaaa; }
-        .btn-delete { background-color: var(--accent-red); color: #f4e4bc; font-weight: bold; border-radius: 50%; width: 30px; height: 30px; padding: 0; border: 2px solid #500000; font-family: sans-serif; cursor: pointer; }
-        .btn-reset-player { background-color: var(--accent-orange); color: white; font-weight: bold; border-radius: 50%; width: 30px; height: 30px; padding: 0; border: 2px solid #bf360c; font-family: sans-serif; cursor: pointer; }
-        .btn-reset-player:hover { background-color: #ff6d00; }
 
-        table { width: 100%; border-collapse: separate; border-spacing: 0 10px; margin-top: 10px; }
-        th { padding: 15px 10px; text-align: left; background-color: #6b523d; color: var(--accent-gold); font-family: 'Rye', cursive; letter-spacing: 1px; border-top: 3px solid #3e2b1f; border-bottom: 3px solid #3e2b1f; }
-        tbody tr { background-color: rgba(255, 255, 255, 0.4); box-shadow: 2px 2px 4px rgba(0,0,0,0.1); border: 1px solid var(--accent-brown); }
-        td { padding: 15px 10px; border-top: 1px dashed rgba(139, 69, 19, 0.3); border-bottom: 2px solid var(--accent-brown); vertical-align: middle; }
-        input[type="text"], input[type="number"] { padding: 8px; background: transparent; border: none; border-bottom: 2px dashed var(--accent-brown); font-family: 'Special Elite', monospace; font-size: 1.1em; color: var(--ink-color); box-sizing: border-box; outline: none; }
-        input[type="text"].player-name { width: 100%; cursor: default; color: var(--accent-brown); font-weight: bold; }
-        input[type="text"] { width: 100%; }
-        input[type="number"] { width: 70px; margin-right: 5px; text-align: center; border: 2px solid var(--accent-brown); background-color: #f9f3e3; }
-        .score-cell { font-family: 'Rye', cursive; font-size: 1.8em; color: var(--accent-red); text-align: center; }
-        .history-log { font-size: 0.9em; color: #6b523d; font-style: italic; max-width: 250px; overflow-x: auto; white-space: nowrap; padding: 5px; background-color: rgba(139, 69, 19, 0.05); border-radius: 4px; }
+        .btn-delete {
+            background-color: var(--accent-red);
+            color: #f4e4bc;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            border: 2px solid #500000;
+            font-family: sans-serif;
+            cursor: pointer;
+        }
 
-        .btn-local-note { cursor: pointer; font-size: 1.2em; margin-left: 5px; opacity: 0.3; transition: 0.2s; }
-        .btn-local-note:hover { opacity: 1; transform: scale(1.1); }
-        .btn-local-note.has-note { opacity: 1; text-shadow: 0 0 5px gold; }
-        .player-note-text { font-family: 'Courier New', monospace; font-size: 0.75em; color: #b71c1c; font-weight: bold; display: block; margin-top: 2px; margin-left: 20px; font-style: italic; width: 100%; word-wrap: break-word; }
+        .btn-reset-player {
+            background-color: var(--accent-orange);
+            color: white;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            border: 2px solid #bf360c;
+            font-family: sans-serif;
+            cursor: pointer;
+        }
 
-        .btn-start-dm { cursor: pointer; font-size: 1.2em; margin-right: 8px; color: var(--accent-brown); transition: 0.2s; }
-        .btn-start-dm:hover { transform: scale(1.2); color: var(--accent-orange); }
+        .btn-reset-player:hover {
+            background-color: #ff6d00;
+        }
 
-        .chat-header-private { background-color: #ffe0b2; color: #e65100; padding: 5px 10px; border-radius: 4px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e65100; font-family: 'Special Elite', monospace; }
-        .btn-back-general { background: var(--accent-brown); color: var(--accent-gold); border: none; cursor: pointer; font-family: 'Rye', cursive; padding: 5px 10px; border-radius: 4px; font-size: 0.8em; }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 10px;
+            margin-top: 10px;
+        }
 
-        .status-cell { font-family: 'Special Elite', monospace; font-weight: bold; font-size: 0.9em; text-align: center; }
+        th {
+            padding: 15px 10px;
+            text-align: left;
+            background-color: #6b523d;
+            color: var(--accent-gold);
+            font-family: 'Rye', cursive;
+            letter-spacing: 1px;
+            border-top: 3px solid #3e2b1f;
+            border-bottom: 3px solid #3e2b1f;
+        }
+
+        tbody tr {
+            background-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid var(--accent-brown);
+        }
+
+        td {
+            padding: 15px 10px;
+            border-top: 1px dashed rgba(139, 69, 19, 0.3);
+            border-bottom: 2px solid var(--accent-brown);
+            vertical-align: middle;
+        }
+
+        input[type="text"], input[type="number"] {
+            padding: 8px;
+            background: transparent;
+            border: none;
+            border-bottom: 2px dashed var(--accent-brown);
+            font-family: 'Special Elite', monospace;
+            font-size: 1.1em;
+            color: var(--ink-color);
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        input[type="text"].player-name {
+            width: 100%;
+            cursor: default;
+            color: var(--accent-brown);
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: 100%;
+        }
+
+        input[type="number"] {
+            width: 70px;
+            margin-right: 5px;
+            text-align: center;
+            border: 2px solid var(--accent-brown);
+            background-color: #f9f3e3;
+        }
+
+        .score-cell {
+            font-family: 'Rye', cursive;
+            font-size: 1.8em;
+            color: var(--accent-red);
+            text-align: center;
+        }
+
+        .history-log {
+            font-size: 0.9em;
+            color: #6b523d;
+            font-style: italic;
+            max-width: 250px;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding: 5px;
+            background-color: rgba(139, 69, 19, 0.05);
+            border-radius: 4px;
+        }
+
+        .btn-local-note {
+            cursor: pointer;
+            font-size: 1.2em;
+            margin-left: 5px;
+            opacity: 0.3;
+            transition: 0.2s;
+        }
+
+        .btn-local-note:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .btn-local-note.has-note {
+            opacity: 1;
+            text-shadow: 0 0 5px gold;
+        }
+
+        .player-note-text {
+            font-family: 'Courier New', monospace;
+            font-size: 0.75em;
+            color: #b71c1c;
+            font-weight: bold;
+            display: block;
+            margin-top: 2px;
+            margin-left: 20px;
+            font-style: italic;
+            width: 100%;
+            word-wrap: break-word;
+        }
+
+        .btn-start-dm {
+            cursor: pointer;
+            font-size: 1.2em;
+            margin-right: 8px;
+            color: var(--accent-brown);
+            transition: 0.2s;
+        }
+
+        .btn-start-dm:hover {
+            transform: scale(1.2);
+            color: var(--accent-orange);
+        }
+
+        .chat-header-private {
+            background-color: #ffe0b2;
+            color: #e65100;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #e65100;
+            font-family: 'Special Elite', monospace;
+        }
+
+        .btn-back-general {
+            background: var(--accent-brown);
+            color: var(--accent-gold);
+            border: none;
+            cursor: pointer;
+            font-family: 'Rye', cursive;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+
+        .status-cell {
+            font-family: 'Special Elite', monospace;
+            font-weight: bold;
+            font-size: 0.9em;
+            text-align: center;
+        }
+
         .st-dvornik { color: #7f8c8d; }
         .st-novo    { color: #2ecc71; }
         .st-mid     { color: #3498db; }
@@ -318,30 +859,187 @@
             tfoot { display: none; }
         }
 
-        .chat-wrapper { display: flex; flex-direction: column; height: calc(100vh - 100px); }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 10px; background: rgba(255, 255, 255, 0.3); border: 2px solid var(--accent-brown); border-radius: 8px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; }
-        .message-bubble { max-width: 80%; padding: 8px 12px; border-radius: 12px; position: relative; font-family: 'Special Elite', monospace; font-size: 1em; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); }
-        .message-sender { font-size: 0.75em; font-weight: bold; margin-bottom: 2px; display: block; font-family: 'Rye', cursive; }
-        .msg-time { font-size: 0.8em; opacity: 0.6; margin-left: 8px; font-weight: normal; float: right; }
-        .msg-actions { display: inline-flex; gap: 5px; margin-left: 8px; opacity: 0.5; transition: 0.2s; }
-        .message-bubble:hover .msg-actions { opacity: 1; }
-        .msg-btn { background: transparent; border: none; cursor: pointer; font-size: 1em; padding: 0; color: inherit; }
-        .msg-btn:hover { transform: scale(1.2); color: #000; }
-        .edited-label { font-size: 0.7em; font-style: italic; color: #888; margin-left: 4px; }
-        .msg-meta { font-size: 0.7em; color: #6b523d; opacity: 0.7; float: right; margin-left: 10px; margin-top: 2px; }
-        .editing-mode { background-color: #fff3e0 !important; border-color: #ff9800 !important; box-shadow: 0 0 8px rgba(255, 152, 0, 0.5) !important; }
-        .my-message { align-self: flex-end; background-color: #e8f5e9; border: 1px solid var(--accent-green); border-bottom-right-radius: 0; }
-        .my-message .message-sender { color: var(--accent-green); text-align: right; }
-        .other-message { align-self: flex-start; background-color: #fff8e1; border: 1px solid var(--accent-brown); border-bottom-left-radius: 0; }
-        .other-message .message-sender { color: var(--accent-brown); }
-        .chat-input-bar { display: flex; gap: 10px; }
-        .chat-input { flex: 1; padding: 10px; border: 2px solid var(--accent-brown); border-radius: 4px; font-family: 'Special Elite', monospace; background: #fff; }
-        .btn-send { background-color: var(--accent-brown); color: var(--accent-gold); border: none; padding: 0 20px; border-radius: 4px; cursor: pointer; font-family: 'Rye', cursive; }
+        .chat-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 100px);
+        }
 
-        .grand-total-panel { margin-top: 20px; background: linear-gradient(145deg, #3e2b1f, #2a1b0f); border: 3px solid var(--accent-gold); border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 25px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
-        .grand-total-panel::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%); pointer-events: none; }
-        .gt-label { font-family: 'Rye', cursive; font-size: 1.5em; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
-        .gt-value { font-family: 'Rye', cursive; font-size: 2.5em; color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(203, 161, 53, 0.5), 3px 3px 0px #000; }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid var(--accent-brown);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message-bubble {
+            max-width: 80%;
+            padding: 8px 12px;
+            border-radius: 12px;
+            position: relative;
+            font-family: 'Special Elite', monospace;
+            font-size: 1em;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .message-sender {
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-bottom: 2px;
+            display: block;
+            font-family: 'Rye', cursive;
+        }
+
+        .msg-time {
+            font-size: 0.8em;
+            opacity: 0.6;
+            margin-left: 8px;
+            font-weight: normal;
+            float: right;
+        }
+
+        .msg-actions {
+            display: inline-flex;
+            gap: 5px;
+            margin-left: 8px;
+            opacity: 0.5;
+            transition: 0.2s;
+        }
+
+        .message-bubble:hover .msg-actions {
+            opacity: 1;
+        }
+
+        .msg-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            padding: 0;
+            color: inherit;
+        }
+
+        .msg-btn:hover {
+            transform: scale(1.2);
+            color: #000;
+        }
+
+        .edited-label {
+            font-size: 0.7em;
+            font-style: italic;
+            color: #888;
+            margin-left: 4px;
+        }
+
+        .msg-meta {
+            font-size: 0.7em;
+            color: #6b523d;
+            opacity: 0.7;
+            float: right;
+            margin-left: 10px;
+            margin-top: 2px;
+        }
+
+        .editing-mode {
+            background-color: #fff3e0 !important;
+            border-color: #ff9800 !important;
+            box-shadow: 0 0 8px rgba(255, 152, 0, 0.5) !important;
+        }
+
+        .my-message {
+            align-self: flex-end;
+            background-color: #e8f5e9;
+            border: 1px solid var(--accent-green);
+            border-bottom-right-radius: 0;
+        }
+
+        .my-message .message-sender {
+            color: var(--accent-green);
+            text-align: right;
+        }
+
+        .other-message {
+            align-self: flex-start;
+            background-color: #fff8e1;
+            border: 1px solid var(--accent-brown);
+            border-bottom-left-radius: 0;
+        }
+
+        .other-message .message-sender {
+            color: var(--accent-brown);
+        }
+
+        .chat-input-bar {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid var(--accent-brown);
+            border-radius: 4px;
+            font-family: 'Special Elite', monospace;
+            background: #fff;
+        }
+
+        .btn-send {
+            background-color: var(--accent-brown);
+            color: var(--accent-gold);
+            border: none;
+            padding: 0 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Rye', cursive;
+        }
+
+        .grand-total-panel {
+            margin-top: 20px;
+            background: linear-gradient(145deg, #3e2b1f, #2a1b0f);
+            border: 3px solid var(--accent-gold);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .grand-total-panel::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .gt-label {
+            font-family: 'Rye', cursive;
+            font-size: 1.5em;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .gt-value {
+            font-family: 'Rye', cursive;
+            font-size: 2.5em;
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(203, 161, 53, 0.5), 3px 3px 0px #000;
+        }
 
         .journal-list { display: flex; flex-direction: column; gap: 15px; }
         .journal-card { background: rgba(255, 255, 255, 0.6); border: 2px solid var(--accent-brown); padding: 15px; cursor: pointer; transition: 0.2s; }
@@ -397,97 +1095,36 @@
         .bg-name { background: var(--accent-brown); color: var(--accent-gold); padding: 5px; font-size: 0.8em; font-family: 'Rye', cursive; }
 
         /* --- ИСПРАВЛЕНИЯ ПОКЕРА --- */
-        
         .poker-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 2px solid var(--accent-brown); }
         #pokerPotDisplay { font-family: 'Rye', cursive; font-size: 1.5em; color: var(--accent-green); text-shadow: 1px 1px 0 #000; }
         
-        /* КОНТЕЙНЕР ДЛЯ ЦЕНТРИРОВАНИЯ СТОЛА */
         .poker-table-wrapper {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            /* Увеличили отступы сверху и снизу, чтобы игроки не обрезались */
-            padding: 60px 0; 
-            overflow: visible; 
+            width: 100%; display: flex; justify-content: center; padding: 60px 0; overflow: visible; 
         }
 
-        /* НАСТОЯЩИЙ ОВАЛЬНЫЙ СТОЛ */
         .poker-table-felt {
-            width: 90%;
-            max-width: 800px;
-            height: 50vh;
-            min-height: 350px;
-            background-color: #2e7d32; 
-            border: 15px solid #4e342e; 
-            border-radius: 200px; 
-            position: relative; 
-            box-shadow: 0 15px 30px rgba(0,0,0,0.6), inset 0 0 50px rgba(0,0,0,0.8);
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
+            width: 90%; max-width: 800px; height: 50vh; min-height: 350px;
+            background-color: #2e7d32; border: 15px solid #4e342e; border-radius: 200px; 
+            position: relative; box-shadow: 0 15px 30px rgba(0,0,0,0.6), inset 0 0 50px rgba(0,0,0,0.8);
+            display: flex; justify-content: center; align-items: center;
         }
 
-        /* Надпись перенесена наверх стола */
         .center-message { 
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: rgba(255,255,255,0.7); 
-            font-family: 'Rye'; 
-            font-size: 1.5em; 
-            text-align: center; 
-            pointer-events: none; 
-            width: 100%;
-            z-index: 5;
-        }
-
-        /* Карты на столе (Флоп, Терн, Ривер) */
-        .community-cards {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            display: flex;
-            gap: 8px;
-            z-index: 20;
-        }
-        .community-cards .poker-card {
-            width: 50px; 
-            height: 75px; 
-            font-size: 1em;
-            cursor: default; /* На столе карты нажимать нельзя */
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            color: rgba(255,255,255,0.7); font-family: 'Rye'; font-size: 1.5em; 
+            text-align: center; pointer-events: none; width: 100%; z-index: 5;
         }
 
         .btn-start-round {
-            position: absolute; 
-            top: 50%; left: 50%;
-            margin: 0;
-            transform: translate(-50%, -50%); 
-            
-            /* ИЗМЕНЕНИЯ ЗДЕСЬ: */
-            width: auto;
-            min-width: 220px; 
-            white-space: nowrap;
-            /* ---------------- */
-            
-            height: 50px;
-            font-size: 1.2em;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
-            z-index: 100;
-            background: linear-gradient(45deg, #2e7d32, #1b5e20);
-            border: 2px solid #fff;
-            color: #fff;
-            font-family: 'Rye', cursive;
-            cursor: pointer;
-            border-radius: 50px;
+            position: absolute; top: 50%; left: 50%; margin: 0; transform: translate(-50%, -50%); 
+            width: auto; min-width: 220px; white-space: nowrap; height: 50px; font-size: 1.2em;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); z-index: 100;
+            background: linear-gradient(45deg, #2e7d32, #1b5e20); border: 2px solid #fff;
+            color: #fff; font-family: 'Rye', cursive; cursor: pointer; border-radius: 50px;
             animation: pulse-btn 2s infinite;
         }
 
-        /* ИСПРАВЛЕНИЕ: Блокируем движение кнопки при нажатии */
-        .btn-start-round:active {
-            top: 50% !important; /* Не дает кнопке уехать */
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5); /* Визуальный эффект нажатия без смещения */
-        }
+        .btn-start-round:active { top: 50% !important; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
 
         @keyframes pulse-btn {
             0% { transform: translate(-50%, -50%) scale(1); }
@@ -495,24 +1132,16 @@
             100% { transform: translate(-50%, -50%) scale(1); }
         }
         
-      /* Игроки за столом вынесены ЗА края овала */
-        .poker-player { 
-            position: absolute; 
-            width: 100px; 
-            text-align: center; 
-            z-index: 10; 
-        }
+        .poker-player { position: absolute; width: 100px; text-align: center; z-index: 10; }
         
-        .pp-0 { bottom: -45px; left: 50%; transform: translateX(-50%); } /* Я (Внизу по центру) */
-        .pp-1 { top: 50%; left: -50px; transform: translateY(-50%); }    /* Слева сбоку */
-        .pp-2 { top: -45px; left: 50%; transform: translateX(-50%); }    /* Сверху по центру */
-        .pp-3 { top: 50%; right: -50px; transform: translateY(-50%); }   /* Справа сбоку */
-        .pp-4 { bottom: -20px; left: 0px; }                              /* Слева внизу */
-        .pp-5 { bottom: -20px; right: 0px; }                             /* Справа внизу */
+        .pp-0 { bottom: -45px; left: 50%; transform: translateX(-50%); } 
+        .pp-1 { top: 50%; left: -50px; transform: translateY(-50%); } 
+        .pp-2 { top: -45px; left: 50%; transform: translateX(-50%); } 
+        .pp-3 { top: 50%; right: -50px; transform: translateY(-50%); } 
+        .pp-4 { bottom: -20px; left: 0px; } 
+        .pp-5 { bottom: -20px; right: 0px; } 
 
         .pp-avatar { width: 50px; height: 50px; background: #2a1b0f; border: 2px solid var(--accent-gold); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--accent-gold); font-weight: bold; position: relative; transition: all 0.3s; }
-        
-        /* Свечение того, чей сейчас ход */
         .pp-avatar.active-turn { box-shadow: 0 0 25px #00ff00; border-color: #fff; transform: scale(1.1); }
         
         .pp-info { background: rgba(0,0,0,0.85); border: 1px solid var(--accent-brown); color: #fff; padding: 4px 8px; border-radius: 8px; font-size: 0.8em; margin-top: 5px; position: relative; z-index: 5; min-width: 90px; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
@@ -521,7 +1150,9 @@
         .mini-card { width: 15px; height: 22px; background: #fff; border-radius: 2px; margin: 0 1px; border: 1px solid #000; }
         .mini-card.back { background: repeating-linear-gradient(45deg, #b71c1c, #b71c1c 2px, #fff 2px, #fff 4px); }
 
-        /* Мои карты и кнопки */
+        .community-cards { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; gap: 8px; z-index: 20; }
+        .community-cards .poker-card { width: 50px; height: 75px; font-size: 1em; cursor: default; }
+
         .poker-controls { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95); padding: 15px; z-index: 3900; display: flex; flex-direction: column; align-items: center; border-top: 3px solid var(--accent-gold); }
         .my-hand { display: flex; gap: 10px; margin-bottom: 10px; }
         .poker-card { width: 60px; height: 90px; background: #fff; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Courier New', monospace; font-weight: bold; font-size: 1.2em; border: 1px solid #999; box-shadow: 2px 2px 5px #000; cursor: pointer; transition: 0.2s; }
@@ -529,69 +1160,35 @@
         .poker-card.black { color: black; }
         .poker-card.selected { transform: translateY(-10px); border: 2px solid gold; box-shadow: 0 5px 15px rgba(255,215,0,0.5); }
 
-        /* ПРЯЧЕМ МЕНЮ, ЕСЛИ МЫ НЕ ЗА СТОЛОМ ИЛИ НЕ НАШ ХОД */
-        .force-hide { display: none !important; }
+        /* Умное скрытие меню при переходе по вкладкам */
+        body:not(:has(#view-poker-table:not(.hidden))) #pokerControls { display: none !important; }
         
         .action-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 400px; }
+        
         .btn-poker-action { 
-            padding: 12px 20px; 
-            border-radius: 6px; 
-            border: none; 
-            font-weight: bold; 
-            cursor: pointer; 
-            font-family: 'Special Elite'; 
-            color: #fff; 
-            font-size: 1.1em; 
-            flex: 1; 
-            min-width: 100px; 
+            padding: 12px 20px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; 
+            font-family: 'Special Elite'; color: #fff; font-size: 1.1em; flex: 1; min-width: 100px; 
         }
         
-        /* ИСПРАВЛЕНИЕ: Запрещаем этим кнопкам прыгать при нажатии */
+        /* Запрет прыжков для кнопок действий */
         .btn-poker-action:active { top: 0 !important; box-shadow: inset 0 0 10px rgba(0,0,0,0.5) !important; }
+
         .btn-fold { background: #b71c1c; border: 1px solid #ff5252; }
         .btn-check { background: #2e7d32; border: 1px solid #69f0ae; }
         .btn-raise { background: #8e24aa; border: 1px solid #ea80fc; }
         .btn-allin { background: #f57f17; color: #000; border: 1px solid #ffff00; }
         .btn-swap { background: #0277bd; width: 100%; flex: 100%; border: 1px solid #40c4ff; margin-top: 5px; }
 
-        /* Кнопка удаления стола в лобби */
-        .btn-delete-table {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            font-size: 1.2em;
-            margin-left: 10px;
-            opacity: 0.7;
-        }
+        .btn-delete-table { background: transparent; border: none; cursor: pointer; font-size: 1.2em; margin-left: 10px; opacity: 0.7; }
         .btn-delete-table:hover { opacity: 1; transform: scale(1.2); }
-
         .history-log span.poker-win { color: #00e676; font-weight: bold; background: rgba(0,255,0,0.1); padding: 0 4px; }
 
-
-        /* --- НОВЫЕ СТИЛИ ПОКЕРА --- */
-        .btn-continue-host {
-            position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%);
-            padding: 15px 30px; font-size: 1.2em; background: #e65100; color: #fff;
-            border: 2px solid #fff; border-radius: 50px; cursor: pointer; z-index: 100;
-            box-shadow: 0 0 20px rgba(230, 81, 0, 0.8); font-family: 'Rye', cursive;
-        }
-        
-        .joker-modal {
-            background: #2a1b0f; border: 4px solid var(--accent-gold); padding: 20px;
-            text-align: center; max-height: 80vh; overflow-y: auto; max-width: 400px;
-        }
-        .joker-cards-grid {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px;
-        }
-        .joker-pick-card {
-            background: #fff; border-radius: 4px; padding: 10px 5px; font-family: monospace;
-            font-size: 1.2em; font-weight: bold; cursor: pointer; border: 1px solid #000;
-        }
+        .joker-modal { background: #2a1b0f; border: 4px solid var(--accent-gold); padding: 20px; text-align: center; max-height: 80vh; overflow-y: auto; max-width: 400px; }
+        .joker-cards-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
+        .joker-pick-card { background: #fff; border-radius: 4px; padding: 10px 5px; font-family: monospace; font-size: 1.2em; font-weight: bold; cursor: pointer; border: 1px solid #000; }
         .joker-pick-card.red { color: red; }
         .joker-pick-card.black { color: black; }
         .joker-pick-card:hover { transform: scale(1.1); box-shadow: 0 0 10px gold; }
-
-        
     </style>
 </head>
 <body>
@@ -779,9 +1376,6 @@
                 <div id="communityCards" class="community-cards"></div>
                 <div id="pokerCenterMessage" class="center-message">Ожидание...</div>
                 <button id="btnStartPoker" class="btn-start-round hidden" onclick="window.poker.startGame()">Начать раздачу</button>
-                
-                <button id="btnContinuePoker" class="btn-continue-host hidden" onclick="window.poker.nextRound()">▶ Продолжить игру</button>
-                <button id="btnShowCards" class="btn-continue-host hidden" style="background:#0277bd;" onclick="window.poker.showMyCards()">👀 Показать карты</button>
             </div>
         </div>
 
@@ -798,33 +1392,14 @@
                 <button id="btnContinuePoker" class="btn-poker-action hidden" style="background:#e65100;" onclick="window.poker.nextRound()">▶ Продолжить игру</button>
             </div>
         </div>
+    </div>
 
-        <div id="exitPokerModal" class="modal-overlay hidden" style="z-index: 6000;">
-            <div class="modal-card">
-                <h3 style="color:#8b0000; font-family:'Rye';">ВЫЙТИ ИЗ ИГРЫ?</h3>
-                <p>Если вы выйдете во время раздачи, ваши вложенные деньги сгорят!</p>
-                <div style="display:flex; gap:10px; margin-top:20px;">
-                    <button class="btn-login-action" style="background:#b71c1c;" onclick="window.poker.confirmLeave()">Да, выйти</button>
-                    <button class="btn-login-action" style="background:#2e7d32;" onclick="document.getElementById('exitPokerModal').classList.add('hidden')">Остаться</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="jokerModal" class="modal-overlay hidden" style="z-index: 5500;">
-            <div class="modal-card joker-modal">
-                <h3 style="color:var(--accent-gold); font-family:'Rye';">МАГИЯ ДЖОКЕРА</h3>
-                <p style="color:#fff; font-size:0.9em;" id="jokerModalText">Выберите карту нужного цвета:</p>
-                <div id="jokerCardsGrid" class="joker-cards-grid"></div>
-            </div>
-        </div>
-
-    <div class="version-tag" onclick="forceUpdate()">OrelPoker v79.0 (NoJump)</div>
+    <div class="version-tag" onclick="forceUpdate()">OrelPoker v81.0 (Final Fix)</div>
     
     <div id="roleModal" class="modal-overlay role-hidden">
         <div class="modal-card">
             <h3 style="margin-top:0; color:#8b4513; font-family:'Rye', cursive;">НАЗНАЧИТЬ РОЛЬ</h3>
             <p id="roleTargetName" style="font-weight:bold; font-size:1.2em; margin-bottom:15px;">...</p>
-            
             <div class="role-buttons-list">
                 <button class="role-select-btn btn-admin" onclick="setRole('admin')">👑 АДМИН</button>
                 <button class="role-select-btn btn-trusted" onclick="setRole('trusted')">🛡️ ДОВЕРЕННОЕ ЛИЦО</button>
@@ -843,6 +1418,14 @@
                 <button class="btn-cancel-role" onclick="closeColorPicker()">Отмена</button>
                 <button class="btn-login-action" style="margin:0; width:auto; flex:1; display:flex; justify-content:center; align-items:center; gap:5px;" onclick="applyCustomColor()">✔️ Применить</button>
             </div>
+        </div>
+    </div>
+
+    <div id="jokerModal" class="modal-overlay hidden" style="z-index: 5500;">
+        <div class="modal-card joker-modal">
+            <h3 style="color:var(--accent-gold); font-family:'Rye';">МАГИЯ ДЖОКЕРА</h3>
+            <p style="color:#fff; font-size:0.9em;" id="jokerModalText">Выберите карту нужного цвета:</p>
+            <div id="jokerCardsGrid" class="joker-cards-grid"></div>
         </div>
     </div>
 </div>
@@ -864,7 +1447,7 @@
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=79').then(reg => {
+            navigator.serviceWorker.register('./sw.js?v=81').then(reg => {
                 reg.update();
                 reg.onupdatefound = () => {
                     const newWorker = reg.installing;
@@ -881,7 +1464,7 @@
 </script>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, onValue, push, set, remove, update, get, query, limitToLast, orderByKey, runTransaction, onDisconnect, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
@@ -1148,10 +1731,7 @@
     }
 
     window.startEditMessage = function(key, oldText, timestamp) {
-        if (Date.now() - timestamp > 86400000) { 
-            alert("Время вышло."); 
-            return; 
-        }
+        if (Date.now() - timestamp > 86400000) { alert("Время вышло."); return; }
         const input = document.getElementById('chatInput');
         editingMsgId = key;
         input.value = oldText;
@@ -1171,10 +1751,7 @@
     }
 
     window.deleteChatMessage = function(key, timestamp) {
-        if (Date.now() - timestamp > 86400000) { 
-            alert("Время вышло."); 
-            return; 
-        }
+        if (Date.now() - timestamp > 86400000) { alert("Время вышло."); return; }
         if (confirm("Удалить?")) {
             const path = currentChatId === 'general' ? 'chat' : `private_chats/${currentChatId}`;
             remove(ref(db, `${path}/${key}`));
@@ -1185,9 +1762,7 @@
     window.toggleBgSelector = function() {
         const panel = document.getElementById('bgSelectorPanel');
         panel.classList.toggle('hidden');
-        if (!panel.classList.contains('hidden')) { 
-            renderBackgroundsList(); 
-        }
+        if (!panel.classList.contains('hidden')) renderBackgroundsList(); 
     }
 
     window.renderBackgroundsList = async function() {
@@ -1215,21 +1790,15 @@
             let isApplied = false;
             
             if (currentBg) {
-                if (bg.owner === 'all') { 
-                    if (currentBg.startsWith('#')) isApplied = true; 
-                } else { 
-                    if (currentBg === bg.file) isApplied = true; 
-                }
+                if (bg.owner === 'all') { if (currentBg.startsWith('#')) isApplied = true; } 
+                else { if (currentBg === bg.file) isApplied = true; }
             }
             
             card.className = `bg-card ${isUnlocked ? 'unlocked' : ''} ${isApplied ? 'active-selected' : ''}`;
             
             if (isUnlocked) {
-                if (bg.owner === 'all') { 
-                    card.onclick = () => openColorPickerModal(); 
-                } else { 
-                    card.onclick = () => saveProfileBackground(bg.file); 
-                }
+                if (bg.owner === 'all') card.onclick = () => openColorPickerModal(); 
+                else card.onclick = () => saveProfileBackground(bg.file); 
             } else {
                 card.onclick = () => alert("Этот фон доступен только для " + bg.owner);
             }
@@ -1244,29 +1813,20 @@
         const isResetActive = (!currentBg);
         resetCard.className = `bg-card unlocked ${isResetActive ? 'active-selected' : ''}`;
         resetCard.onclick = () => saveProfileBackground(null);
-        resetCard.innerHTML = `
-            <div style="height:80px; background:#3e2b1f; display:flex; align-items:center; justify-content:center; color:#fff; font-size:2em;">❌</div>
-            <div class="bg-name">Сбросить</div>
-            ${isResetActive ? '<div class="applied-ribbon" style="background:#555;">ПУСТО</div>' : ''}
-        `;
+        resetCard.innerHTML = `<div style="height:80px; background:#3e2b1f; display:flex; align-items:center; justify-content:center; color:#fff; font-size:2em;">❌</div><div class="bg-name">Сбросить</div>${isResetActive ? '<div class="applied-ribbon" style="background:#555;">ПУСТО</div>' : ''}`;
         grid.appendChild(resetCard);
     }
     
     window.saveProfileBackground = async function(fileName) {
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         if (!sessionUser) return;
-        
         const myId = await findPlayerIdByLogin(sessionUser.nick);
-        if (!myId) { 
-            alert("Вы не сидите за столом! Сначала создайте игрока."); 
-            return; 
-        }
+        if (!myId) return alert("Вы не сидите за столом! Сначала создайте игрока."); 
         
         if (fileName) {
             if(confirm("Установить этот фон?")) { 
                 update(ref(db, 'players/' + myId), { background: fileName }); 
-                alert("Фон установлен!"); 
-                showView('game'); 
+                alert("Фон установлен!"); showView('game'); 
             }
         } else {
             if(confirm("Убрать фон?")) { 
@@ -1286,11 +1846,9 @@
         
         if (player.background) {
             if (player.background.startsWith('#')) { 
-                newRow.style.backgroundColor = player.background; 
-                newRow.style.backgroundImage = 'none'; 
+                newRow.style.backgroundColor = player.background; newRow.style.backgroundImage = 'none'; 
             } else { 
-                newRow.style.backgroundImage = `url('./${player.background}')`; 
-                newRow.style.backgroundColor = 'transparent'; 
+                newRow.style.backgroundImage = `url('./${player.background}')`; newRow.style.backgroundColor = 'transparent'; 
             }
             newRow.classList.add('custom-bg-row');
         }
@@ -1303,63 +1861,42 @@
         
         const statusDot = document.createElement('div');
         statusDot.className = 'player-status-indicator';
-        if(player.login) {
-            statusDot.setAttribute('data-player-login', player.login);
-        }
+        if(player.login) statusDot.setAttribute('data-player-login', player.login);
         const keyToCheck = player.login || player.name;
-        if (onlineNicknames.has(keyToCheck)) {
-            statusDot.classList.add('is-online');
-        }
+        if (onlineNicknames.has(keyToCheck)) statusDot.classList.add('is-online');
         
         if (player.login && player.login !== myLogin) {
             const btnDM = document.createElement('span');
-            btnDM.innerText = '✉️'; 
-            btnDM.className = 'btn-start-dm'; 
-            btnDM.title = 'Написать личное сообщение'; 
-            btnDM.onclick = () => openPrivateChat(player.login);
+            btnDM.innerText = '✉️'; btnDM.className = 'btn-start-dm'; 
+            btnDM.title = 'Написать личное сообщение'; btnDM.onclick = () => openPrivateChat(player.login);
             nameWrapper.appendChild(btnDM);
         }
         
         const roleBadge = document.createElement('span');
         roleBadge.className = 'role-badge';
-        if (!player.login) { 
-            roleBadge.innerText = '👽'; 
-            roleBadge.title = 'Гость'; 
-        } else if (player.login === 'Zagonskiy') { 
-            roleBadge.innerText = '👑'; 
-            roleBadge.title = 'Создатель'; 
-        } else {
+        if (!player.login) { roleBadge.innerText = '👽'; roleBadge.title = 'Гость'; } 
+        else if (player.login === 'Zagonskiy') { roleBadge.innerText = '👑'; roleBadge.title = 'Создатель'; } 
+        else {
             roleBadge.innerText = '⏳';
             get(child(ref(db), 'users/' + player.login + '/role')).then((snap) => {
                 const r = snap.val();
-                if (r === 'admin') { 
-                    roleBadge.innerText = '👑'; roleBadge.title = 'Админ'; 
-                } else if (r === 'trusted') { 
-                    roleBadge.innerText = '🛡️'; roleBadge.title = 'Доверенный'; 
-                } else { 
-                    roleBadge.innerText = '👤'; roleBadge.title = 'Игрок'; 
-                }
+                if (r === 'admin') { roleBadge.innerText = '👑'; roleBadge.title = 'Админ'; } 
+                else if (r === 'trusted') { roleBadge.innerText = '🛡️'; roleBadge.title = 'Доверенный'; } 
+                else { roleBadge.innerText = '👤'; roleBadge.title = 'Игрок'; }
             });
         }
         
         const inputName = document.createElement('input');
-        inputName.type = 'text'; 
-        inputName.className = 'player-name'; 
-        inputName.value = player.name || ""; 
-        inputName.readOnly = true;
+        inputName.type = 'text'; inputName.className = 'player-name'; inputName.value = player.name || ""; inputName.readOnly = true;
         
         if (myRole === 'admin' && player.login) { 
-            inputName.style.cursor = "pointer"; 
-            inputName.style.textDecoration = "underline"; 
+            inputName.style.cursor = "pointer"; inputName.style.textDecoration = "underline"; 
             inputName.onclick = () => changeRankDialog(player.login, player.name); 
         } else if ((myRole === 'admin' || myRole === 'trusted') && !player.login) { 
-            inputName.style.cursor = "pointer"; 
-            inputName.style.borderBottom = "1px dashed var(--accent-brown)"; 
+            inputName.style.cursor = "pointer"; inputName.style.borderBottom = "1px dashed var(--accent-brown)"; 
             inputName.onclick = () => { 
                 const newName = prompt("Переименовать гостя:", player.name); 
-                if (newName && newName.trim() !== "") {
-                    update(ref(db, 'players/' + id), { name: newName.trim() }); 
-                }
+                if (newName && newName.trim() !== "") update(ref(db, 'players/' + id), { name: newName.trim() }); 
             }; 
         }
         
@@ -1373,8 +1910,7 @@
         
         if (myRole === 'admin') { 
             const btnNote = document.createElement('span'); 
-            btnNote.innerText = '📝'; 
-            btnNote.className = 'btn-local-note'; 
+            btnNote.innerText = '📝'; btnNote.className = 'btn-local-note'; 
             if(noteText) btnNote.classList.add('has-note'); 
             btnNote.onclick = () => setLocalNote(uniqueKey); 
             nameWrapper.appendChild(btnNote); 
@@ -1382,16 +1918,13 @@
         
         cellName.appendChild(nameWrapper);
         if (noteText && myRole === 'admin') { 
-            const noteDiv = document.createElement('div'); 
-            noteDiv.className = 'player-note-text'; 
-            noteDiv.innerText = noteText; 
-            cellName.appendChild(noteDiv); 
+            const noteDiv = document.createElement('div'); noteDiv.className = 'player-note-text'; 
+            noteDiv.innerText = noteText; cellName.appendChild(noteDiv); 
         }
         
         const cellStatus = newRow.insertCell(1);
         cellStatus.className = 'status-cell';
-        let statusText = "Дворник"; 
-        let statusClass = "st-dvornik";
+        let statusText = "Дворник"; let statusClass = "st-dvornik";
         
         if (total >= 50000) { statusText = "Читак ебаный"; statusClass = "st-cheat"; }
         else if (total >= 10000) { statusText = "Донатер"; statusClass = "st-donate"; }
@@ -1400,20 +1933,14 @@
         else if (total >= 1000) { statusText = "Новобранец"; statusClass = "st-novo"; }
         else if (total === 0)   { statusText = "Банкрот"; statusClass = "st-bankrot"; } 
         
-        cellStatus.innerText = statusText; 
-        cellStatus.classList.add(statusClass);
+        cellStatus.innerText = statusText; cellStatus.classList.add(statusClass);
         
         const cellAction = newRow.insertCell(2);
         if (myRole !== 'player') {
             const inputNum = document.createElement('input'); 
-            inputNum.type = 'number'; 
-            inputNum.className = 'input-val'; 
-            inputNum.placeholder = '0';
+            inputNum.type = 'number'; inputNum.className = 'input-val'; inputNum.placeholder = '0';
             inputNum.addEventListener('keypress', function(event) { 
-                if (event.key === 'Enter') { 
-                    event.preventDefault(); 
-                    handleScore(id, inputNum, 1); 
-                } 
+                if (event.key === 'Enter') { event.preventDefault(); handleScore(id, inputNum, 1); } 
             });
             cellAction.append(
                 inputNum, 
@@ -1422,13 +1949,10 @@
                 createBtn('↩', 'btn-undo', () => undoLast(id)), 
                 createBtn('↪', 'btn-redo', () => redoLast(id))
             );
-        } else { 
-            cellAction.innerText = "—"; 
-        }
+        } else { cellAction.innerText = "—"; }
         
         const cellTotal = newRow.insertCell(3);
-        cellTotal.className = 'score-cell'; 
-        cellTotal.innerText = total;
+        cellTotal.className = 'score-cell'; cellTotal.innerText = total;
         
         const cellHistory = newRow.insertCell(4);
         cellHistory.className = 'history-log'; 
@@ -1441,18 +1965,14 @@
         
         const cellDelete = newRow.insertCell(5);
         const wrapper = document.createElement('div');
-        wrapper.style.display = 'flex'; 
-        wrapper.style.justifyContent = 'center'; 
-        wrapper.style.gap = '5px';
+        wrapper.style.display = 'flex'; wrapper.style.justifyContent = 'center'; wrapper.style.gap = '5px';
         
         if (myRole === 'admin') {
              wrapper.appendChild(createBtn('♻️', 'btn-reset-player', () => resetPlayer(id)));
              if (player.login) { 
                  wrapper.appendChild(createBtn('✕', 'btn-delete', () => safeDeletePlayer(id, player.login))); 
              } else { 
-                 wrapper.appendChild(createBtn('✕', 'btn-delete', () => { 
-                     if(confirm("Удалить гостя навсегда?")) remove(ref(db, 'players/' + id)); 
-                 })); 
+                 wrapper.appendChild(createBtn('✕', 'btn-delete', () => { if(confirm("Удалить гостя навсегда?")) remove(ref(db, 'players/' + id)); })); 
              }
         }
         cellDelete.appendChild(wrapper);
@@ -1464,31 +1984,18 @@
         const newNote = prompt("Заметка об игроке (видна только вам):", current);
         if (newNote === null) return; 
         
-        if (newNote.trim() === "") { 
-            delete notes[key]; 
-        } else { 
-            notes[key] = newNote.trim(); 
-        }
-        localStorage.setItem('op_local_notes', JSON.stringify(notes));
+        if (newNote.trim() === "") delete notes[key]; 
+        else notes[key] = newNote.trim(); 
         
+        localStorage.setItem('op_local_notes', JSON.stringify(notes));
         const savedData = JSON.parse(localStorage.getItem('poker_data_v74'));
-        if (savedData) {
-            renderTable(savedData);
-        }
+        if (savedData) renderTable(savedData);
     }
 
     window.refreshTable = async function() {
         const pass = prompt("Для обновления введите код доступа:");
-        if (pass !== "108020") { 
-            if(pass !== null) alert("Ошибка доступа"); 
-            return; 
-        }
-        try { 
-            await syncUsersToTable(); 
-            alert("Таблица синхронизирована!"); 
-        } catch(e) { 
-            alert("Ошибка: " + e.message); 
-        }
+        if (pass !== "108020") { if(pass !== null) alert("Ошибка доступа"); return; }
+        try { await syncUsersToTable(); alert("Таблица синхронизирована!"); } catch(e) { alert("Ошибка: " + e.message); }
     }
 
     async function syncUsersToTable(currentDisplayName) {
@@ -1499,44 +2006,25 @@
             const players = playersSnap.val() || {};
             
             const existingLogins = new Set();
-            for(let id in players) { 
-                const pLogin = players[id].login || players[id].name; 
-                existingLogins.add(pLogin); 
-            }
+            for(let id in players) { existingLogins.add(players[id].login || players[id].name); }
             
-            const updates = {}; 
-            let hasUpdates = false;
-            
+            const updates = {}; let hasUpdates = false;
             for(let login in users) {
                 if(!existingLogins.has(login)) {
-                    const userData = users[login]; 
-                    const dispName = userData.displayName || login; 
+                    const userData = users[login]; const dispName = userData.displayName || login; 
                     const newKey = push(ref(db, 'players')).key;
-                    
                     let historyToRestore = { 'start_bonus': 1000 }; 
-                    if (userData.saved_history) { 
-                        historyToRestore = userData.saved_history; 
-                    }
-                    
-                    updates['players/' + newKey] = { 
-                        name: dispName, 
-                        login: login, 
-                        history: historyToRestore 
-                    };
+                    if (userData.saved_history) historyToRestore = userData.saved_history; 
+                    updates['players/' + newKey] = { name: dispName, login: login, history: historyToRestore };
                     hasUpdates = true;
                 }
             }
-            if(hasUpdates) { 
-                await update(ref(db), updates); 
-            }
-        } catch(e) { 
-            console.error("Sync error", e); 
-        }
+            if(hasUpdates) await update(ref(db), updates); 
+        } catch(e) { console.error("Sync error", e); }
     }
 
     window.editNickname = async function() {
-        let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        if (!sessionUser) sessionUser = JSON.parse(localStorage.getItem('op_user'));
+        let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || JSON.parse(localStorage.getItem('op_user'));
         if (!sessionUser) return;
         
         const oldDisplayName = sessionUser.displayName || sessionUser.nick;
@@ -1548,13 +2036,10 @@
             await update(ref(db, 'users/' + sessionUser.nick), { displayName: trimmedName });
             sessionUser.displayName = trimmedName;
             sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser));
-            
             if(localStorage.getItem('op_user')) { 
                 let local = JSON.parse(localStorage.getItem('op_user')); 
-                local.displayName = trimmedName; 
-                localStorage.setItem('op_user', JSON.stringify(local)); 
+                local.displayName = trimmedName; localStorage.setItem('op_user', JSON.stringify(local)); 
             }
-            
             updateMenuUI(trimmedName, sessionUser.nick);
             
             const playersSnap = await get(playersRef);
@@ -1564,80 +2049,47 @@
                     update(ref(db, 'players/' + child.key), { name: trimmedName, login: sessionUser.nick }); 
                 } 
             });
-        } catch(e) { 
-            alert("Error: " + e.message); 
-        }
+        } catch(e) { alert("Error: " + e.message); }
     }
 
     window.switchAuthView = function(view) {
-        document.getElementById('loginError').innerText = ""; 
-        document.getElementById('regError').innerText = "";
+        document.getElementById('loginError').innerText = ""; document.getElementById('regError').innerText = "";
         if(view === 'register') { 
-            document.getElementById('login-view-card').classList.add('hidden'); 
-            document.getElementById('register-view-card').classList.remove('hidden'); 
+            document.getElementById('login-view-card').classList.add('hidden'); document.getElementById('register-view-card').classList.remove('hidden'); 
         } else { 
-            document.getElementById('register-view-card').classList.add('hidden'); 
-            document.getElementById('login-view-card').classList.remove('hidden'); 
+            document.getElementById('register-view-card').classList.add('hidden'); document.getElementById('login-view-card').classList.remove('hidden'); 
         }
     }
 
     window.safeDeletePlayer = async function(id, login) {
         if(!confirm("Убрать игрока со стола? (Баланс сохранится)")) return;
-        const snapshot = await get(ref(db, 'players/' + id)); 
-        const data = snapshot.val();
-        if (data && login) { 
-            if (data.history) { 
-                await update(ref(db, 'users/' + login), { saved_history: data.history }); 
-            } 
-        }
+        const snapshot = await get(ref(db, 'players/' + id)); const data = snapshot.val();
+        if (data && login && data.history) await update(ref(db, 'users/' + login), { saved_history: data.history }); 
         remove(ref(db, 'players/' + id));
     }
 
     window.handleRegister = function() {
-        const nick = document.getElementById('regNick').value.trim(); 
-        const pass = document.getElementById('regPass').value.trim(); 
-        const passRepeat = document.getElementById('regPassRepeat').value.trim();
-        
-        if(!nick || !pass) { 
-            document.getElementById('regError').innerText = "Заполните все поля"; 
-            return; 
-        }
-        if(pass !== passRepeat) { 
-            document.getElementById('regError').innerText = "Пароли не совпадают!"; 
-            return; 
-        }
+        const nick = document.getElementById('regNick').value.trim(); const pass = document.getElementById('regPass').value.trim(); const passRepeat = document.getElementById('regPassRepeat').value.trim();
+        if(!nick || !pass) return document.getElementById('regError').innerText = "Заполните все поля"; 
+        if(pass !== passRepeat) return document.getElementById('regError').innerText = "Пароли не совпадают!"; 
         
         get(child(ref(db), `users/${nick}`)).then((snapshot) => {
-            if (snapshot.exists()) { 
-                document.getElementById('regError').innerText = "Ник занят!"; 
-            } else {
-                set(ref(db, 'users/' + nick), { 
-                    pass: pass, 
-                    created: Date.now(), 
-                    displayName: nick, 
-                    role: 'player' 
-                }).then(() => { 
+            if (snapshot.exists()) document.getElementById('regError').innerText = "Ник занят!"; 
+            else {
+                set(ref(db, 'users/' + nick), { pass: pass, created: Date.now(), displayName: nick, role: 'player' }).then(() => { 
                     const newPlayerRef = push(ref(db, 'players')); 
                     return set(newPlayerRef, { name: nick, login: nick, history: { 'start_bonus': 1000 } }); 
                 }).then(() => { 
-                    alert("Аккаунт создан! Входите."); 
-                    switchAuthView('login'); 
-                    document.getElementById('loginNick').value = nick; 
-                    document.getElementById('loginPass').value = pass; 
+                    alert("Аккаунт создан! Входите."); switchAuthView('login'); 
+                    document.getElementById('loginNick').value = nick; document.getElementById('loginPass').value = pass; 
                 });
             }
         });
     }
 
     window.handleLogin = function() {
-        const nick = document.getElementById('loginNick').value.trim(); 
-        const pass = document.getElementById('loginPass').value.trim(); 
-        const remember = document.getElementById('rememberMe').checked;
-        
-        if(!nick || !pass) { 
-            document.getElementById('loginError').innerText = "Введите данные"; 
-            return; 
-        }
+        const nick = document.getElementById('loginNick').value.trim(); const pass = document.getElementById('loginPass').value.trim(); const remember = document.getElementById('rememberMe').checked;
+        if(!nick || !pass) return document.getElementById('loginError').innerText = "Введите данные"; 
         checkLogin(nick, pass, false, remember);
     }
 
@@ -1649,51 +2101,33 @@
                     const userData = snapshot.val();
                     if(String(userData.pass) === String(pass)) {
                         let knownUsers = JSON.parse(localStorage.getItem('op_known_users') || '{}'); 
-                        knownUsers[nick] = pass; 
-                        localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
+                        knownUsers[nick] = pass; localStorage.setItem('op_known_users', JSON.stringify(knownUsers));
                         
-                        const dispName = userData.displayName || nick; 
-                        const dbRole = userData.role || 'player';
+                        const dispName = userData.displayName || nick; const dbRole = userData.role || 'player';
                         const userObj = { nick, pass, displayName: dispName, role: dbRole };
                         
                         localStorage.setItem('op_user', JSON.stringify(userObj));
                         performLogin(nick, pass, remember || isAuto, dispName, dbRole);
-                        return;
                     } else {
                         if(!isAuto) alert(`ОШИБКА ПАРОЛЯ!`);
-                        if(isAuto) { 
-                            localStorage.removeItem('op_user'); 
-                            sessionStorage.removeItem('op_session_user'); 
-                        }
-                        return;
+                        if(isAuto) { localStorage.removeItem('op_user'); sessionStorage.removeItem('op_session_user'); }
                     }
-                } else { 
-                    if(!isAuto) alert("Пользователь с таким ником не найден в базе!"); 
-                    return; 
-                }
+                } else { if(!isAuto) alert("Пользователь с таким ником не найден в базе!"); }
             }
-        } catch (error) { 
-            if(!isAuto) alert("Критическая ошибка: " + error.message); 
-        }
+        } catch (error) { if(!isAuto) alert("Критическая ошибка: " + error.message); }
     }
 
     function performLogin(nick, pass, remember, displayName, loadedRole) {
         document.getElementById('login-overlay').style.display = 'none';
-        const finalName = displayName || nick;
-        updateMenuUI(finalName, nick);
+        const finalName = displayName || nick; updateMenuUI(finalName, nick);
         
-        let role = loadedRole || 'player'; 
-        if (nick === 'Zagonskiy') { 
-            role = 'admin'; 
-        } 
-        
+        let role = loadedRole || 'player'; if (nick === 'Zagonskiy') role = 'admin'; 
         const userObj = { nick, pass, displayName: finalName, role: role };
+        
         sessionStorage.setItem('op_session_user', JSON.stringify(userObj));
         if(remember) localStorage.setItem('op_user', JSON.stringify(userObj));
         
-        setOnlineStatus(nick); 
-        fetchUserRole(nick); 
-        applyRoleUI();
+        setOnlineStatus(nick); fetchUserRole(nick); applyRoleUI();
     }
 
     function fetchUserRole(nick) {
@@ -1701,443 +2135,190 @@
         get(child(ref(db), `users/${nick}/role`)).then((snap) => {
             let role = snap.val() || 'player';
             let sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-            if(sessionUser) { 
-                if (sessionUser.role !== role) { 
-                    sessionUser.role = role; 
-                    sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser)); 
-                    applyRoleUI(); 
-                } 
+            if(sessionUser && sessionUser.role !== role) { 
+                sessionUser.role = role; sessionStorage.setItem('op_session_user', JSON.stringify(sessionUser)); applyRoleUI(); 
             }
         });
     }
 
-    window.openColorPickerModal = function() { 
-        document.getElementById('colorPickerOverlay').classList.remove('role-hidden'); 
-    }
-    
-    window.closeColorPicker = function() { 
-        document.getElementById('colorPickerOverlay').classList.add('role-hidden'); 
-    }
-    
-    window.applyCustomColor = function() { 
-        const selectedColor = document.getElementById('customColorInput').value; 
-        saveProfileBackground(selectedColor); 
-        closeColorPicker(); 
-    }
+    window.openColorPickerModal = function() { document.getElementById('colorPickerOverlay').classList.remove('role-hidden'); }
+    window.closeColorPicker = function() { document.getElementById('colorPickerOverlay').classList.add('role-hidden'); }
+    window.applyCustomColor = function() { saveProfileBackground(document.getElementById('customColorInput').value); closeColorPicker(); }
     
     window.applyRoleUI = function() {
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')); 
-        const role = sessionUser ? sessionUser.role : 'player';
-        
-        const controlsDiv = document.querySelector('.controls'); 
-        const oldRestore = document.getElementById('btnRestore'); 
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')); const role = sessionUser ? sessionUser.role : 'player';
+        const controlsDiv = document.querySelector('.controls'); const oldRestore = document.getElementById('btnRestore'); 
         if(oldRestore) oldRestore.remove();
-        
         const extremeResetBtn = document.querySelector('.btn-extreme-reset');
         
         if (role === 'player') {
-            if(controlsDiv) controlsDiv.classList.add('role-hidden'); 
-            if(extremeResetBtn) extremeResetBtn.classList.add('role-hidden');
+            if(controlsDiv) controlsDiv.classList.add('role-hidden'); if(extremeResetBtn) extremeResetBtn.classList.add('role-hidden');
         } else {
             if(controlsDiv) {
                 controlsDiv.classList.remove('role-hidden');
                 if (!document.getElementById('btnRestore')) {
-                    const btnRestore = document.createElement('button'); 
-                    btnRestore.id = 'btnRestore'; 
-                    btnRestore.className = 'btn-refresh'; 
-                    btnRestore.innerText = '♻️ Восстановить'; 
-                    btnRestore.onclick = window.restorePlayers;
-                    
-                    const btnAdd = document.querySelector('.btn-add'); 
-                    if(btnAdd && btnAdd.parentNode) {
-                        btnAdd.parentNode.insertBefore(btnRestore, btnAdd.nextSibling);
-                    }
+                    const btnRestore = document.createElement('button'); btnRestore.id = 'btnRestore'; btnRestore.className = 'btn-refresh'; 
+                    btnRestore.innerText = '♻️ Восстановить'; btnRestore.onclick = window.restorePlayers;
+                    const btnAdd = document.querySelector('.btn-add'); if(btnAdd && btnAdd.parentNode) btnAdd.parentNode.insertBefore(btnRestore, btnAdd.nextSibling);
                 }
             }
-            if (role === 'admin') { 
-                if(extremeResetBtn) extremeResetBtn.classList.remove('role-hidden'); 
-            } else { 
-                if(extremeResetBtn) extremeResetBtn.classList.add('role-hidden'); 
-            }
+            if(extremeResetBtn) { if (role === 'admin') extremeResetBtn.classList.remove('role-hidden'); else extremeResetBtn.classList.add('role-hidden'); }
         }
-        
-        const savedData = JSON.parse(localStorage.getItem('poker_data_v74')); 
-        if (savedData) {
-            renderTable(savedData);
-        }
+        const savedData = JSON.parse(localStorage.getItem('poker_data_v74')); if (savedData) renderTable(savedData);
     }
 
-    window.restorePlayers = async function() { 
-        if(!confirm("Вернуть всех зарегистрированных игроков за стол?")) return; 
-        await syncUsersToTable(); 
-        alert("Список синхронизирован!"); 
-    }
-    
-    window.logout = function() { 
-        if(confirm("Выйти?")) { 
-            if (currentConnectionRef) remove(currentConnectionRef); 
-            localStorage.removeItem('op_user'); 
-            sessionStorage.removeItem('op_session_user'); 
-            location.reload(); 
-        } 
-    }
+    window.restorePlayers = async function() { if(!confirm("Вернуть всех зарегистрированных игроков за стол?")) return; await syncUsersToTable(); alert("Список синхронизирован!"); }
+    window.logout = function() { if(confirm("Выйти?")) { if (currentConnectionRef) remove(currentConnectionRef); localStorage.removeItem('op_user'); sessionStorage.removeItem('op_session_user'); location.reload(); } }
 
-    function setOnlineStatus(nickname) { 
-        const myUserRef = ref(db, `online_users/${nickname}`); 
-        currentConnectionRef = push(myUserRef); 
-        onDisconnect(currentConnectionRef).remove(); 
-        set(currentConnectionRef, true); 
-    }
+    function setOnlineStatus(nickname) { currentConnectionRef = push(ref(db, `online_users/${nickname}`)); onDisconnect(currentConnectionRef).remove(); set(currentConnectionRef, true); }
 
     onValue(connectedRef, (snap) => { 
-        const dotMobile = document.getElementById('mobileStatusDot'); 
-        const dotDesktop = document.getElementById('desktopStatusDot'); 
-        const statusEl = document.getElementById('networkStatus'); 
+        const dotMobile = document.getElementById('mobileStatusDot'); const dotDesktop = document.getElementById('desktopStatusDot'); const statusEl = document.getElementById('networkStatus'); 
         if(statusEl) statusEl.style.display = 'none'; 
-        if (snap.val() === true) { 
-            dotMobile.classList.add('online'); 
-            dotDesktop.classList.add('online'); 
-        } else { 
-            dotMobile.classList.remove('online'); 
-            dotDesktop.classList.remove('online'); 
-        } 
+        if (snap.val() === true) { dotMobile.classList.add('online'); dotDesktop.classList.add('online'); } else { dotMobile.classList.remove('online'); dotDesktop.classList.remove('online'); } 
     });
 
     onValue(onlineUsersRef, (snap) => { 
-        const countDisplay = document.getElementById('onlineCounter'); 
-        onlineNicknames.clear(); 
-        if (snap.exists()) { 
-            const data = snap.val(); 
-            Object.keys(data).forEach(n => onlineNicknames.add(n)); 
-            countDisplay.innerText = `👁️ Онлайн: ${onlineNicknames.size}`; 
-        } else { 
-            countDisplay.innerText = `👁️ Онлайн: 0`; 
-        } 
+        const countDisplay = document.getElementById('onlineCounter'); onlineNicknames.clear(); 
+        if (snap.exists()) { const data = snap.val(); Object.keys(data).forEach(n => onlineNicknames.add(n)); countDisplay.innerText = `👁️ Онлайн: ${onlineNicknames.size}`; } else countDisplay.innerText = `👁️ Онлайн: 0`; 
         updateTableStatusDots(); 
     });
 
     function updateTableStatusDots() { 
         document.querySelectorAll('.player-status-indicator').forEach(dot => { 
-            const name = dot.getAttribute('data-player-name'); 
-            const login = dot.getAttribute('data-player-login'); 
-            const keyToCheck = login || name; 
-            if (onlineNicknames.has(keyToCheck)) {
-                dot.classList.add('is-online'); 
-            } else {
-                dot.classList.remove('is-online'); 
-            }
+            const keyToCheck = dot.getAttribute('data-player-login') || dot.getAttribute('data-player-name'); 
+            if (onlineNicknames.has(keyToCheck)) dot.classList.add('is-online'); else dot.classList.remove('is-online'); 
         }); 
     }
     
-    onValue(playersRef, (snapshot) => { 
-        const data = snapshot.val(); 
-        if (!data) return; 
-        localStorage.setItem('poker_data_v74', JSON.stringify(data)); 
-        renderTable(data); 
-    });
+    onValue(playersRef, (snapshot) => { const data = snapshot.val(); if (!data) return; localStorage.setItem('poker_data_v74', JSON.stringify(data)); renderTable(data); });
 
     function renderTable(data) {
         if (document.activeElement.tagName === 'INPUT') return;
-        
-        const tableBody = document.getElementById('tableBody'); 
-        tableBody.innerHTML = '';
-        
-        const sortedPlayers = Object.keys(data).map(key => { 
-            const player = data[key]; 
-            return { 
-                id: key, 
-                playerData: player, 
-                sortOrder: (player.sortOrder !== undefined) ? player.sortOrder : 9999 
-            }; 
-        });
-        
+        const tableBody = document.getElementById('tableBody'); tableBody.innerHTML = '';
+        const sortedPlayers = Object.keys(data).map(key => { return { id: key, playerData: data[key], sortOrder: (data[key].sortOrder !== undefined) ? data[key].sortOrder : 9999 }; });
         sortedPlayers.sort((a, b) => a.sortOrder - b.sortOrder);
-        
-        sortedPlayers.forEach(item => { 
-            renderPlayerRow(item.id, item.playerData); 
-        });
-        
-        recalculateGrandTotal(); 
-        updateTableStatusDots();
+        sortedPlayers.forEach(item => { renderPlayerRow(item.id, item.playerData); });
+        recalculateGrandTotal(); updateTableStatusDots();
     }
 
-    function recalculateGrandTotal() { 
-        const scoreCells = document.querySelectorAll('.score-cell'); 
-        let totalSum = 0; 
-        scoreCells.forEach(cell => totalSum += parseFloat(cell.innerText || 0)); 
-        document.getElementById('grandTotal').innerText = totalSum; 
-    }
+    function recalculateGrandTotal() { const scoreCells = document.querySelectorAll('.score-cell'); let totalSum = 0; scoreCells.forEach(cell => totalSum += parseFloat(cell.innerText || 0)); document.getElementById('grandTotal').innerText = totalSum; }
 
     function calculatePlayerStats(player) { 
-        let historyArray = []; 
-        let total = 0; 
+        let historyArray = []; let total = 0; 
         if (player.history) { 
-            if (typeof player.history === 'object' && !Array.isArray(player.history)) { 
-                historyArray = Object.values(player.history); 
-            } else if (Array.isArray(player.history)) { 
-                historyArray = player.history; 
-            } 
+            if (typeof player.history === 'object' && !Array.isArray(player.history)) historyArray = Object.values(player.history); 
+            else if (Array.isArray(player.history)) historyArray = player.history; 
         } 
         historyArray.forEach(val => total += parseFloat(val) || 0); 
         return { total, historyArray }; 
     }
-    function createBtn(text, cls, onClick) { 
-        const btn = document.createElement('button'); 
-        btn.innerText = text; 
-        btn.className = cls; 
-        btn.onclick = onClick; 
-        return btn; 
-    }
 
-  window.handleScore = function(id, inputElem, multiplier) { 
-        let val = parseFloat(inputElem.value); 
-        if (isNaN(val)) return; 
-        
+    function createBtn(text, cls, onClick) { const btn = document.createElement('button'); btn.innerText = text; btn.className = cls; btn.onclick = onClick; return btn; }
+
+    window.handleScore = function(id, inputElem, multiplier) { 
+        let val = parseFloat(inputElem.value); if (isNaN(val)) return; 
         let change = val * multiplier; 
-        push(ref(db, 'players/' + id + '/history'), change); 
-        set(ref(db, 'players/' + id + '/redoStack'), null); 
-        
-        const row = inputElem.closest('tr'); 
-        const totalCell = row.querySelector('.score-cell'); 
-        const historyCell = row.querySelector('.history-log'); 
-        let currentTotal = parseFloat(totalCell.innerText || 0); 
-        totalCell.innerText = currentTotal + change; 
-        
-        let text = historyCell.innerHTML; 
-        let newEntry = (change >= 0 ? `+${change}` : change); 
-        
-        if (historyCell.innerText === 'Пусто') {
-            historyCell.innerHTML = newEntry; 
-        } else {
-            historyCell.innerHTML = text + ' ' + newEntry; 
-        }
-        
-        inputElem.value = ''; 
-        inputElem.focus(); 
-        recalculateGrandTotal(); 
+        push(ref(db, 'players/' + id + '/history'), change); set(ref(db, 'players/' + id + '/redoStack'), null); 
+        const row = inputElem.closest('tr'); const totalCell = row.querySelector('.score-cell'); const historyCell = row.querySelector('.history-log'); 
+        let currentTotal = parseFloat(totalCell.innerText || 0); totalCell.innerText = currentTotal + change; 
+        let text = historyCell.innerHTML; let newEntry = (change >= 0 ? `+${change}` : change); 
+        if (historyCell.innerText === 'Пусто') historyCell.innerHTML = newEntry; else historyCell.innerHTML = text + ' ' + newEntry; 
+        inputElem.value = ''; inputElem.focus(); recalculateGrandTotal(); 
     }
 
     window.undoLast = async function(id) { 
-        const historyRef = ref(db, 'players/' + id + '/history'); 
-        const lastItemQuery = query(historyRef, orderByKey(), limitToLast(1)); 
-        const snapshot = await get(lastItemQuery); 
-        snapshot.forEach((child) => { 
-            const val = child.val(); 
-            remove(child.ref); 
-            push(ref(db, 'players/' + id + '/redoStack'), val); 
-        }); 
+        const historyRef = ref(db, 'players/' + id + '/history'); const lastItemQuery = query(historyRef, orderByKey(), limitToLast(1)); 
+        const snapshot = await get(lastItemQuery); snapshot.forEach((child) => { const val = child.val(); remove(child.ref); push(ref(db, 'players/' + id + '/redoStack'), val); }); 
     }
 
     window.redoLast = async function(id) { 
-        const redoRef = ref(db, 'players/' + id + '/redoStack'); 
-        const lastRedoQuery = query(redoRef, orderByKey(), limitToLast(1)); 
-        const snapshot = await get(lastRedoQuery); 
-        snapshot.forEach((child) => { 
-            const val = child.val(); 
-            remove(child.ref); 
-            push(ref(db, 'players/' + id + '/history'), val); 
-        }); 
+        const redoRef = ref(db, 'players/' + id + '/redoStack'); const lastRedoQuery = query(redoRef, orderByKey(), limitToLast(1)); 
+        const snapshot = await get(lastRedoQuery); snapshot.forEach((child) => { const val = child.val(); remove(child.ref); push(ref(db, 'players/' + id + '/history'), val); }); 
     }
 
     window.createNewPlayer = function() { 
-        let guestName = prompt("Введите имя гостя:", "Гость"); 
-        if (guestName === null) return; 
-        if (guestName.trim() === "") guestName = "Гость"; 
-        push(playersRef, { name: guestName.trim(), history: {} }); 
+        let guestName = prompt("Введите имя гостя:", "Гость"); if (guestName === null) return; 
+        if (guestName.trim() === "") guestName = "Гость"; push(playersRef, { name: guestName.trim(), history: {} }); 
     }
 
-    window.resetPlayer = (id) => { 
-        if (prompt("Сбросить игрока (Код)?") === "108020") {
-            update(ref(db, 'players/' + id), { history: null, redoStack: null }); 
-        } else {
-            alert("Ошибка"); 
-        }
-    };
+    window.resetPlayer = (id) => { if (prompt("Сбросить игрока (Код)?") === "108020") update(ref(db, 'players/' + id), { history: null, redoStack: null }); else alert("Ошибка"); };
 
     window.extremeReset = async () => { 
         if (prompt("ПОЛНЫЙ СБРОС (Код)?") === "108020") { 
-            const snap = await get(playersRef); 
-            const updates = {}; 
-            snap.forEach(child => { 
-                updates['players/' + child.key + '/history'] = null; 
-                updates['players/' + child.key + '/redoStack'] = null; 
-            }); 
+            const snap = await get(playersRef); const updates = {}; 
+            snap.forEach(child => { updates['players/' + child.key + '/history'] = null; updates['players/' + child.key + '/redoStack'] = null; }); 
             await update(ref(db), updates); 
         } 
     };
 
     window.startNewDay = async () => { 
         if (prompt("НОВЫЙ ДЕНЬ (Код)?") === "108020") { 
-            const snap = await get(playersRef); 
-            const updates = {}; 
+            const snap = await get(playersRef); const updates = {}; 
             snap.forEach(child => { 
-                const { total } = calculatePlayerStats(child.val()); 
-                const key1 = push(ref(db)).key; 
-                const key2 = push(ref(db)).key; 
-                const newHistory = {}; 
-                newHistory[key1] = total; 
-                newHistory[key2] = 500; 
-                updates['players/' + child.key + '/history'] = newHistory; 
-                updates['players/' + child.key + '/redoStack'] = null; 
+                const { total } = calculatePlayerStats(child.val()); const key1 = push(ref(db)).key; const key2 = push(ref(db)).key; 
+                const newHistory = {}; newHistory[key1] = total; newHistory[key2] = 500; 
+                updates['players/' + child.key + '/history'] = newHistory; updates['players/' + child.key + '/redoStack'] = null; 
             }); 
-            await update(ref(db), updates); 
-            alert("День начат! +500"); 
+            await update(ref(db), updates); alert("День начат! +500"); 
         } 
     };
     
     window.addToJournal = async function() {
         if (!confirm("Сохранить итоги, ОТСОРТИРОВАТЬ таблицу и сбросить историю?")) return;
-
-        const dv = document.getElementById('gameDate').value; 
-        if (!dv) { 
-            alert("Ошибка даты!"); 
-            return; 
-        } 
-        
-        const [y, m, d] = dv.split('-'); 
-        const fd = `${d}.${m}.${y}`;
-
-        const s = await get(playersRef); 
-        const dt = s.val(); 
-        if (!dt) return;
-
-        let playersArray = []; 
-        let gt = 0;
-
+        const dv = document.getElementById('gameDate').value; if (!dv) return alert("Ошибка даты!"); 
+        const [y, m, d] = dv.split('-'); const fd = `${d}.${m}.${y}`;
+        const s = await get(playersRef); const dt = s.val(); if (!dt) return;
+        let playersArray = []; let gt = 0;
         for (let key in dt) { 
-            const p = dt[key]; 
-            const { total, historyArray } = calculatePlayerStats(p); 
-            gt += total; 
-            playersArray.push({ 
-                key: key, 
-                name: p.name || "Без имени", 
-                total: total, 
-                historyString: historyArray.join(' ') 
-            }); 
+            const p = dt[key]; const { total, historyArray } = calculatePlayerStats(p); gt += total; 
+            playersArray.push({ key: key, name: p.name || "Без имени", total: total, historyString: historyArray.join(' ') }); 
         }
-
         playersArray.sort((a, b) => b.total - a.total);
-
-        const updates = {}; 
-        const journalPlayers = [];
-
+        const updates = {}; const journalPlayers = [];
         playersArray.forEach((p, index) => {
             journalPlayers.push({ name: p.name, total: p.total, history: p.historyString });
-            const newHistoryKey = push(ref(db)).key; 
-            const newHistory = {}; 
-            newHistory[newHistoryKey] = p.total;
-
-            updates['players/' + p.key + '/sortOrder'] = index; 
-            updates['players/' + p.key + '/history'] = newHistory; 
-            updates['players/' + p.key + '/redoStack'] = null;
+            const newHistoryKey = push(ref(db)).key; const newHistory = {}; newHistory[newHistoryKey] = p.total;
+            updates['players/' + p.key + '/sortOrder'] = index; updates['players/' + p.key + '/history'] = newHistory; updates['players/' + p.key + '/redoStack'] = null;
         });
-
-        await push(journalRef, { 
-            date: fd + ' ' + new Date().toLocaleTimeString().slice(0, 5), 
-            timestamp: Date.now(), 
-            grandTotal: gt, 
-            players: journalPlayers 
-        });
-
-        await update(ref(db), updates); 
-        alert("Готово! Таблица отсортирована по лидерам.");
+        await push(journalRef, { date: fd + ' ' + new Date().toLocaleTimeString().slice(0, 5), timestamp: Date.now(), grandTotal: gt, players: journalPlayers });
+        await update(ref(db), updates); alert("Готово! Таблица отсортирована по лидерам.");
     };
 
     window.deleteJournalEntry = function(id) { 
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        if (sessionUser.role === 'admin' || sessionUser.role === 'trusted') { 
-            if(confirm("Удалить запись?")) remove(ref(db, 'journal/' + id)); 
-        } else { 
-            alert("Нет прав!"); 
-        }
+        if (sessionUser.role === 'admin' || sessionUser.role === 'trusted') { if(confirm("Удалить запись?")) remove(ref(db, 'journal/' + id)); } else alert("Нет прав!"); 
     }
 
     onValue(journalRef, (snapshot) => {
-        const listDiv = document.getElementById('journalList'); 
-        listDiv.innerHTML = ''; 
-        const data = snapshot.val();
-        
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || { role: 'player' }; 
-        const canDelete = (sessionUser.role === 'admin' || sessionUser.role === 'trusted');
-
-        if (!data) { 
-            listDiv.innerHTML = '<div style="text-align:center;">Пусто</div>'; 
-            return; 
-        }
-
+        const listDiv = document.getElementById('journalList'); listDiv.innerHTML = ''; const data = snapshot.val();
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')) || { role: 'player' }; const canDelete = (sessionUser.role === 'admin' || sessionUser.role === 'trusted');
+        if (!data) return listDiv.innerHTML = '<div style="text-align:center;">Пусто</div>'; 
         const entries = Object.entries(data).sort((a, b) => b[1].timestamp - a[1].timestamp);
-
         entries.forEach(([id, entry]) => {
-            const card = document.createElement('div'); 
-            card.className = 'journal-card'; 
-            
-            const header = document.createElement('div'); 
-            header.className = 'journal-header';
-
-            let deleteBtnHtml = ''; 
-            if (canDelete) { 
-                deleteBtnHtml = `<button class="btn-journal-delete" onclick="event.stopPropagation(); deleteJournalEntry('${id}')">🗑️</button>`; 
-            }
-
+            const card = document.createElement('div'); card.className = 'journal-card'; const header = document.createElement('div'); header.className = 'journal-header';
+            let deleteBtnHtml = ''; if (canDelete) deleteBtnHtml = `<button class="btn-journal-delete" onclick="event.stopPropagation(); deleteJournalEntry('${id}')">🗑️</button>`; 
             header.innerHTML = `<div style="display:flex; align-items:center;"><span>📅 ${entry.date}</span>${deleteBtnHtml}</div><span class="journal-total">Банк: ${entry.grandTotal}</span>`;
-            
-            const details = document.createElement('div'); 
-            details.className = 'journal-details';
+            const details = document.createElement('div'); details.className = 'journal-details';
             let detailsHtml = `<div style="font-weight:bold; border-bottom:1px solid #000; margin-bottom:5px; display:flex; justify-content:space-between;"><span>Игрок</span><span>Итог</span></div>`;
-            
-            if (entry.players) { 
-                entry.players.forEach(p => { 
-                    detailsHtml += `<div class="detail-row"><span style="font-weight:bold;">${p.name}</span><span style="color:${p.total >= 0 ? 'green' : 'red'}">${p.total}</span></div><div style="font-size:0.8em; color:#666; margin-bottom:5px;">${p.history}</div>`; 
-                }); 
-            }
-            
-            details.innerHTML = detailsHtml; 
-            card.appendChild(header); 
-            card.appendChild(details); 
-            card.onclick = () => card.classList.toggle('open'); 
-            listDiv.appendChild(card);
+            if (entry.players) entry.players.forEach(p => { detailsHtml += `<div class="detail-row"><span style="font-weight:bold;">${p.name}</span><span style="color:${p.total >= 0 ? 'green' : 'red'}">${p.total}</span></div><div style="font-size:0.8em; color:#666; margin-bottom:5px;">${p.history}</div>`; }); 
+            details.innerHTML = detailsHtml; card.appendChild(header); card.appendChild(details); card.onclick = () => card.classList.toggle('open'); listDiv.appendChild(card);
         });
     });
 
     let currentRankLogin = null;
-
     window.changeRankDialog = function(login, currentName) { 
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')); 
-        if (!sessionUser || sessionUser.role !== 'admin') return; 
-        
-        if (login === 'Zagonskiy') { 
-            alert("Нельзя менять ранг Создателя!"); 
-            return; 
-        } 
-        
-        currentRankLogin = login; 
-        document.getElementById('roleTargetName').innerText = currentName; 
-        document.getElementById('roleModal').classList.remove('role-hidden'); 
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')); if (!sessionUser || sessionUser.role !== 'admin') return; 
+        if (login === 'Zagonskiy') return alert("Нельзя менять ранг Создателя!"); 
+        currentRankLogin = login; document.getElementById('roleTargetName').innerText = currentName; document.getElementById('roleModal').classList.remove('role-hidden'); 
     }
-
-    window.setRole = function(newRole) { 
-        if (!currentRankLogin) return; 
-        update(ref(db, 'users/' + currentRankLogin), { role: newRole })
-            .then(() => { 
-                alert(`Роль успешно изменена!`); 
-                closeRoleModal(); 
-            })
-            .catch(e => alert("Ошибка: " + e)); 
-    }
-
-    window.closeRoleModal = function() { 
-        document.getElementById('roleModal').classList.add('role-hidden'); 
-        currentRankLogin = null; 
-    }
-
-    window.toggleSidebar = function() { 
-        document.getElementById('sidebar').classList.toggle('open'); 
-    }
+    window.setRole = function(newRole) { if (!currentRankLogin) return; update(ref(db, 'users/' + currentRankLogin), { role: newRole }).then(() => { alert(`Роль успешно изменена!`); closeRoleModal(); }).catch(e => alert("Ошибка: " + e)); }
+    window.closeRoleModal = function() { document.getElementById('roleModal').classList.add('role-hidden'); currentRankLogin = null; }
+    window.toggleSidebar = function() { document.getElementById('sidebar').classList.toggle('open'); }
 
     window.showView = function(viewName) {
         document.getElementById('sidebar').classList.remove('open');
         
-        // Скрываем все основные экраны
         document.getElementById('view-game').classList.add('hidden');
         document.getElementById('view-journal').classList.add('hidden');
         document.getElementById('view-chat').classList.add('hidden');
@@ -2145,8 +2326,7 @@
         document.getElementById('view-poker-lobby').classList.add('hidden');
         document.getElementById('view-poker-table').classList.add('hidden');
         
-        // --- ЖЕСТКОЕ СКРЫТИЕ КНОПОК ПОКЕРА ПРИ ЛЮБОМ ПЕРЕХОДЕ ---
-        // Скрываем кнопки только если мы УХОДИМ из покера
+        // Умное скрытие. Скрываем только если не возвращаемся в покер.
         if (viewName !== 'poker-table') {
             document.getElementById('pokerControls').classList.add('hidden'); 
             document.getElementById('actionButtonsContainer').classList.add('hidden');
@@ -2164,8 +2344,7 @@
             if (!currentChatId) {
                 showChatList();
             } else {
-                 const container = document.getElementById('chatMessages');
-                 setTimeout(() => container.scrollTop = container.scrollHeight, 100);
+                setTimeout(() => document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight, 100);
             }
         } else if (viewName === 'journal') {
             document.getElementById('view-journal').classList.remove('hidden');
@@ -2173,22 +2352,27 @@
         } else if (viewName === 'settings') {
             document.getElementById('view-settings').classList.remove('hidden');
             const btnSet = document.getElementById('btn-nav-settings');
-            if(btnSet) btnSet.classList.add('active');
+            if(btnSet) {
+                btnSet.classList.add('active');
+            }
         } else if (viewName === 'poker-lobby') {
-            // Если игрок уже сидит за столом, мы не даем ему смотреть лобби - сразу кидаем за стол
             if (window.poker && window.poker.getCurrentTableId()) {
                 document.getElementById('view-poker-table').classList.remove('hidden');
             } else {
                 document.getElementById('view-poker-lobby').classList.remove('hidden');
             }
             const btnP = document.getElementById('btn-nav-poker');
-            if(btnP) btnP.classList.add('active');
+            if(btnP) {
+                btnP.classList.add('active');
+            }
         } else if (viewName === 'poker-table') {
             document.getElementById('view-poker-table').classList.remove('hidden');
             const btnP = document.getElementById('btn-nav-poker');
-            if(btnP) btnP.classList.add('active');
+            if(btnP) {
+                btnP.classList.add('active');
+            }
             
-            // ВОССТАНАВЛИВАЕМ КАРТЫ ПРИ ВОЗВРАТЕ НА ВКЛАДКУ
+            // Восстанавливаем кнопки, если вернулись
             if (window.poker && window.poker.forceRender) {
                 window.poker.forceRender();
             }
@@ -2196,126 +2380,51 @@
     }
 
     window.downloadCSV = function() { 
-        const rows = document.querySelectorAll('#scoreTable tbody tr'); 
-        if (rows.length === 0) { 
-            alert("Пусто!"); 
-            return; 
-        } 
-        
-        const selectedDate = document.getElementById('gameDate').value; 
-        let formattedDate = selectedDate; 
-        
-        if(selectedDate) { 
-            const parts = selectedDate.split('-'); 
-            formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`; 
-        } 
-        
-        let csvContent = `Дата выписки:;${formattedDate}\n\n`; 
-        csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n"; 
-        
+        const rows = document.querySelectorAll('#scoreTable tbody tr'); if (rows.length === 0) return alert("Пусто!"); 
+        const selectedDate = document.getElementById('gameDate').value; let formattedDate = selectedDate; 
+        if(selectedDate) { const parts = selectedDate.split('-'); formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`; } 
+        let csvContent = `Дата выписки:;${formattedDate}\n\n`; csvContent += "Имя игрока;ИТОГОВАЯ СУММА;История операций ->\n"; 
         rows.forEach(row => { 
-            let name = row.querySelector('.player-name').value.trim(); 
-            if (!name) name = "Без имени"; 
-            
-            let total = row.querySelector('.score-cell').innerText; 
-            let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); 
+            let name = row.querySelector('.player-name').value.trim(); if (!name) name = "Без имени"; 
+            let total = row.querySelector('.score-cell').innerText; let opsString = row.querySelector('.history-log').innerText.replace(/\s/g, ';'); 
             csvContent += `"${name}";${total};${opsString}\n`; 
         }); 
-        
-        let grandTotal = document.getElementById('grandTotal').innerText; 
-        csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`; 
-        
+        let grandTotal = document.getElementById('grandTotal').innerText; csvContent += `\n"ОБЩИЙ БАНК";"${grandTotal}"\n`; 
         const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }); 
-        const link = document.createElement("a"); 
-        const url = URL.createObjectURL(blob); 
-        link.setAttribute("href", url); 
-        link.setAttribute("download", `Выписка за ${formattedDate}.csv`); 
-        document.body.appendChild(link); 
-        link.click(); 
-        document.body.removeChild(link); 
+        const link = document.createElement("a"); const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `Выписка за ${formattedDate}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); 
     }
     
-    // --- СИСТЕМА ПЕРЕВОДОВ ---
     window.openTransferModal = async function() {
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        if (!sessionUser) return;
-        
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')); if (!sessionUser) return;
         const myId = await findPlayerIdByLogin(sessionUser.nick);
-        
-        if (!myId) {
-            alert("Вы не сидите за столом! Сначала создайте игрока.");
-            return;
-        }
-        
-        const snap = await get(ref(db, 'players/' + myId));
-        const player = snap.val();
-        const { total } = calculatePlayerStats(player);
-        
-        document.getElementById('myCurrentBalance').innerText = total;
-        document.getElementById('transferAmount').value = '';
-        document.getElementById('transferModal').classList.remove('hidden');
+        if (!myId) return alert("Вы не сидите за столом! Сначала создайте игрока.");
+        const snap = await get(ref(db, 'players/' + myId)); const player = snap.val(); const { total } = calculatePlayerStats(player);
+        document.getElementById('myCurrentBalance').innerText = total; document.getElementById('transferAmount').value = ''; document.getElementById('transferModal').classList.remove('hidden');
     }
 
     window.confirmTransfer = async function() {
         const amount = parseFloat(document.getElementById('transferAmount').value);
-        if (isNaN(amount) || amount <= 0) { 
-            alert("Некорректная сумма"); 
-            return; 
-        }
-        
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        const myLogin = sessionUser.nick;
-        const targetLogin = currentChatPartner;
-
+        if (isNaN(amount) || amount <= 0) return alert("Некорректная сумма"); 
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')); const myLogin = sessionUser.nick; const targetLogin = currentChatPartner;
         if (!targetLogin) return;
-
-        const myId = await findPlayerIdByLogin(myLogin);
-        const targetId = await findPlayerIdByLogin(targetLogin);
-
-        if (!myId) { alert("Ошибка: Вы не за столом."); return; }
-        if (!targetId) { alert("Ошибка: Получатель не за столом."); return; }
-
-        const snap = await get(ref(db, 'players/' + myId));
-        const { total } = calculatePlayerStats(snap.val());
-
-        if (total < amount) {
-            alert("Недостаточно средств!");
-            return;
-        }
-
+        const myId = await findPlayerIdByLogin(myLogin); const targetId = await findPlayerIdByLogin(targetLogin);
+        if (!myId) return alert("Ошибка: Вы не за столом."); 
+        if (!targetId) return alert("Ошибка: Получатель не за столом."); 
+        const snap = await get(ref(db, 'players/' + myId)); const { total } = calculatePlayerStats(snap.val());
+        if (total < amount) return alert("Недостаточно средств!");
         if (!confirm(`Перевести ${amount} игроку @${targetLogin}?`)) return;
-
         const updates = {};
-        const pushKey1 = push(ref(db, 'players/' + myId + '/history')).key;
-        updates['players/' + myId + '/history/' + pushKey1] = -amount;
-        
-        const pushKey2 = push(ref(db, 'players/' + targetId + '/history')).key;
-        updates['players/' + targetId + '/history/' + pushKey2] = amount;
-
+        const pushKey1 = push(ref(db, 'players/' + myId + '/history')).key; updates['players/' + myId + '/history/' + pushKey1] = -amount;
+        const pushKey2 = push(ref(db, 'players/' + targetId + '/history')).key; updates['players/' + targetId + '/history/' + pushKey2] = amount;
         await update(ref(db), updates);
-
         const path = `private_chats/${currentChatId}`;
-        push(ref(db, path), {
-            sender: "Система",
-            senderLogin: "system",
-            text: `💸 ПЕРЕВОД: ${sessionUser.displayName} отправил ${amount} монет.`,
-            timestamp: Date.now()
-        });
-
-        document.getElementById('transferModal').classList.add('hidden');
-        alert("Перевод выполнен!");
+        push(ref(db, path), { sender: "Система", senderLogin: "system", text: `💸 ПЕРЕВОД: ${sessionUser.displayName} отправил ${amount} монет.`, timestamp: Date.now() });
+        document.getElementById('transferModal').classList.add('hidden'); alert("Перевод выполнен!");
     }
 
     async function findPlayerIdByLogin(loginTarget) {
-        const snap = await get(playersRef);
-        const data = snap.val();
-        if (!data) return null;
-        
-        for (let id in data) {
-            if (data[id].login === loginTarget || data[id].name === loginTarget) {
-                return id;
-            }
-        }
+        const snap = await get(playersRef); const data = snap.val(); if (!data) return null;
+        for (let id in data) { if (data[id].login === loginTarget || data[id].name === loginTarget) return id; }
         return null;
     }
 </script>
@@ -2324,9 +2433,3 @@
 
 </body>
 </html>
-
-
-
-
-
-
