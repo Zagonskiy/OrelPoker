@@ -134,7 +134,7 @@ window.poker.joinTable = async function(tableId) {
     subscribeToTable(tableId);
 }
 
-// НОВЫЙ ВЫХОД ИЗ ИГРЫ (Один клик + моментальное удаление)
+// УЛУЧШЕННЫЙ ВЫХОД: Один клик, авто-фолд, штраф и удаление
 window.poker.leaveTable = async function() {
     if(!confirm("Вы точно хотите выйти? Если вы в игре, ваши вложенные деньги сгорят!")) return;
     
@@ -145,20 +145,32 @@ window.poker.leaveTable = async function() {
     if(currentTableId) {
         const user = JSON.parse(sessionStorage.getItem('op_session_user'));
         const tId = currentTableId;
-        currentTableId = null; 
-
+        
         const tSnap = await get(ref(db, `poker_tables/${tId}`));
         const tblData = tSnap.val();
         
-        // Штраф
+        // Авто-фолд и штраф, если игрок ушел посреди раздачи
         if (tblData && tblData.status === 'playing' && tblData.players && tblData.players[user.nick]) {
-            const invested = tblData.players[user.nick].invested || 0;
-            if (invested > 0 && !tblData.players[user.nick].isSpectator) {
-                const balId = tblData.players[user.nick].balanceId;
+            const pData = tblData.players[user.nick];
+            const invested = pData.invested || 0;
+            
+            if (invested > 0 && !pData.isSpectator) {
+                const balId = pData.balanceId;
                 const txKey = push(ref(db, `players/${balId}/history`)).key;
                 await update(ref(db, `players/${balId}/history/${txKey}`), -invested + "p");
             }
+            
+            // Если сейчас был его ход, двигаем игру дальше, чтобы она не зависла
+            if (tblData.turnOrder && tblData.turnOrder[tblData.currentTurnIndex] === user.nick && !pData.folded) {
+                const updates = {};
+                updates[`poker_tables/${tId}/players/${user.nick}/folded`] = true;
+                updates[`poker_tables/${tId}/players/${user.nick}/acted`] = true;
+                await advanceTurn(tblData, updates);
+            }
         }
+
+        // Только теперь отвязываем локальный ID
+        currentTableId = null; 
 
         await remove(ref(db, `poker_tables/${tId}/players/${user.nick}`));
 
@@ -177,10 +189,8 @@ window.poker.leaveTable = async function() {
     window.showView('poker-lobby');
 }
 
-// Восстановление при переключении вкладок
 window.poker.forceRender = function() {
     if (currentGameState) {
-        // Вызываем рендер сразу, чтобы UI появился моментально
         renderTableState(currentGameState, {}); 
         get(ref(db, 'players')).then(s => {
             renderTableState(currentGameState, s.val() || {});
@@ -198,7 +208,6 @@ function subscribeToTable(tableId) {
     tableListener = onValue(ref(db, `poker_tables/${tableId}`), async (snap) => {
         const table = snap.val();
         
-        // Если стол удалили - принудительно выкидываем игрока
         if(!table) { 
             if(currentTableId) { 
                 alert("Стол был расформирован."); 
@@ -216,6 +225,8 @@ function subscribeToTable(tableId) {
         renderTableState(table, globalPlayers);
 
         const user = JSON.parse(sessionStorage.getItem('op_session_user'));
+        
+        // ХОСТ-МОНИТОР: Защита от вылетов других игроков
         if (table.status === 'playing' && table.host === user.nick) {
             if (table.turnOrder) {
                 const activePlayers = table.turnOrder.filter(n => table.players[n] && !table.players[n].folded && !table.players[n].isSpectator);
@@ -230,6 +241,7 @@ function subscribeToTable(tableId) {
             }
         }
         
+        // ХОСТ-МОНИТОР ДЖОКЕРА
         if (table.stage === 'joker_pick' && table.host === user.nick) {
             checkJokersReady(table);
         }
@@ -317,7 +329,6 @@ function renderTableState(table, globalPlayers) {
     const myData = table.players[myNick];
     const myHandDiv = document.getElementById('myHand');
     
-    // Получаем все кнопки
     const btnFold = document.querySelector('.btn-fold');
     const btnCheck = document.querySelector('.btn-check');
     const btnRaise = document.querySelector('.btn-raise');
@@ -326,7 +337,7 @@ function renderTableState(table, globalPlayers) {
     const btnShowCards = document.getElementById('btnShowCards');
     const btnContinue = document.getElementById('btnContinuePoker');
 
-    // Скрываем все кнопки действий по умолчанию
+    // Прячем всё перед новой проверкой
     [btnFold, btnCheck, btnRaise, btnAllin, btnSwap, btnShowCards, btnContinue].forEach(b => {
         if(b) b.classList.add('hidden');
     });
@@ -346,7 +357,6 @@ function renderTableState(table, globalPlayers) {
             myHandDiv.appendChild(cDiv);
         });
 
-        // ЛОГИКА ОТОБРАЖЕНИЯ НОВЫХ КНОПОК
         if (table.status === 'playing') {
             if (isMyTurn && !myData.folded && !myData.isAllIn) {
                 actContainer.classList.remove('hidden');
@@ -359,35 +369,43 @@ function renderTableState(table, globalPlayers) {
                 let myRoundBet = myData.roundBet || 0;
                 let callAmount = currentBet - myRoundBet;
 
-                if (callAmount > 0) {
-                    btnCheck.innerText = `Колл ${callAmount}`;
-                    btnCheck.style.background = '#0277bd'; 
-                } else {
-                    btnCheck.innerText = `Чек`;
-                    btnCheck.style.background = '#2e7d32'; 
+                if (btnCheck) {
+                    if (callAmount > 0) {
+                        btnCheck.innerText = `Колл ${callAmount}`;
+                        btnCheck.style.background = '#0277bd'; 
+                    } else {
+                        btnCheck.innerText = `Чек`;
+                        btnCheck.style.background = '#2e7d32'; 
+                    }
                 }
 
-                if(btnSwap && !myData.swapped && table.stage === 'preflop') {
-                    btnSwap.classList.remove('hidden');
+                if(btnSwap) {
+                    if(!myData.swapped && table.stage === 'preflop') btnSwap.classList.remove('hidden');
                 }
             } else {
                 actContainer.classList.add('hidden');
             }
         } else if (table.status === 'showdown' || table.status === 'showdown_folded') {
-            actContainer.classList.remove('hidden'); // Показываем контейнер для кнопок финала
+            let hasVisibleBtns = false;
             
             if (table.status === 'showdown_folded' && !myData.folded && !myData.cardsVisible) {
                 btnShowCards.classList.remove('hidden');
+                hasVisibleBtns = true;
             }
             if (table.host === myNick) {
                 btnContinue.classList.remove('hidden');
+                hasVisibleBtns = true;
             }
+            
+            if (hasVisibleBtns) actContainer.classList.remove('hidden');
+            else actContainer.classList.add('hidden');
         }
     } else {
         controls.classList.add('hidden');
         actContainer.classList.add('hidden');
     }
 
+    // ТРИГГЕР КОНЦА ИГРЫ
     if (table.triggerEnd && table.status === 'playing') {
         if (table.host === myNick) {
             update(ref(db, `poker_tables/${currentTableId}`), { triggerEnd: null }).then(() => {
@@ -396,6 +414,7 @@ function renderTableState(table, globalPlayers) {
         }
     }
 
+    // ВЫЗОВ МОДАЛКИ ДЖОКЕРА
     if (table.stage === 'joker_pick' && myData && !myData.folded && !myData.isSpectator) {
         let needPick = false;
         let jokerColor = null;
@@ -406,8 +425,14 @@ function renderTableState(table, globalPlayers) {
         const handJoker = (myData.hand || []).find(c => c.rank === 'Jr');
         if (handJoker && !myData.jokerHandPick) { needPick = true; jokerColor = handJoker.color; }
 
-        if (needPick) showJokerSelection(jokerColor, table);
-        else document.getElementById('jokerModal').classList.add('hidden');
+        if (needPick) {
+            const modal = document.getElementById('jokerModal');
+            if (modal.classList.contains('hidden')) {
+                showJokerSelection(jokerColor, table);
+            }
+        } else {
+            document.getElementById('jokerModal').classList.add('hidden');
+        }
     } else {
         document.getElementById('jokerModal').classList.add('hidden');
     }
@@ -470,6 +495,8 @@ window.poker.startGame = async function() {
     updates[`poker_tables/${currentTableId}/turnOrder`] = turnOrder;
     updates[`poker_tables/${currentTableId}/currentTurnIndex`] = 0;
     updates[`poker_tables/${currentTableId}/currentBet`] = 0; 
+    updates[`poker_tables/${currentTableId}/triggerEnd`] = null;
+    updates[`poker_tables/${currentTableId}/finishing`] = null;
     
     if (turnOrder.length > 0) {
         updates[`poker_tables/${currentTableId}/message`] = `Ход: ${table.players[turnOrder[0]].nick}`;
@@ -492,14 +519,10 @@ async function advanceTurn(tableData, updatesObj) {
     let playersTemp = JSON.parse(JSON.stringify(tableData.players || {}));
     for (let key in updatesObj) {
         let match = key.match(/players\/(.+)\/acted/);
-        if (match) {
-            if(playersTemp[match[1]]) playersTemp[match[1]].acted = updatesObj[key];
-        }
+        if (match && playersTemp[match[1]]) playersTemp[match[1]].acted = updatesObj[key];
         
         let matchFold = key.match(/players\/(.+)\/folded/);
-        if (matchFold) {
-            if(playersTemp[matchFold[1]]) playersTemp[matchFold[1]].folded = updatesObj[key];
-        }
+        if (matchFold && playersTemp[matchFold[1]]) playersTemp[matchFold[1]].folded = updatesObj[key];
     }
 
     tableData.turnOrder.forEach(nick => {
@@ -562,7 +585,6 @@ async function advanceTurn(tableData, updatesObj) {
             updatesObj[`poker_tables/${currentTableId}/players/${nick}/roundBet`] = 0;
         });
         
-        // Надежный поиск следующего живого игрока
         let startIdx = 0;
         while(startIdx < tableData.turnOrder.length) {
             let p = playersTemp[tableData.turnOrder[startIdx]];
@@ -714,6 +736,8 @@ async function checkEndGame() {
     const table = tableSnap.val();
     const user = JSON.parse(sessionStorage.getItem('op_session_user'));
     
+    if(table.host !== user.nick) return;
+
     const players = table.players || {};
     const activePlayers = table.turnOrder.filter(nick => players[nick] && !players[nick].folded);
     
@@ -724,10 +748,7 @@ async function checkEndGame() {
             triggerEnd: null
         });
         
-        // Отдаем деньги сразу
-        if(table.host === user.nick) {
-            endGameLogic([activePlayers[0]], table, "Все сбросили. Победил: ");
-        }
+        endGameLogic([activePlayers[0]], table, "Все сбросили. Победил: ");
         return;
     }
 
@@ -744,13 +765,15 @@ async function checkEndGame() {
                 message: 'МАГИЯ ДЖОКЕРА: Игроки выбирают карты!'
             });
         } else {
-            if(table.host === user.nick) finishShowdown(table, activePlayers);
+            finishShowdown(table, activePlayers);
         }
     }
 }
 
 function showJokerSelection(color, table) {
     const modal = document.getElementById('jokerModal');
+    if (!modal.classList.contains('hidden')) return;
+
     const grid = document.getElementById('jokerCardsGrid');
     grid.innerHTML = '';
     
@@ -795,10 +818,14 @@ function checkJokersReady(table) {
     activePlayers.forEach(nick => {
         const p = table.players[nick];
         if (tableJoker && !p.jokerTablePick) allReady = false;
-        if (!tableJoker && p.hand && p.hand.some(c=>c.rank==='Jr') && !p.jokerHandPick) allReady = false;
+        if (p.hand && p.hand.some(c=>c.rank==='Jr') && !p.jokerHandPick) allReady = false;
     });
 
-    if (allReady) finishShowdown(table, activePlayers);
+    if (allReady && table.status === 'playing' && !table.finishing) {
+        update(ref(db, `poker_tables/${currentTableId}`), { finishing: true }).then(() => {
+            finishShowdown(table, activePlayers);
+        });
+    }
 }
 
 async function finishShowdown(table, activePlayers) {
@@ -862,7 +889,7 @@ async function endGameLogic(winners, table, msgPrefix) {
 
     const winnerNames = winners.map(w => table.players[w].nick).join(', ');
     updates[`poker_tables/${currentTableId}/message`] = `${msgPrefix} ${winnerNames} (+${winAmount})`;
-    // Если статус не был изменен на folded_showdown, ставим обычный
+    
     if (table.status !== 'showdown_folded') {
         updates[`poker_tables/${currentTableId}/status`] = 'showdown';
     }
@@ -878,6 +905,7 @@ window.poker.nextRound = async function() {
     updates[`poker_tables/${currentTableId}/pot`] = 0;
     updates[`poker_tables/${currentTableId}/communityCards`] = null; 
     updates[`poker_tables/${currentTableId}/triggerEnd`] = null;
+    updates[`poker_tables/${currentTableId}/finishing`] = null;
     
     const tableSnap = await get(ref(db, `poker_tables/${currentTableId}`));
     const table = tableSnap.val();
@@ -887,6 +915,7 @@ window.poker.nextRound = async function() {
         updates[`poker_tables/${currentTableId}/players/${nick}/hand`] = null;
         updates[`poker_tables/${currentTableId}/players/${nick}/cardsVisible`] = false;
         updates[`poker_tables/${currentTableId}/players/${nick}/lastAction`] = "";
+        
         if (table.players[nick].isSpectator) {
             updates[`poker_tables/${currentTableId}/players/${nick}/isSpectator`] = false;
             updates[`poker_tables/${currentTableId}/players/${nick}/lastAction`] = "Готов играть";
@@ -898,7 +927,6 @@ window.poker.nextRound = async function() {
 window.poker.showMyCards = function() {
     const user = JSON.parse(sessionStorage.getItem('op_session_user'));
     update(ref(db, `poker_tables/${currentTableId}/players/${user.nick}/cardsVisible`), true);
-    document.getElementById('btnShowCards').classList.add('hidden');
 }
 
 function evaluateHand(hand, communityCards) {
@@ -931,7 +959,7 @@ function evaluateHand(hand, communityCards) {
     let flushHigh = 0;
     if (flushSuit) {
         isFlush = true;
-        flushHigh = allCards.find(c => c.suit === flushSuit).val;
+        flushHigh = allCards.find(c => c.suit === flushSuit)?.val || 0;
     }
 
     let isStraight = false;
@@ -944,9 +972,9 @@ function evaluateHand(hand, communityCards) {
     for (let i = 0; i < uniqueVals.length - 1; i++) {
         if (uniqueVals[i] === uniqueVals[i+1] + 1) {
             consec++;
-            if (consec === 5) {
+            if (consec >= 5) {
                 isStraight = true;
-                straightHigh = uniqueVals[i-3];
+                straightHigh = uniqueVals[i - 3];
                 break;
             }
         } else {
