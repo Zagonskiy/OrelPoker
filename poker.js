@@ -135,8 +135,8 @@ window.poker.joinTable = async function(tableId) {
 }
 
 // ИСПРАВЛЕННЫЙ ВЫХОД: Сначала пас и завершение хода, потом удаление из базы
-window.poker.leaveTable = async function() {
-    if(!confirm("Вы точно хотите выйти? Если вы в игре, ваши вложенные деньги сгорят!")) return;
+window.poker.leaveTable = async function(skipConfirm = false, destView = 'poker-lobby') {
+    if(!skipConfirm && !confirm("Вы точно хотите выйти? Если вы в игре, ваши вложенные деньги сгорят!")) return;
     
     const user = JSON.parse(sessionStorage.getItem('op_session_user'));
     const tId = currentTableId;
@@ -188,7 +188,7 @@ window.poker.leaveTable = async function() {
         }
     }
     
-    window.showView('poker-lobby');
+    window.showView(destView, true);
 }
 
 window.poker.forceRender = function() {
@@ -360,8 +360,20 @@ function renderTableState(table, globalPlayers) {
         });
 
         if (table.status === 'playing') {
-            if (isMyTurn && !myData.folded && !myData.isAllIn) {
-                actContainer.classList.remove('hidden');
+            if (isMyTurn && !myData.folded) {
+            actContainer.classList.remove('hidden');
+            
+            if (myData.isAllIn) {
+                // Если игрок в ва-банке, оставляем ему только кнопку "Чек (Ва-банк)"
+                btnFold.classList.add('hidden');
+                btnRaise.classList.add('hidden');
+                btnAllin.classList.add('hidden');
+                if (btnSwap) btnSwap.classList.add('hidden');
+                
+                btnCheck.classList.remove('hidden');
+                btnCheck.innerText = `Чек (Ва-банк)`;
+                btnCheck.style.background = '#2e7d32';
+            } else {
                 btnFold.classList.remove('hidden');
                 btnCheck.classList.remove('hidden');
                 btnRaise.classList.remove('hidden');
@@ -384,6 +396,7 @@ function renderTableState(table, globalPlayers) {
                 if(btnSwap) {
                     if(!myData.swapped && table.stage === 'preflop') btnSwap.classList.remove('hidden');
                 }
+            }
             } else {
                 actContainer.classList.add('hidden');
             }
@@ -533,9 +546,37 @@ async function advanceTurn(tableData, updatesObj) {
         if (matchFold && playersTemp[matchFold[1]]) playersTemp[matchFold[1]].folded = updatesObj[key];
     }
 
+    // Проверяем, не пошли ли все активные игроки в Ва-банк
+    const activePlayers = tableData.turnOrder.filter(n => playersTemp[n] && !playersTemp[n].folded);
+    const allAreAllIn = activePlayers.every(n => playersTemp[n].isAllIn);
+
+    if (allAreAllIn && activePlayers.length > 1) {
+        // Автоматически выкладываем все оставшиеся карты на стол и завершаем игру
+        let deck = tableData.deck || [];
+        let commCards = tableData.communityCards || [];
+        
+        while (commCards.length < 5 && deck.length > 0) {
+            commCards.push(deck.pop());
+        }
+        
+        updatesObj[`poker_tables/${currentTableId}/communityCards`] = commCards;
+        updatesObj[`poker_tables/${currentTableId}/deck`] = deck;
+        updatesObj[`poker_tables/${currentTableId}/stage`] = 'river';
+        updatesObj[`poker_tables/${currentTableId}/currentTurnIndex`] = -1;
+        updatesObj[`poker_tables/${currentTableId}/triggerEnd`] = true;
+        
+        activePlayers.forEach(nick => {
+            updatesObj[`poker_tables/${currentTableId}/players/${nick}/acted`] = true;
+        });
+        
+        await update(ref(db), updatesObj);
+        return;
+    }
+
+    // Иначе проверяем, все ли сделали ход (не игнорируем тех, кто в All-in!)
     tableData.turnOrder.forEach(nick => {
         const p = playersTemp[nick];
-        if (p && !p.folded && !p.isAllIn && !p.acted) {
+        if (p && !p.folded && !p.acted) { 
             allActed = false;
         }
     });
@@ -547,7 +588,7 @@ async function advanceTurn(tableData, updatesObj) {
         while(attempts < tableData.turnOrder.length) {
             const nextNick = tableData.turnOrder[nextIdx];
             const p = playersTemp[nextNick];
-            if (p && !p.folded && !p.isAllIn && !p.acted) {
+            if (p && !p.folded && !p.acted) {
                 updatesObj[`poker_tables/${currentTableId}/currentTurnIndex`] = nextIdx;
                 updatesObj[`poker_tables/${currentTableId}/message`] = `Ход: ${p.nick}`;
                 break;
@@ -557,8 +598,6 @@ async function advanceTurn(tableData, updatesObj) {
         }
         await update(ref(db), updatesObj);
     } else {
-        const activePlayers = tableData.turnOrder.filter(n => playersTemp[n] && !playersTemp[n].folded);
-        
         if (activePlayers.length <= 1) {
             updatesObj[`poker_tables/${currentTableId}/currentTurnIndex`] = -1;
             updatesObj[`poker_tables/${currentTableId}/triggerEnd`] = true;
@@ -596,7 +635,7 @@ async function advanceTurn(tableData, updatesObj) {
         let startIdx = 0;
         while(startIdx < tableData.turnOrder.length) {
             let p = playersTemp[tableData.turnOrder[startIdx]];
-            if (!p || p.folded || p.isAllIn) {
+            if (!p || p.folded) { 
                 startIdx++;
             } else {
                 break;
@@ -719,6 +758,13 @@ window.poker.action = async function(act) {
     }
 
     if (act === 'check') {
+        if (table.players[myNick].isAllIn) {
+            updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = "Чек (Ва-банк)";
+            updates[`poker_tables/${currentTableId}/players/${myNick}/acted`] = true;
+            await advanceTurn(table, updates);
+            return;
+        }
+
         if (callAmount > 0) {
             if (myCachedBalance < callAmount) {
                 return alert("Не хватает денег для колла! Жмите Ва-банк.");
