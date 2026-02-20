@@ -533,7 +533,21 @@
         .force-hide { display: none !important; }
         
         .action-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 400px; }
-        .btn-poker-action { padding: 12px 20px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; font-family: 'Special Elite'; color: #fff; font-size: 1.1em; flex: 1; min-width: 100px; }
+        .btn-poker-action { 
+            padding: 12px 20px; 
+            border-radius: 6px; 
+            border: none; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-family: 'Special Elite'; 
+            color: #fff; 
+            font-size: 1.1em; 
+            flex: 1; 
+            min-width: 100px; 
+        }
+        
+        /* ИСПРАВЛЕНИЕ: Запрещаем этим кнопкам прыгать при нажатии */
+        .btn-poker-action:active { top: 0 !important; box-shadow: inset 0 0 10px rgba(0,0,0,0.5) !important; }
         .btn-fold { background: #b71c1c; border: 1px solid #ff5252; }
         .btn-check { background: #2e7d32; border: 1px solid #69f0ae; }
         .btn-raise { background: #8e24aa; border: 1px solid #ea80fc; }
@@ -779,6 +793,9 @@
                 <button class="btn-poker-action btn-raise" onclick="window.poker.action('raise')">💰 Рейз</button>
                 <button class="btn-poker-action btn-allin" onclick="window.poker.action('allin')">Ва-банк</button>
                 <button id="btnSwapCard" class="btn-poker-action btn-swap hidden" onclick="window.poker.action('swap')">🔄 Сменить 1 карту</button>
+                
+                <button id="btnShowCards" class="btn-poker-action hidden" style="background:#0277bd;" onclick="window.poker.showMyCards()">👀 Показать карты</button>
+                <button id="btnContinuePoker" class="btn-poker-action hidden" style="background:#e65100;" onclick="window.poker.nextRound()">▶ Продолжить игру</button>
             </div>
         </div>
 
@@ -2129,8 +2146,11 @@
         document.getElementById('view-poker-table').classList.add('hidden');
         
         // --- ЖЕСТКОЕ СКРЫТИЕ КНОПОК ПОКЕРА ПРИ ЛЮБОМ ПЕРЕХОДЕ ---
-        document.getElementById('pokerControls').classList.add('hidden'); 
-        document.getElementById('actionButtonsContainer').classList.add('hidden');
+        // Скрываем кнопки только если мы УХОДИМ из покера
+        if (viewName !== 'poker-table') {
+            document.getElementById('pokerControls').classList.add('hidden'); 
+            document.getElementById('actionButtonsContainer').classList.add('hidden');
+        }
 
         document.getElementById('bgSelectorPanel').classList.add('hidden'); 
         document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
@@ -2304,6 +2324,7 @@
 
 </body>
 </html>
+
 
 
 
