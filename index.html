@@ -1147,27 +1147,58 @@
         .pp-info { background: rgba(0,0,0,0.85); border: 1px solid var(--accent-brown); color: #fff; padding: 4px 8px; border-radius: 8px; font-size: 0.8em; margin-top: 5px; position: relative; z-index: 5; min-width: 90px; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
         .pp-balance { color: var(--accent-green); font-weight: bold; display: block; border-top: 1px dotted #555; margin-top: 2px; padding-top: 2px; }
         .pp-cards { display: flex; justify-content: center; margin-top: 5px; }
+
+
+        /* Увеличенные мини-карты для игроков */
         .mini-card { 
-            width: 22px; 
-            height: 30px; 
+            width: 32px !important; 
+            height: 44px !important; 
             background: #fff; 
-            border-radius: 3px; 
-            margin: 0 2px; 
+            border-radius: 4px; 
+            margin: 0 3px; 
             border: 1px solid #000; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            font-size: 0.65em; 
+            font-size: 0.95em !important; 
             font-weight: bold; 
             line-height: 1;
             font-family: 'Arial', sans-serif;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
         }
-        .mini-card.back { background: repeating-linear-gradient(45deg, #b71c1c, #b71c1c 2px, #fff 2px, #fff 4px); color: transparent; }
+        .mini-card.back { 
+            background: repeating-linear-gradient(45deg, #b71c1c, #b71c1c 3px, #fff 3px, #fff 6px); 
+            color: transparent !important; 
+        }
         .mini-card.red { color: red; }
-        .mini-card.black { color: black; }}
+        .mini-card.black { color: black; }
 
-        .community-cards { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; gap: 8px; z-index: 20; }
-        .community-cards .poker-card { width: 50px; height: 75px; font-size: 1em; cursor: default; }
+        /* Жесткая горизонтальная ориентация для карт на столе */
+        .community-cards { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            display: flex !important; 
+            flex-direction: row !important; 
+            flex-wrap: nowrap !important;
+            justify-content: center;
+            align-items: center;
+            gap: 8px; 
+            z-index: 20; 
+            width: max-content;
+        }
+
+        @media screen and (max-width: 768px) {
+            .community-cards .poker-card {
+                width: 42px !important;
+                height: 62px !important;
+                font-size: 0.9em !important;
+            }
+            .community-cards {
+                gap: 4px !important;
+            }
+        }
 
         .poker-controls { 
             position: fixed; 
@@ -2477,5 +2508,6 @@
 
 </body>
 </html>
+
 
 
