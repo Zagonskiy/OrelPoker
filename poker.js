@@ -1001,9 +1001,19 @@ window.poker.nextRound = async function() {
     update(ref(db), updates);
 }
 
-window.poker.showMyCards = function() {
+window.poker.showMyCards = async function() {
     const user = JSON.parse(sessionStorage.getItem('op_session_user'));
-    update(ref(db, `poker_tables/${currentTableId}/players/${user.nick}/cardsVisible`), true);
+    if (!user || !currentTableId) return;
+    
+    // Правильный синтаксис обновления Firebase
+    const updates = {};
+    updates[`poker_tables/${currentTableId}/players/${user.nick}/cardsVisible`] = true;
+    
+    try {
+        await update(ref(db), updates);
+    } catch (e) {
+        console.error("Ошибка при вскрытии карт:", e);
+    }
 }
 
 function evaluateHand(hand, communityCards) {
