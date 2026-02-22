@@ -281,13 +281,21 @@ function renderTableState(table, globalPlayers) {
         
         let cardsHtml = '';
         if(pData.cards) {
+            let c1 = "", c2 = "", color1 = "", color2 = "";
+            if (pData.cardsVisible && pData.hand && pData.hand.length >= 2) {
+                let card1 = pData.hand[0];
+                let card2 = pData.hand[1];
+                c1 = card1.rank + card1.suit;
+                c2 = card2.rank + card2.suit;
+                color1 = (['♥','♦'].includes(card1.suit) || card1.color === 'red') ? 'red' : 'black';
+                color2 = (['♥','♦'].includes(card2.suit) || card2.color === 'red') ? 'red' : 'black';
+            }
             cardsHtml = `
                 <div class="pp-cards">
-                    <div class="mini-card ${pData.cardsVisible ? '' : 'back'}"></div>
-                    <div class="mini-card ${pData.cardsVisible ? '' : 'back'}"></div>
+                    <div class="mini-card ${pData.cardsVisible ? color1 : 'back'}">${pData.cardsVisible ? c1 : ''}</div>
+                    <div class="mini-card ${pData.cardsVisible ? color2 : 'back'}">${pData.cardsVisible ? c2 : ''}</div>
                 </div>`;
         }
-
         const isHisTurn = (table.status === 'playing' && table.turnOrder && table.turnOrder[table.currentTurnIndex] === pNick);
 
         const div = document.createElement('div');
@@ -394,7 +402,7 @@ function renderTableState(table, globalPlayers) {
                 }
 
                 if(btnSwap) {
-                    if(!myData.swapped && table.stage === 'preflop') btnSwap.classList.remove('hidden');
+                    if(!myData.swapped) btnSwap.classList.remove('hidden');
                 }
             }
             } else {
@@ -796,8 +804,23 @@ async function checkEndGame() {
     const activePlayers = table.turnOrder.filter(nick => players[nick] && !players[nick].folded);
     
     if(activePlayers.length === 1 && table.status === 'playing') {
+        let commCards = table.communityCards || [];
+        let deck = table.deck || [];
+        
+        // Докручиваем карты на стол, если все сбросили до ривера
+        while (commCards.length < 5 && deck.length > 0) {
+            commCards.push(deck.pop());
+        }
+
+        // Обновляем локальную переменную, чтобы endGameLogic не сломала статус (фикс пропадающей кнопки)
+        table.status = 'showdown_folded';
+        table.communityCards = commCards;
+        table.deck = deck;
+
         update(ref(db, `poker_tables/${currentTableId}`), { 
             status: 'showdown_folded', 
+            communityCards: commCards,
+            deck: deck,
             message: `Все сбросили. Победил: ${table.players[activePlayers[0]].nick}`,
             triggerEnd: null
         });
