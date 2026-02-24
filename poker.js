@@ -303,7 +303,7 @@ function renderTableState(table, globalPlayers) {
                     }
                 }
             }
-            
+        }
             if (!canShow) {
                 isBack1 = 'back'; isBack2 = 'back';
                 c1 = ''; c2 = '';
