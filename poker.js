@@ -281,27 +281,50 @@ function renderTableState(table, globalPlayers) {
         
         let cardsHtml = '';
         if(pData.cards) {
-            let c1 = "", c2 = "", color1 = "", color2 = "";
-            if (pData.cardsVisible && pData.hand && pData.hand.length >= 2) {
-                let card1 = pData.hand[0];
-                let card2 = pData.hand[1];
-                c1 = card1.rank + card1.suit;
-                c2 = card2.rank + card2.suit;
-                color1 = (['♥','♦'].includes(card1.suit) || card1.color === 'red') ? 'red' : 'black';
-                color2 = (['♥','♦'].includes(card2.suit) || card2.color === 'red') ? 'red' : 'black';
+            let c1 = "", c2 = "", color1 = "", color2 = "", isBack1 = "back", isBack2 = "back";
+            
+            // ЖЕСТКАЯ ЗАЩИТА: чужие карты показываем ТОЛЬКО на стадии вскрытия
+            const canShow = (pNick === myNick) || ((table.status === 'showdown' || table.status === 'showdown_folded') && pData.cardsVisible);
+
+            if (canShow && pData.hand) {
+                const handArr = Array.isArray(pData.hand) ? pData.hand : Object.values(pData.hand);
+                if (handArr.length >= 2) {
+                    const card1 = handArr[0];
+                    const card2 = handArr[1];
+                    if (card1) {
+                        c1 = `${card1.rank}<br>${card1.suit}`;
+                        color1 = (['♥','♦'].includes(card1.suit) || card1.color === 'red') ? 'red' : 'black';
+                        isBack1 = color1;
+                    }
+                    if (card2) {
+                        c2 = `${card2.rank}<br>${card2.suit}`;
+                        color2 = (['♥','♦'].includes(card2.suit) || card2.color === 'red') ? 'red' : 'black';
+                        isBack2 = color2;
+                    }
+                }
             }
+            
+            if (!canShow) {
+                isBack1 = 'back'; isBack2 = 'back';
+                c1 = ''; c2 = '';
+            }
+
             cardsHtml = `
                 <div class="pp-cards">
-                    <div class="mini-card ${pData.cardsVisible ? color1 : 'back'}">${pData.cardsVisible ? c1 : ''}</div>
-                    <div class="mini-card ${pData.cardsVisible ? color2 : 'back'}">${pData.cardsVisible ? c2 : ''}</div>
+                    <div class="mini-card ${isBack1}">${c1}</div>
+                    <div class="mini-card ${isBack2}">${c2}</div>
                 </div>`;
         }
         const isHisTurn = (table.status === 'playing' && table.turnOrder && table.turnOrder[table.currentTurnIndex] === pNick);
 
+        // Проверяем, является ли тот, кто смотрит, хостом, и не кликает ли он сам на себя
+        const isHostAndNotMe = (table.host === myNick && pNick !== myNick);
+        const kickAction = isHostAndNotMe ? `onclick="window.poker.promptKick('${pNick}', '${pData.nick}')" style="cursor:pointer; box-shadow: inset 0 0 10px rgba(255,0,0,0.5);" title="Нажмите, чтобы выгнать"` : '';
+
         const div = document.createElement('div');
         div.className = `poker-player pp-${visualIdx}`;
         div.innerHTML = `
-            <div class="pp-avatar ${isHisTurn ? 'active-turn' : ''}">
+            <div class="pp-avatar ${isHisTurn ? 'active-turn' : ''}" ${kickAction}>
                 ${pNick.substr(0,2)}
             </div>
             <div class="pp-info">
@@ -312,7 +335,6 @@ function renderTableState(table, globalPlayers) {
             ${cardsHtml}
         `;
         container.appendChild(div);
-    });
 
     const commContainer = document.getElementById('communityCards');
     if (commContainer) {
@@ -1086,4 +1108,38 @@ function evaluateHand(hand, communityCards) {
     if (pairs.length === 1) return 200000 + pairs[0] + kickerScore;
     
     return 100000 + kickerScore; 
+}
+
+// --- ФУНКЦИИ ЛИДЕРА: ИСКЛЮЧЕНИЕ ИГРОКОВ ---
+window.poker.promptKick = function(targetNick, targetName) {
+    if(confirm(`Меню Лидера:\nВы точно хотите выгнать игрока ${targetName} со стола?`)) {
+        window.poker.kickPlayer(targetNick);
+    }
+}
+
+window.poker.kickPlayer = async function(targetNick) {
+    const tId = currentTableId;
+    if (!tId) return;
+
+    const tSnap = await get(ref(db, `poker_tables/${tId}`));
+    const tblData = tSnap.val();
+
+    if (tblData && tblData.status === 'playing' && tblData.players && tblData.players[targetNick]) {
+        const pData = tblData.players[targetNick];
+        
+        if (pData.invested > 0 && !pData.isSpectator) {
+            const balId = pData.balanceId;
+            const txKey = push(ref(db, `players/${balId}/history`)).key;
+            await set(ref(db, `players/${balId}/history/${txKey}`), -pData.invested + "p");
+        }
+        
+        if (tblData.turnOrder && tblData.turnOrder[tblData.currentTurnIndex] === targetNick && !pData.folded) {
+            const updates = {};
+            updates[`poker_tables/${tId}/players/${targetNick}/folded`] = true;
+            updates[`poker_tables/${tId}/players/${targetNick}/acted`] = true;
+            await advanceTurn(tblData, updates);
+        }
+    }
+
+    await remove(ref(db, `poker_tables/${tId}/players/${targetNick}`));
 }
