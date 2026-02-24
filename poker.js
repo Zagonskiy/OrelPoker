@@ -134,60 +134,54 @@ window.poker.joinTable = async function(tableId) {
     subscribeToTable(tableId);
 }
 
-// ИСПРАВЛЕННЫЙ ВЫХОД: Сначала пас и завершение хода, потом удаление из базы
 window.poker.leaveTable = async function(skipConfirm = false, destView = 'poker-lobby') {
     if(!skipConfirm && !confirm("Вы точно хотите выйти? Если вы в игре, ваши вложенные деньги сгорят!")) return;
     
-    const user = JSON.parse(sessionStorage.getItem('op_session_user'));
-    const tId = currentTableId;
-    if (!tId) return;
-
-    const tSnap = await get(ref(db, `poker_tables/${tId}`));
-    const tblData = tSnap.val();
-
-    // Авто-фолд и штраф, если игрок ушел посреди раздачи
-    if (tblData && tblData.status === 'playing' && tblData.players && tblData.players[user.nick]) {
-        const pData = tblData.players[user.nick];
-        
-        if (pData.invested > 0 && !pData.isSpectator) {
-            const balId = pData.balanceId;
-            const txKey = push(ref(db, `players/${balId}/history`)).key;
-            await set(ref(db, `players/${balId}/history/${txKey}`), -pData.invested + "p");
-        }
-        
-        // Если сейчас был его ход, двигаем игру дальше, чтобы она не зависла
-        if (tblData.turnOrder && tblData.turnOrder[tblData.currentTurnIndex] === user.nick && !pData.folded) {
-            const updates = {};
-            updates[`poker_tables/${tId}/players/${user.nick}/folded`] = true;
-            updates[`poker_tables/${tId}/players/${user.nick}/acted`] = true;
-            await advanceTurn(tblData, updates);
-        }
-    }
-
-    // Отписываемся ДО удаления, чтобы не рисовать фантомный стол
-    if (tableListener) {
-        tableListener();
-        tableListener = null;
-    }
-    currentTableId = null; 
-
-    // Скрываем элементы сразу
     document.getElementById('pokerControls').classList.add('hidden');
     document.getElementById('actionButtonsContainer').classList.add('hidden');
     document.getElementById('myHand').innerHTML = '';
+    
+    if(currentTableId) {
+        const user = JSON.parse(sessionStorage.getItem('op_session_user'));
+        const tId = currentTableId;
+        
+        const tSnap = await get(ref(db, `poker_tables/${tId}`));
+        const tblData = tSnap.val();
+        
+        if (tblData && tblData.status === 'playing' && tblData.players && tblData.players[user.nick]) {
+            const pData = tblData.players[user.nick];
+            const invested = pData.invested || 0;
+            
+            if (invested > 0 && !pData.isSpectator) {
+                const balId = pData.balanceId;
+                const txKey = push(ref(db, `players/${balId}/history`)).key;
+                await update(ref(db, `players/${balId}/history/${txKey}`), -invested + "p");
+            }
+            
+            if (tblData.turnOrder && tblData.turnOrder[tblData.currentTurnIndex] === user.nick && !pData.folded) {
+                const updates = {};
+                updates[`poker_tables/${tId}/players/${user.nick}/folded`] = true;
+                updates[`poker_tables/${tId}/players/${user.nick}/acted`] = true;
+                await advanceTurn(tblData, updates);
+            }
+        }
 
-    await remove(ref(db, `poker_tables/${tId}/players/${user.nick}`));
+        currentTableId = null; 
 
-    const snap = await get(ref(db, `poker_tables/${tId}/players`));
-    if(!snap.exists()) {
-        await remove(ref(db, `poker_tables/${tId}`));
-    } else if (tblData && tblData.host === user.nick) {
-        const remainingNicks = Object.keys(snap.val() || {});
-        if(remainingNicks.length > 0) {
-            await update(ref(db, `poker_tables/${tId}`), { host: remainingNicks[0] });
+        await remove(ref(db, `poker_tables/${tId}/players/${user.nick}`));
+
+        const snap = await get(ref(db, `poker_tables/${tId}/players`));
+        if(!snap.exists()) {
+            remove(ref(db, `poker_tables/${tId}`));
+        } else if (tblData && tblData.host === user.nick) {
+            const remainingNicks = Object.keys(snap.val() || {});
+            if(remainingNicks.length > 0) {
+                update(ref(db, `poker_tables/${tId}`), { host: remainingNicks[0] });
+            }
         }
     }
     
+    if(tableListener) tableListener(); 
     window.showView(destView, true);
 }
 
@@ -228,7 +222,7 @@ function subscribeToTable(tableId) {
 
         const user = JSON.parse(sessionStorage.getItem('op_session_user'));
         
-        // ХОСТ-МОНИТОР: Защита от вылетов других игроков
+        // ХОСТ-МОНИТОР
         if (table.status === 'playing' && table.host === user.nick) {
             if (table.turnOrder) {
                 const activePlayers = table.turnOrder.filter(n => table.players[n] && !table.players[n].folded && !table.players[n].isSpectator);
@@ -243,7 +237,6 @@ function subscribeToTable(tableId) {
             }
         }
         
-        // ХОСТ-МОНИТОР ДЖОКЕРА
         if (table.stage === 'joker_pick' && table.host === user.nick) {
             checkJokersReady(table);
         }
@@ -303,7 +296,7 @@ function renderTableState(table, globalPlayers) {
                     }
                 }
             }
-        }
+            
             if (!canShow) {
                 isBack1 = 'back'; isBack2 = 'back';
                 c1 = ''; c2 = '';
@@ -315,6 +308,7 @@ function renderTableState(table, globalPlayers) {
                     <div class="mini-card ${isBack2}">${c2}</div>
                 </div>`;
         }
+
         const isHisTurn = (table.status === 'playing' && table.turnOrder && table.turnOrder[table.currentTurnIndex] === pNick);
 
         // Проверяем, является ли тот, кто смотрит, хостом, и не кликает ли он сам на себя
@@ -335,6 +329,7 @@ function renderTableState(table, globalPlayers) {
             ${cardsHtml}
         `;
         container.appendChild(div);
+    });
 
     const commContainer = document.getElementById('communityCards');
     if (commContainer) {
@@ -369,7 +364,6 @@ function renderTableState(table, globalPlayers) {
     const btnShowCards = document.getElementById('btnShowCards');
     const btnContinue = document.getElementById('btnContinuePoker');
 
-    // Прячем всё перед новой проверкой
     [btnFold, btnCheck, btnRaise, btnAllin, btnSwap, btnShowCards, btnContinue].forEach(b => {
         if(b) b.classList.add('hidden');
     });
@@ -391,42 +385,41 @@ function renderTableState(table, globalPlayers) {
 
         if (table.status === 'playing') {
             if (isMyTurn && !myData.folded) {
-            actContainer.classList.remove('hidden');
-            
-            if (myData.isAllIn) {
-                // Если игрок в ва-банке, оставляем ему только кнопку "Чек (Ва-банк)"
-                btnFold.classList.add('hidden');
-                btnRaise.classList.add('hidden');
-                btnAllin.classList.add('hidden');
-                if (btnSwap) btnSwap.classList.add('hidden');
+                actContainer.classList.remove('hidden');
                 
-                btnCheck.classList.remove('hidden');
-                btnCheck.innerText = `Чек (Ва-банк)`;
-                btnCheck.style.background = '#2e7d32';
-            } else {
-                btnFold.classList.remove('hidden');
-                btnCheck.classList.remove('hidden');
-                btnRaise.classList.remove('hidden');
-                btnAllin.classList.remove('hidden');
-                
-                let currentBet = table.currentBet || 0;
-                let myRoundBet = myData.roundBet || 0;
-                let callAmount = currentBet - myRoundBet;
+                if (myData.isAllIn) {
+                    btnFold.classList.add('hidden');
+                    btnRaise.classList.add('hidden');
+                    btnAllin.classList.add('hidden');
+                    if (btnSwap) btnSwap.classList.add('hidden');
+                    
+                    btnCheck.classList.remove('hidden');
+                    btnCheck.innerText = `Чек (Ва-банк)`;
+                    btnCheck.style.background = '#2e7d32';
+                } else {
+                    btnFold.classList.remove('hidden');
+                    btnCheck.classList.remove('hidden');
+                    btnRaise.classList.remove('hidden');
+                    btnAllin.classList.remove('hidden');
+                    
+                    let currentBet = table.currentBet || 0;
+                    let myRoundBet = myData.roundBet || 0;
+                    let callAmount = currentBet - myRoundBet;
 
-                if (btnCheck) {
-                    if (callAmount > 0) {
-                        btnCheck.innerText = `Колл ${callAmount}`;
-                        btnCheck.style.background = '#0277bd'; 
-                    } else {
-                        btnCheck.innerText = `Чек`;
-                        btnCheck.style.background = '#2e7d32'; 
+                    if (btnCheck) {
+                        if (callAmount > 0) {
+                            btnCheck.innerText = `Колл ${callAmount}`;
+                            btnCheck.style.background = '#0277bd'; 
+                        } else {
+                            btnCheck.innerText = `Чек`;
+                            btnCheck.style.background = '#2e7d32'; 
+                        }
+                    }
+
+                    if(btnSwap) {
+                        if(!myData.swapped) btnSwap.classList.remove('hidden');
                     }
                 }
-
-                if(btnSwap) {
-                    if(!myData.swapped) btnSwap.classList.remove('hidden');
-                }
-            }
             } else {
                 actContainer.classList.add('hidden');
             }
@@ -450,7 +443,6 @@ function renderTableState(table, globalPlayers) {
         actContainer.classList.add('hidden');
     }
 
-    // ТРИГГЕР КОНЦА ИГРЫ
     if (table.triggerEnd && table.status === 'playing') {
         if (table.host === myNick) {
             update(ref(db, `poker_tables/${currentTableId}`), { triggerEnd: null }).then(() => {
@@ -459,27 +451,20 @@ function renderTableState(table, globalPlayers) {
         }
     }
 
-    // ИСПРАВЛЕННЫЙ ВЫЗОВ МОДАЛКИ ДЖОКЕРА
     if (table.stage === 'joker_pick' && myData && !myData.folded && !myData.isSpectator) {
-        let pickTarget = null;
+        let needPick = false;
         let jokerColor = null;
         
         const tableJoker = (table.communityCards || []).find(c => c.rank === 'Jr');
-        if (tableJoker && !myData.jokerTablePick) { 
-            pickTarget = 'jokerTablePick'; 
-            jokerColor = tableJoker.color; 
-        } else {
-            const handJoker = (myData.hand || []).find(c => c.rank === 'Jr');
-            if (handJoker && !myData.jokerHandPick) { 
-                pickTarget = 'jokerHandPick'; 
-                jokerColor = handJoker.color; 
-            }
-        }
+        if (tableJoker && !myData.jokerTablePick) { needPick = true; jokerColor = tableJoker.color; }
+        
+        const handJoker = (myData.hand || []).find(c => c.rank === 'Jr');
+        if (handJoker && !myData.jokerHandPick) { needPick = true; jokerColor = handJoker.color; }
 
-        if (pickTarget) {
+        if (needPick) {
             const modal = document.getElementById('jokerModal');
             if (modal.classList.contains('hidden')) {
-                showJokerSelection(jokerColor, pickTarget, table);
+                showJokerSelection(jokerColor, table);
             }
         } else {
             document.getElementById('jokerModal').classList.add('hidden');
@@ -576,12 +561,10 @@ async function advanceTurn(tableData, updatesObj) {
         if (matchFold && playersTemp[matchFold[1]]) playersTemp[matchFold[1]].folded = updatesObj[key];
     }
 
-    // Проверяем, не пошли ли все активные игроки в Ва-банк
     const activePlayers = tableData.turnOrder.filter(n => playersTemp[n] && !playersTemp[n].folded);
     const allAreAllIn = activePlayers.every(n => playersTemp[n].isAllIn);
 
     if (allAreAllIn && activePlayers.length > 1) {
-        // Автоматически выкладываем все оставшиеся карты на стол и завершаем игру
         let deck = tableData.deck || [];
         let commCards = tableData.communityCards || [];
         
@@ -603,7 +586,6 @@ async function advanceTurn(tableData, updatesObj) {
         return;
     }
 
-    // Иначе проверяем, все ли сделали ход (не игнорируем тех, кто в All-in!)
     tableData.turnOrder.forEach(nick => {
         const p = playersTemp[nick];
         if (p && !p.folded && !p.acted) { 
@@ -829,12 +811,10 @@ async function checkEndGame() {
         let commCards = table.communityCards || [];
         let deck = table.deck || [];
         
-        // Докручиваем карты на стол, если все сбросили до ривера
         while (commCards.length < 5 && deck.length > 0) {
             commCards.push(deck.pop());
         }
 
-        // Обновляем локальную переменную, чтобы endGameLogic не сломала статус (фикс пропадающей кнопки)
         table.status = 'showdown_folded';
         table.communityCards = commCards;
         table.deck = deck;
@@ -869,8 +849,7 @@ async function checkEndGame() {
     }
 }
 
-// ИСПРАВЛЕНА функция выбора: теперь мы передаем pickTarget (кому принадлежит джокер)
-function showJokerSelection(color, pickTarget, table) {
+function showJokerSelection(color, table) {
     const modal = document.getElementById('jokerModal');
     if (!modal.classList.contains('hidden')) return;
 
@@ -890,7 +869,7 @@ function showJokerSelection(color, pickTarget, table) {
                 const btn = document.createElement('div');
                 btn.className = `joker-pick-card ${color}`;
                 btn.innerHTML = `${rank}<br>${suit}`;
-                btn.onclick = () => submitJokerPick({suit, rank, val: RANKS.indexOf(rank)+2}, pickTarget, table);
+                btn.onclick = () => submitJokerPick({suit, rank, val: RANKS.indexOf(rank)+2}, table);
                 grid.appendChild(btn);
             }
         });
@@ -898,13 +877,14 @@ function showJokerSelection(color, pickTarget, table) {
     modal.classList.remove('hidden');
 }
 
-// ИСПРАВЛЕНО: обновляем конкретный target в БД
-async function submitJokerPick(card, pickTarget, table) {
+async function submitJokerPick(card, table) {
     document.getElementById('jokerModal').classList.add('hidden');
     const user = JSON.parse(sessionStorage.getItem('op_session_user'));
     
     const updates = {};
-    updates[`poker_tables/${currentTableId}/players/${user.nick}/${pickTarget}`] = card;
+    const tableJoker = (table.communityCards || []).find(c => c.rank === 'Jr');
+    if (tableJoker) updates[`poker_tables/${currentTableId}/players/${user.nick}/jokerTablePick`] = card;
+    else updates[`poker_tables/${currentTableId}/players/${user.nick}/jokerHandPick`] = card;
     
     await update(ref(db), updates);
 }
@@ -1027,7 +1007,6 @@ window.poker.showMyCards = async function() {
     const user = JSON.parse(sessionStorage.getItem('op_session_user'));
     if (!user || !currentTableId) return;
     
-    // Правильный синтаксис обновления Firebase
     const updates = {};
     updates[`poker_tables/${currentTableId}/players/${user.nick}/cardsVisible`] = true;
     
