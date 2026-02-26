@@ -313,7 +313,8 @@ function renderTableState(table, globalPlayers) {
 
         // Проверяем, является ли тот, кто смотрит, хостом, и не кликает ли он сам на себя
         const isHostAndNotMe = (table.host === myNick && pNick !== myNick);
-        const kickAction = isHostAndNotMe ? `onclick="window.poker.promptKick('${pNick}', '${pData.nick}')" style="cursor:pointer; box-shadow: inset 0 0 10px rgba(255,0,0,0.5);" title="Нажмите, чтобы выгнать"` : '';
+        const safeNick = pData.nick ? pData.nick.replace(/'/g, "\\'").replace(/"/g, '&quot;') : pNick;
+        const kickAction = isHostAndNotMe ? `onclick="window.poker.promptKick('${pNick}', '${safeNick}')" style="cursor:pointer; box-shadow: inset 0 0 10px rgba(255,0,0,0.5);" title="Нажмите, чтобы выгнать"` : '';
 
         const div = document.createElement('div');
         div.className = `poker-player pp-${visualIdx}`;
@@ -417,7 +418,10 @@ function renderTableState(table, globalPlayers) {
                     }
 
                     if(btnSwap) {
-                        if(!myData.swapped) btnSwap.classList.remove('hidden');
+                        const commCards = table.communityCards || [];
+                        if(!myData.swapped && commCards.length < 5) {
+                            btnSwap.classList.remove('hidden');
+                        }
                     }
                 }
             } else {
@@ -426,7 +430,7 @@ function renderTableState(table, globalPlayers) {
         } else if (table.status === 'showdown' || table.status === 'showdown_folded') {
             let hasVisibleBtns = false;
             
-            if (table.status === 'showdown_folded' && !myData.folded && !myData.cardsVisible) {
+            if (!myData.cardsVisible) {
                 btnShowCards.classList.remove('hidden');
                 hasVisibleBtns = true;
             }
@@ -452,19 +456,18 @@ function renderTableState(table, globalPlayers) {
     }
 
     if (table.stage === 'joker_pick' && myData && !myData.folded && !myData.isSpectator) {
-        let needPick = false;
-        let jokerColor = null;
+        let jokersToPick = [];
+        (table.communityCards || []).forEach(c => { if(c.rank === 'Jr') jokersToPick.push(c.color); });
+        (myData.hand || []).forEach(c => { if(c.rank === 'Jr') jokersToPick.push(c.color); });
         
-        const tableJoker = (table.communityCards || []).find(c => c.rank === 'Jr');
-        if (tableJoker && !myData.jokerTablePick) { needPick = true; jokerColor = tableJoker.color; }
-        
-        const handJoker = (myData.hand || []).find(c => c.rank === 'Jr');
-        if (handJoker && !myData.jokerHandPick) { needPick = true; jokerColor = handJoker.color; }
+        let colorToPick = null;
+        if (jokersToPick.includes('red') && !myData.jokerPickRed) colorToPick = 'red';
+        else if (jokersToPick.includes('black') && !myData.jokerPickBlack) colorToPick = 'black';
 
-        if (needPick) {
+        if (colorToPick) {
             const modal = document.getElementById('jokerModal');
             if (modal.classList.contains('hidden')) {
-                showJokerSelection(jokerColor, table);
+                showJokerSelection(colorToPick, table);
             }
         } else {
             document.getElementById('jokerModal').classList.add('hidden');
@@ -519,8 +522,8 @@ window.poker.startGame = async function() {
         updates[`poker_tables/${currentTableId}/players/${nick}/isAllIn`] = false;
         updates[`poker_tables/${currentTableId}/players/${nick}/roundBet`] = 0;
         updates[`poker_tables/${currentTableId}/players/${nick}/invested`] = 10; 
-        updates[`poker_tables/${currentTableId}/players/${nick}/jokerTablePick`] = null; 
-        updates[`poker_tables/${currentTableId}/players/${nick}/jokerHandPick`] = null; 
+        updates[`poker_tables/${currentTableId}/players/${nick}/jokerPickRed`] = null; 
+        updates[`poker_tables/${currentTableId}/players/${nick}/jokerPickBlack`] = null; 
     }
 
     updates[`poker_tables/${currentTableId}/deck`] = deck;
@@ -710,12 +713,14 @@ window.poker.action = async function(act) {
             return alert("Не хватает денег для рейза! Используйте Ва-банк.");
         }
 
-        const amountStr = prompt(`Для колла нужно: ${callAmount}. Ваш баланс: ${myCachedBalance}. Сколько добавить СВЕРХУ (Рейз)?\n(Минимум 10, кратно 10)`);
+        let minRaise = callAmount > 0 ? callAmount : 10;
+
+        const amountStr = prompt(`Для колла нужно: ${callAmount}. Ваш баланс: ${myCachedBalance}.\nСколько добавить СВЕРХУ (Рейз)?\n(Минимум ${minRaise}, кратно 10)`);
         if (!amountStr) return;
         const raiseAmount = parseInt(amountStr);
         
-        if(isNaN(raiseAmount) || raiseAmount < 10 || raiseAmount % 10 !== 0) {
-            return alert("Рейз должен быть числом от 10 и кратным 10!");
+        if(isNaN(raiseAmount) || raiseAmount < minRaise || raiseAmount % 10 !== 0) {
+            return alert(`Рейз должен быть не меньше ${minRaise} и кратным 10!`);
         }
 
         let totalPay = callAmount + raiseAmount; 
@@ -869,7 +874,7 @@ function showJokerSelection(color, table) {
                 const btn = document.createElement('div');
                 btn.className = `joker-pick-card ${color}`;
                 btn.innerHTML = `${rank}<br>${suit}`;
-                btn.onclick = () => submitJokerPick({suit, rank, val: RANKS.indexOf(rank)+2}, table);
+                btn.onclick = () => submitJokerPick({suit, rank, val: RANKS.indexOf(rank)+2}, color, table);
                 grid.appendChild(btn);
             }
         });
@@ -877,27 +882,29 @@ function showJokerSelection(color, table) {
     modal.classList.remove('hidden');
 }
 
-async function submitJokerPick(card, table) {
+async function submitJokerPick(card, color, table) {
     document.getElementById('jokerModal').classList.add('hidden');
     const user = JSON.parse(sessionStorage.getItem('op_session_user'));
     
     const updates = {};
-    const tableJoker = (table.communityCards || []).find(c => c.rank === 'Jr');
-    if (tableJoker) updates[`poker_tables/${currentTableId}/players/${user.nick}/jokerTablePick`] = card;
-    else updates[`poker_tables/${currentTableId}/players/${user.nick}/jokerHandPick`] = card;
+    if (color === 'red') updates[`poker_tables/${currentTableId}/players/${user.nick}/jokerPickRed`] = card;
+    if (color === 'black') updates[`poker_tables/${currentTableId}/players/${user.nick}/jokerPickBlack`] = card;
     
     await update(ref(db), updates);
 }
 
 function checkJokersReady(table) {
     const activePlayers = table.turnOrder.filter(nick => table.players[nick] && !table.players[nick].folded);
-    const tableJoker = (table.communityCards || []).find(c => c.rank === 'Jr');
     
     let allReady = true;
     activePlayers.forEach(nick => {
         const p = table.players[nick];
-        if (tableJoker && !p.jokerTablePick) allReady = false;
-        if (p.hand && p.hand.some(c=>c.rank==='Jr') && !p.jokerHandPick) allReady = false;
+        let requiredJokers = [];
+        (table.communityCards || []).forEach(c => { if(c.rank === 'Jr') requiredJokers.push(c.color); });
+        (p.hand || []).forEach(c => { if(c.rank === 'Jr') requiredJokers.push(c.color); });
+        
+        if (requiredJokers.includes('red') && !p.jokerPickRed) allReady = false;
+        if (requiredJokers.includes('black') && !p.jokerPickBlack) allReady = false;
     });
 
     if (allReady && table.status === 'playing' && !table.finishing) {
@@ -919,15 +926,15 @@ async function finishShowdown(table, activePlayers) {
         let finalHand = [...p.hand];
         let finalComm = [...(table.communityCards || [])];
 
-        if (p.jokerHandPick) {
-            const jIdx = finalHand.findIndex(c => c.rank === 'Jr');
-            if(jIdx !== -1) finalHand[jIdx] = p.jokerHandPick;
-        }
-        if (p.jokerTablePick) {
-            finalHand.push(p.jokerTablePick);
-            const cIdx = finalComm.findIndex(c => c.rank === 'Jr');
-            if(cIdx !== -1) finalComm.splice(cIdx, 1); 
-        }
+        const replaceJoker = (arr, color, pick) => {
+            const idx = arr.findIndex(c => c.rank === 'Jr' && c.color === color);
+            if (idx !== -1 && pick) arr[idx] = pick;
+        };
+
+        replaceJoker(finalHand, 'red', p.jokerPickRed);
+        replaceJoker(finalHand, 'black', p.jokerPickBlack);
+        replaceJoker(finalComm, 'red', p.jokerPickRed);
+        replaceJoker(finalComm, 'black', p.jokerPickBlack);
 
         const score = evaluateHand(finalHand, finalComm);
         if(score > bestScore) {
