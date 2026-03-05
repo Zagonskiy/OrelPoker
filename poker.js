@@ -134,6 +134,7 @@ window.poker.joinTable = async function(tableId) {
     subscribeToTable(tableId);
 }
 
+// УМНЫЙ ВЫХОД: Сначала безопасно сбрасываем карты, потом выходим
 window.poker.leaveTable = async function(skipConfirm = false, destView = 'poker-lobby') {
     if(!skipConfirm && !confirm("Вы точно хотите выйти? Если вы в игре, ваши вложенные деньги сгорят!")) return;
     
@@ -151,18 +152,27 @@ window.poker.leaveTable = async function(skipConfirm = false, destView = 'poker-
         if (tblData && tblData.status === 'playing' && tblData.players && tblData.players[user.nick]) {
             const pData = tblData.players[user.nick];
             
-            // Если сейчас его ход, передаем дальше
-            if (tblData.turnOrder && tblData.turnOrder[tblData.currentTurnIndex] === user.nick && !pData.folded) {
+            if (!pData.folded && !pData.isSpectator) {
                 const updates = {};
                 updates[`poker_tables/${tId}/players/${user.nick}/folded`] = true;
                 updates[`poker_tables/${tId}/players/${user.nick}/acted`] = true;
-                await advanceTurn(tblData, updates);
+                updates[`poker_tables/${tId}/players/${user.nick}/isSpectator`] = true;
+                
+                await update(ref(db), updates);
+                
+                const freshSnap = await get(ref(db, `poker_tables/${tId}`));
+                await advanceTurn(freshSnap.val(), {});
             }
         }
 
         currentTableId = null; 
 
         await remove(ref(db, `poker_tables/${tId}/players/${user.nick}`));
+
+        if (tblData && tblData.turnOrder) {
+            const newOrder = tblData.turnOrder.filter(n => n !== user.nick);
+            await update(ref(db, `poker_tables/${tId}`), { turnOrder: newOrder });
+        }
 
         const snap = await get(ref(db, `poker_tables/${tId}/players`));
         if(!snap.exists()) {
@@ -216,7 +226,6 @@ function subscribeToTable(tableId) {
 
         const user = JSON.parse(sessionStorage.getItem('op_session_user'));
         
-        // ХОСТ-МОНИТОР
         if (table.status === 'playing' && table.host === user.nick) {
             if (table.turnOrder) {
                 const activePlayers = table.turnOrder.filter(n => table.players[n] && !table.players[n].folded && !table.players[n].isSpectator);
@@ -270,7 +279,6 @@ function renderTableState(table, globalPlayers) {
         if(pData.cards) {
             let c1 = "", c2 = "", color1 = "", color2 = "", isBack1 = "back", isBack2 = "back";
             
-            // ЖЕСТКАЯ ЗАЩИТА: чужие карты показываем ТОЛЬКО на стадии вскрытия
             const canShow = (pNick === myNick) || ((table.status === 'showdown' || table.status === 'showdown_folded') && pData.cardsVisible);
 
             if (canShow && pData.hand) {
@@ -304,8 +312,6 @@ function renderTableState(table, globalPlayers) {
         }
 
         const isHisTurn = (table.status === 'playing' && table.turnOrder && table.turnOrder[table.currentTurnIndex] === pNick);
-
-        // Проверяем, является ли тот, кто смотрит, хостом, и не кликает ли он сам на себя
         const isHostAndNotMe = (table.host === myNick && pNick !== myNick);
         const safeNick = pData.nick ? pData.nick.replace(/'/g, "\\'").replace(/"/g, '&quot;') : pNick;
         const kickAction = isHostAndNotMe ? `onclick="window.poker.promptKick('${pNick}', '${safeNick}')" style="cursor:pointer; box-shadow: inset 0 0 10px rgba(255,0,0,0.5);" title="Нажмите, чтобы выгнать"` : '';
@@ -374,48 +380,37 @@ function renderTableState(table, globalPlayers) {
             cDiv.className = `poker-card ${['♥','♦'].includes(card.suit) || card.color === 'red' ? 'red' : 'black'}`;
             if(card.selected) cDiv.classList.add('selected');
             cDiv.innerHTML = `${card.rank}<br>${card.suit}`;
-            cDiv.onclick = () => { if(isMyTurn && !myData.swapped && !myData.folded) toggleCardSelection(idx); };
+            cDiv.onclick = () => { if(isMyTurn && !myData.swapped && !myData.folded && !myData.isAllIn) toggleCardSelection(idx); };
             myHandDiv.appendChild(cDiv);
         });
 
         if (table.status === 'playing') {
-            if (isMyTurn && !myData.folded) {
+            if (isMyTurn && !myData.folded && !myData.isAllIn) {
                 actContainer.classList.remove('hidden');
                 
-                if (myData.isAllIn) {
-                    btnFold.classList.add('hidden');
-                    btnRaise.classList.add('hidden');
-                    btnAllin.classList.add('hidden');
-                    if (btnSwap) btnSwap.classList.add('hidden');
-                    
-                    btnCheck.classList.remove('hidden');
-                    btnCheck.innerText = `Чек (Ва-банк)`;
-                    btnCheck.style.background = '#2e7d32';
-                } else {
-                    btnFold.classList.remove('hidden');
-                    btnCheck.classList.remove('hidden');
-                    btnRaise.classList.remove('hidden');
-                    btnAllin.classList.remove('hidden');
-                    
-                    let currentBet = table.currentBet || 0;
-                    let myRoundBet = myData.roundBet || 0;
-                    let callAmount = currentBet - myRoundBet;
+                btnFold.classList.remove('hidden');
+                btnCheck.classList.remove('hidden');
+                btnRaise.classList.remove('hidden');
+                btnAllin.classList.remove('hidden');
+                
+                let currentBet = table.currentBet || 0;
+                let myRoundBet = myData.roundBet || 0;
+                let callAmount = currentBet - myRoundBet;
 
-                    if (btnCheck) {
-                        if (callAmount > 0) {
-                            btnCheck.innerText = `Колл ${callAmount}`;
-                            btnCheck.style.background = '#0277bd'; 
-                        } else {
-                            btnCheck.innerText = `Чек`;
-                            btnCheck.style.background = '#2e7d32'; 
-                        }
+                if (btnCheck) {
+                    if (callAmount > 0) {
+                        btnCheck.innerText = `Колл ${callAmount}`;
+                        btnCheck.style.background = '#0277bd'; 
+                    } else {
+                        btnCheck.innerText = `Чек`;
+                        btnCheck.style.background = '#2e7d32'; 
                     }
+                }
 
-                    if(btnSwap) {
-                        const commCards = table.communityCards || [];
-                        if(!myData.swapped && commCards.length < 5) {
-                            btnSwap.classList.remove('hidden');
-                        }
+                if(btnSwap) {
+                    const commCards = table.communityCards || [];
+                    if(!myData.swapped && commCards.length < 5) {
+                        btnSwap.classList.remove('hidden');
                     }
                 }
             } else {
@@ -424,7 +419,7 @@ function renderTableState(table, globalPlayers) {
         } else if (table.status === 'showdown' || table.status === 'showdown_folded') {
             let hasVisibleBtns = false;
             
-            if (!myData.cardsVisible) {
+            if (!myData.cardsVisible && !myData.folded) {
                 btnShowCards.classList.remove('hidden');
                 hasVisibleBtns = true;
             }
@@ -449,6 +444,7 @@ function renderTableState(table, globalPlayers) {
         }
     }
 
+    // ИСПРАВЛЕНА ЛОГИКА ДЖОКЕРА: Точная очередность (сначала красный, потом черный)
     if (table.stage === 'joker_pick' && myData && !myData.folded && !myData.isSpectator) {
         let jokersToPick = [];
         (table.communityCards || []).forEach(c => { if(c.rank === 'Jr') jokersToPick.push(c.color); });
@@ -519,9 +515,10 @@ window.poker.startGame = async function() {
         updates[`poker_tables/${currentTableId}/players/${nick}/jokerPickRed`] = null; 
         updates[`poker_tables/${currentTableId}/players/${nick}/jokerPickBlack`] = null; 
 
-        // Мгновенное списание АНТЕ
+        // Создаем ЕДИНСТВЕННЫЙ ключ логов для этой раздачи
         const balId = table.players[nick].balanceId;
         const txKey = push(ref(db, `players/${balId}/history`)).key;
+        updates[`poker_tables/${currentTableId}/players/${nick}/txKey`] = txKey;
         updates[`players/${balId}/history/${txKey}`] = "-10p";
     }
 
@@ -562,9 +559,12 @@ async function advanceTurn(tableData, updatesObj) {
         
         let matchFold = key.match(/players\/(.+)\/folded/);
         if (matchFold && playersTemp[matchFold[1]]) playersTemp[matchFold[1]].folded = updatesObj[key];
+        
+        let matchAllIn = key.match(/players\/(.+)\/isAllIn/);
+        if (matchAllIn && playersTemp[matchAllIn[1]]) playersTemp[matchAllIn[1]].isAllIn = updatesObj[key];
     }
 
-    const activePlayers = tableData.turnOrder.filter(n => playersTemp[n] && !playersTemp[n].folded);
+    const activePlayers = tableData.turnOrder.filter(n => playersTemp[n] && !playersTemp[n].folded && !playersTemp[n].isSpectator);
     const allAreAllIn = activePlayers.every(n => playersTemp[n].isAllIn);
 
     if (allAreAllIn && activePlayers.length > 1) {
@@ -591,7 +591,7 @@ async function advanceTurn(tableData, updatesObj) {
 
     tableData.turnOrder.forEach(nick => {
         const p = playersTemp[nick];
-        if (p && !p.folded && !p.acted) { 
+        if (p && !p.folded && !p.isSpectator && !p.isAllIn && !p.acted) { 
             allActed = false;
         }
     });
@@ -603,7 +603,7 @@ async function advanceTurn(tableData, updatesObj) {
         while(attempts < tableData.turnOrder.length) {
             const nextNick = tableData.turnOrder[nextIdx];
             const p = playersTemp[nextNick];
-            if (p && !p.folded && !p.acted) {
+            if (p && !p.folded && !p.isSpectator && !p.isAllIn && !p.acted) {
                 updatesObj[`poker_tables/${currentTableId}/currentTurnIndex`] = nextIdx;
                 updatesObj[`poker_tables/${currentTableId}/message`] = `Ход: ${p.nick}`;
                 break;
@@ -644,14 +644,16 @@ async function advanceTurn(tableData, updatesObj) {
         updatesObj[`poker_tables/${currentTableId}/lastRaise`] = 10; 
         
         activePlayers.forEach(nick => {
-            updatesObj[`poker_tables/${currentTableId}/players/${nick}/acted`] = false;
+            if (!playersTemp[nick].isAllIn) {
+                updatesObj[`poker_tables/${currentTableId}/players/${nick}/acted`] = false;
+            }
             updatesObj[`poker_tables/${currentTableId}/players/${nick}/roundBet`] = 0;
         });
         
         let startIdx = 0;
         while(startIdx < tableData.turnOrder.length) {
             let p = playersTemp[tableData.turnOrder[startIdx]];
-            if (!p || p.folded) { 
+            if (!p || p.folded || p.isSpectator || p.isAllIn) { 
                 startIdx++;
             } else {
                 break;
@@ -685,6 +687,7 @@ window.poker.action = async function(act) {
         let myRoundBet = table.players[myNick].roundBet || 0; 
         let callAmount = currentBet - myRoundBet; 
         const balId = table.players[myNick].balanceId;
+        const txKey = table.players[myNick].txKey;
 
         if (act === 'fold') {
             updates[`poker_tables/${currentTableId}/players/${myNick}/folded`] = true;
@@ -718,11 +721,6 @@ window.poker.action = async function(act) {
         }
 
         if (act === 'raise') {
-            if (myCachedBalance <= callAmount) {
-                alert("Не хватает денег для рейза! Используйте Ва-банк.");
-                return;
-            }
-
             let minRaise = table.lastRaise || 10;
 
             const amountStr = prompt(`Для колла нужно: ${callAmount}. Ваш баланс: ${myCachedBalance}.\nСколько добавить СВЕРХУ (Рейз)?\n(Минимум ${minRaise}, кратно 10)`);
@@ -737,24 +735,32 @@ window.poker.action = async function(act) {
             let totalPay = callAmount + raiseAmount; 
             
             if (myCachedBalance < totalPay) {
-                alert("Недостаточно средств для такой ставки!");
+                alert("Недостаточно средств! Кнопка Ва-банк сделает это за вас.");
                 return;
             }
 
             let currentInvested = table.players[myNick].invested || 0;
-            updates[`poker_tables/${currentTableId}/players/${myNick}/invested`] = currentInvested + totalPay;
+            const newInvested = currentInvested + totalPay;
+            
+            updates[`poker_tables/${currentTableId}/players/${myNick}/invested`] = newInvested;
             updates[`poker_tables/${currentTableId}/pot`] = (table.pot || 0) + totalPay;
             updates[`poker_tables/${currentTableId}/currentBet`] = currentBet + raiseAmount;
             updates[`poker_tables/${currentTableId}/lastRaise`] = raiseAmount;
             updates[`poker_tables/${currentTableId}/players/${myNick}/roundBet`] = myRoundBet + totalPay;
-            updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = `Рейз +${raiseAmount}`;
+            
+            if (myCachedBalance === totalPay) {
+                updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = `ВА-БАНК (Рейз)`;
+                updates[`poker_tables/${currentTableId}/players/${myNick}/isAllIn`] = true;
+            } else {
+                updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = `Рейз +${raiseAmount}`;
+            }
+            
             updates[`poker_tables/${currentTableId}/players/${myNick}/acted`] = true;
             
-            const txKey = push(ref(db, `players/${balId}/history`)).key;
-            updates[`players/${balId}/history/${txKey}`] = -totalPay + "p";
+            if (txKey) updates[`players/${balId}/history/${txKey}`] = -newInvested + "p";
             
             table.turnOrder.forEach(nick => {
-                if (nick !== myNick && table.players[nick] && !table.players[nick].folded && !table.players[nick].isAllIn) {
+                if (nick !== myNick && table.players[nick] && !table.players[nick].folded && !table.players[nick].isSpectator && !table.players[nick].isAllIn) {
                     updates[`poker_tables/${currentTableId}/players/${nick}/acted`] = false;
                 }
             });
@@ -765,9 +771,10 @@ window.poker.action = async function(act) {
 
         if (act === 'allin') {
             let totalPay = myCachedBalance; 
-            
             let currentInvested = table.players[myNick].invested || 0;
-            updates[`poker_tables/${currentTableId}/players/${myNick}/invested`] = currentInvested + totalPay;
+            const newInvested = currentInvested + totalPay;
+            
+            updates[`poker_tables/${currentTableId}/players/${myNick}/invested`] = newInvested;
             updates[`poker_tables/${currentTableId}/pot`] = (table.pot || 0) + totalPay;
             
             if (totalPay > callAmount) {
@@ -776,45 +783,46 @@ window.poker.action = async function(act) {
                 updates[`poker_tables/${currentTableId}/lastRaise`] = extraRaise > (table.lastRaise || 10) ? extraRaise : (table.lastRaise || 10);
                 
                 table.turnOrder.forEach(nick => {
-                    if (nick !== myNick && table.players[nick] && !table.players[nick].folded && !table.players[nick].isAllIn) {
+                    if (nick !== myNick && table.players[nick] && !table.players[nick].folded && !table.players[nick].isSpectator && !table.players[nick].isAllIn) {
                         updates[`poker_tables/${currentTableId}/players/${nick}/acted`] = false;
                     }
                 });
             }
 
             updates[`poker_tables/${currentTableId}/players/${myNick}/roundBet`] = myRoundBet + totalPay;
-            updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = `ВА-БАНК (${totalPay})`;
+            updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = `ВА-БАНК`;
             updates[`poker_tables/${currentTableId}/players/${myNick}/acted`] = true;
             updates[`poker_tables/${currentTableId}/players/${myNick}/isAllIn`] = true; 
             
-            const txKey = push(ref(db, `players/${balId}/history`)).key;
-            updates[`players/${balId}/history/${txKey}`] = -totalPay + "p";
+            if (txKey) updates[`players/${balId}/history/${txKey}`] = -newInvested + "p";
             
             await advanceTurn(table, updates);
             return;
         }
 
         if (act === 'check') {
-            if (table.players[myNick].isAllIn) {
-                updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = "Чек (Ва-банк)";
-                updates[`poker_tables/${currentTableId}/players/${myNick}/acted`] = true;
-                await advanceTurn(table, updates);
-                return;
-            }
-
             if (callAmount > 0) {
-                if (myCachedBalance < callAmount) {
-                    alert("Не хватает денег для колла! Жмите Ва-банк.");
-                    return;
+                if (myCachedBalance <= callAmount) {
+                    // Автоматический перевод в Ва-банк, если денег не хватает на Колл
+                    let totalPay = myCachedBalance;
+                    let currentInvested = table.players[myNick].invested || 0;
+                    const newInvested = currentInvested + totalPay;
+                    
+                    updates[`poker_tables/${currentTableId}/players/${myNick}/invested`] = newInvested;
+                    updates[`poker_tables/${currentTableId}/pot`] = (table.pot || 0) + totalPay;
+                    updates[`poker_tables/${currentTableId}/players/${myNick}/roundBet`] = myRoundBet + totalPay;
+                    updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = `ВА-БАНК (Колл)`;
+                    updates[`poker_tables/${currentTableId}/players/${myNick}/isAllIn`] = true;
+                    if (txKey) updates[`players/${balId}/history/${txKey}`] = -newInvested + "p";
+                } else {
+                    let currentInvested = table.players[myNick].invested || 0;
+                    const newInvested = currentInvested + callAmount;
+                    updates[`poker_tables/${currentTableId}/players/${myNick}/invested`] = newInvested;
+                    updates[`poker_tables/${currentTableId}/pot`] = (table.pot || 0) + callAmount;
+                    updates[`poker_tables/${currentTableId}/players/${myNick}/roundBet`] = myRoundBet + callAmount;
+                    updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = `Колл ${callAmount}`;
+                    if (txKey) updates[`players/${balId}/history/${txKey}`] = -newInvested + "p";
                 }
-                let currentInvested = table.players[myNick].invested || 0;
-                updates[`poker_tables/${currentTableId}/players/${myNick}/invested`] = currentInvested + callAmount;
-                updates[`poker_tables/${currentTableId}/pot`] = (table.pot || 0) + callAmount;
-                updates[`poker_tables/${currentTableId}/players/${myNick}/roundBet`] = myRoundBet + callAmount;
-                updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = `Колл ${callAmount}`;
-                
-                const txKey = push(ref(db, `players/${balId}/history`)).key;
-                updates[`players/${balId}/history/${txKey}`] = -callAmount + "p";
             } else {
                 updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = "Чек";
             }
@@ -837,9 +845,9 @@ async function checkEndGame() {
     if(table.host !== user.nick) return;
 
     const players = table.players || {};
-    const activePlayers = table.turnOrder.filter(nick => players[nick] && !players[nick].folded);
+    const activePlayers = table.turnOrder.filter(nick => players[nick] && !players[nick].folded && !players[nick].isSpectator);
     
-    if(activePlayers.length === 1 && table.status === 'playing') {
+    if(activePlayers.length <= 1 && table.status === 'playing') {
         let commCards = table.communityCards || [];
         let deck = table.deck || [];
         
@@ -851,15 +859,17 @@ async function checkEndGame() {
         table.communityCards = commCards;
         table.deck = deck;
 
+        const winnerNick = activePlayers.length === 1 ? table.players[activePlayers[0]].nick : "Никто";
+
         update(ref(db, `poker_tables/${currentTableId}`), { 
             status: 'showdown_folded', 
             communityCards: commCards,
             deck: deck,
-            message: `Все сбросили. Победил: ${table.players[activePlayers[0]].nick}`,
+            message: `Все сбросили. Победил: ${winnerNick}`,
             triggerEnd: null
         });
         
-        endGameLogic([activePlayers[0]], table, "Все сбросили. Победил: ");
+        endGameLogic(activePlayers, table, "Все сбросили. Победил: ");
         return;
     }
 
@@ -930,7 +940,7 @@ async function submitJokerPick(card, color) {
 }
 
 function checkJokersReady(table) {
-    const activePlayers = table.turnOrder.filter(nick => table.players[nick] && !table.players[nick].folded);
+    const activePlayers = table.turnOrder.filter(nick => table.players[nick] && !table.players[nick].folded && !table.players[nick].isSpectator);
     
     let allReady = true;
     activePlayers.forEach(nick => {
@@ -1003,7 +1013,7 @@ async function endGameLogic(winners, table, msgPrefix) {
             }
         }
         
-        // Зачисляем только выигрыш (ставки уже были сняты в процессе игры)
+        // Зачисляем только выигрыш отдельной строкой (ставки уже сняты во время игры)
         if (net > 0) {
             const pid = p.balanceId;
             const txKey = push(ref(db, `players/${pid}/history`)).key;
@@ -1039,6 +1049,7 @@ window.poker.nextRound = async function() {
         updates[`poker_tables/${currentTableId}/players/${nick}/hand`] = null;
         updates[`poker_tables/${currentTableId}/players/${nick}/cardsVisible`] = false;
         updates[`poker_tables/${currentTableId}/players/${nick}/lastAction`] = "";
+        updates[`poker_tables/${currentTableId}/players/${nick}/txKey`] = null;
         
         if (table.players[nick].isSpectator) {
             updates[`poker_tables/${currentTableId}/players/${nick}/isSpectator`] = false;
@@ -1151,13 +1162,22 @@ window.poker.kickPlayer = async function(targetNick) {
     if (tblData && tblData.status === 'playing' && tblData.players && tblData.players[targetNick]) {
         const pData = tblData.players[targetNick];
         
-        if (tblData.turnOrder && tblData.turnOrder[tblData.currentTurnIndex] === targetNick && !pData.folded) {
+        if (!pData.folded && !pData.isSpectator) {
             const updates = {};
             updates[`poker_tables/${tId}/players/${targetNick}/folded`] = true;
             updates[`poker_tables/${tId}/players/${targetNick}/acted`] = true;
-            await advanceTurn(tblData, updates);
+            updates[`poker_tables/${tId}/players/${targetNick}/isSpectator`] = true;
+            
+            await update(ref(db), updates);
+            const freshSnap = await get(ref(db, `poker_tables/${tId}`));
+            await advanceTurn(freshSnap.val(), {});
         }
     }
 
     await remove(ref(db, `poker_tables/${tId}/players/${targetNick}`));
+    
+    if (tblData && tblData.turnOrder) {
+        const newOrder = tblData.turnOrder.filter(n => n !== targetNick);
+        await update(ref(db, `poker_tables/${tId}`), { turnOrder: newOrder });
+    }
 }
