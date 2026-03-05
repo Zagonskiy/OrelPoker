@@ -380,27 +380,29 @@ function renderTableState(table, globalPlayers) {
             cDiv.className = `poker-card ${['♥','♦'].includes(card.suit) || card.color === 'red' ? 'red' : 'black'}`;
             if(card.selected) cDiv.classList.add('selected');
             cDiv.innerHTML = `${card.rank}<br>${card.suit}`;
-            cDiv.onclick = () => { if(isMyTurn && !myData.swapped && !myData.folded && !myData.isAllIn) toggleCardSelection(idx); };
+            cDiv.onclick = () => { if(isMyTurn && !myData.swapped && !myData.folded) toggleCardSelection(idx); };
             myHandDiv.appendChild(cDiv);
         });
 
         if (table.status === 'playing') {
             if (isMyTurn && !myData.folded && !myData.isAllIn) {
-                actContainer.classList.remove('hidden');
-                
-                btnFold.classList.remove('hidden');
-                btnCheck.classList.remove('hidden');
-                btnRaise.classList.remove('hidden');
-                btnAllin.classList.remove('hidden');
-                
-                let currentBet = table.currentBet || 0;
-                let myRoundBet = myData.roundBet || 0;
-                let callAmount = currentBet - myRoundBet;
+                btnFold.classList.remove('hidden'); // Разрешаем фолд
+                    btnRaise.classList.add('hidden');
+                    btnAllin.classList.add('hidden');
+                    
+                    btnCheck.classList.remove('hidden');
+                    btnCheck.innerText = `Чек (Ва-банк)`;
+                    btnCheck.style.background = '#2e7d32';
 
-                if (btnCheck) {
-                    if (callAmount > 0) {
-                        btnCheck.innerText = `Колл ${callAmount}`;
-                        btnCheck.style.background = '#0277bd'; 
+                    // Проверяем, можно ли сменить карту (если еще не менял и не Ривер)
+                    if(btnSwap) {
+                        const commCards = table.communityCards || [];
+                        if(!myData.swapped && commCards.length < 5) {
+                            btnSwap.classList.remove('hidden');
+                        } else {
+                            btnSwap.classList.add('hidden');
+                        }
+                    }
                     } else {
                         btnCheck.innerText = `Чек`;
                         btnCheck.style.background = '#2e7d32'; 
