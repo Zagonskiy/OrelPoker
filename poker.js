@@ -380,13 +380,17 @@ function renderTableState(table, globalPlayers) {
             cDiv.className = `poker-card ${['♥','♦'].includes(card.suit) || card.color === 'red' ? 'red' : 'black'}`;
             if(card.selected) cDiv.classList.add('selected');
             cDiv.innerHTML = `${card.rank}<br>${card.suit}`;
+            // Убрали проверку на !myData.isAllIn, чтобы в ва-банке тоже можно было нажимать на карту
             cDiv.onclick = () => { if(isMyTurn && !myData.swapped && !myData.folded) toggleCardSelection(idx); };
             myHandDiv.appendChild(cDiv);
         });
 
         if (table.status === 'playing') {
-            if (isMyTurn && !myData.folded && !myData.isAllIn) {
-                btnFold.classList.remove('hidden'); // Разрешаем фолд
+            if (isMyTurn && !myData.folded) {
+                actContainer.classList.remove('hidden');
+                
+                if (myData.isAllIn) {
+                    btnFold.classList.remove('hidden');
                     btnRaise.classList.add('hidden');
                     btnAllin.classList.add('hidden');
                     
@@ -394,8 +398,7 @@ function renderTableState(table, globalPlayers) {
                     btnCheck.innerText = `Чек (Ва-банк)`;
                     btnCheck.style.background = '#2e7d32';
 
-                    // Проверяем, можно ли сменить карту (если еще не менял и не Ривер)
-                    if(btnSwap) {
+                    if (btnSwap) {
                         const commCards = table.communityCards || [];
                         if(!myData.swapped && commCards.length < 5) {
                             btnSwap.classList.remove('hidden');
@@ -403,16 +406,33 @@ function renderTableState(table, globalPlayers) {
                             btnSwap.classList.add('hidden');
                         }
                     }
-                    } else {
-                        btnCheck.innerText = `Чек`;
-                        btnCheck.style.background = '#2e7d32'; 
-                    }
-                }
+                } else {
+                    btnFold.classList.remove('hidden');
+                    btnCheck.classList.remove('hidden');
+                    btnRaise.classList.remove('hidden');
+                    btnAllin.classList.remove('hidden');
+                    
+                    let currentBet = table.currentBet || 0;
+                    let myRoundBet = myData.roundBet || 0;
+                    let callAmount = currentBet - myRoundBet;
 
-                if(btnSwap) {
-                    const commCards = table.communityCards || [];
-                    if(!myData.swapped && commCards.length < 5) {
-                        btnSwap.classList.remove('hidden');
+                    if (btnCheck) {
+                        if (callAmount > 0) {
+                            btnCheck.innerText = `Колл ${callAmount}`;
+                            btnCheck.style.background = '#0277bd'; 
+                        } else {
+                            btnCheck.innerText = `Чек`;
+                            btnCheck.style.background = '#2e7d32'; 
+                        }
+                    }
+
+                    if (btnSwap) {
+                        const commCards = table.communityCards || [];
+                        if(!myData.swapped && commCards.length < 5) {
+                            btnSwap.classList.remove('hidden');
+                        } else {
+                            btnSwap.classList.add('hidden');
+                        }
                     }
                 }
             } else {
@@ -446,7 +466,6 @@ function renderTableState(table, globalPlayers) {
         }
     }
 
-    // ИСПРАВЛЕНА ЛОГИКА ДЖОКЕРА: Точная очередность (сначала красный, потом черный)
     if (table.stage === 'joker_pick' && myData && !myData.folded && !myData.isSpectator) {
         let jokersToPick = [];
         (table.communityCards || []).forEach(c => { if(c.rank === 'Jr') jokersToPick.push(c.color); });
@@ -467,8 +486,7 @@ function renderTableState(table, globalPlayers) {
     } else {
         document.getElementById('jokerModal').classList.add('hidden');
     }
-}
-
+        }
 // --- 3. СОЗДАНИЕ КОЛОДЫ И СТАРТ ---
 
 function createDeck() {
@@ -517,7 +535,6 @@ window.poker.startGame = async function() {
         updates[`poker_tables/${currentTableId}/players/${nick}/jokerPickRed`] = null; 
         updates[`poker_tables/${currentTableId}/players/${nick}/jokerPickBlack`] = null; 
 
-        // Создаем ЕДИНСТВЕННЫЙ ключ логов для этой раздачи
         const balId = table.players[nick].balanceId;
         const txKey = push(ref(db, `players/${balId}/history`)).key;
         updates[`poker_tables/${currentTableId}/players/${nick}/txKey`] = txKey;
@@ -548,7 +565,6 @@ function toggleCardSelection(idx) {
     const path = `poker_tables/${currentTableId}/players/${user.nick}/hand/${idx}/selected`;
     get(ref(db, path)).then(s => set(ref(db, path), !s.val()));
 }
-
 // --- 4. ДВИЖЕНИЕ ИГРЫ И СТАВКИ ---
 
 async function advanceTurn(tableData, updatesObj) {
@@ -593,7 +609,7 @@ async function advanceTurn(tableData, updatesObj) {
 
     tableData.turnOrder.forEach(nick => {
         const p = playersTemp[nick];
-        if (p && !p.folded && !p.isSpectator && !p.isAllIn && !p.acted) { 
+        if (p && !p.folded && !p.isSpectator && !p.acted) { 
             allActed = false;
         }
     });
@@ -605,7 +621,7 @@ async function advanceTurn(tableData, updatesObj) {
         while(attempts < tableData.turnOrder.length) {
             const nextNick = tableData.turnOrder[nextIdx];
             const p = playersTemp[nextNick];
-            if (p && !p.folded && !p.isSpectator && !p.isAllIn && !p.acted) {
+            if (p && !p.folded && !p.isSpectator && !p.acted) {
                 updatesObj[`poker_tables/${currentTableId}/currentTurnIndex`] = nextIdx;
                 updatesObj[`poker_tables/${currentTableId}/message`] = `Ход: ${p.nick}`;
                 break;
@@ -655,7 +671,7 @@ async function advanceTurn(tableData, updatesObj) {
         let startIdx = 0;
         while(startIdx < tableData.turnOrder.length) {
             let p = playersTemp[tableData.turnOrder[startIdx]];
-            if (!p || p.folded || p.isSpectator || p.isAllIn) { 
+            if (!p || p.folded || p.isSpectator) { 
                 startIdx++;
             } else {
                 break;
@@ -803,9 +819,15 @@ window.poker.action = async function(act) {
         }
 
         if (act === 'check') {
+            if (table.players[myNick].isAllIn) {
+                updates[`poker_tables/${currentTableId}/players/${myNick}/lastAction`] = "Чек (Ва-банк)";
+                updates[`poker_tables/${currentTableId}/players/${myNick}/acted`] = true;
+                await advanceTurn(table, updates);
+                return;
+            }
+
             if (callAmount > 0) {
                 if (myCachedBalance <= callAmount) {
-                    // Автоматический перевод в Ва-банк, если денег не хватает на Колл
                     let totalPay = myCachedBalance;
                     let currentInvested = table.players[myNick].invested || 0;
                     const newInvested = currentInvested + totalPay;
@@ -835,7 +857,8 @@ window.poker.action = async function(act) {
     } finally {
         setTimeout(() => { window.isActionProcessing = false; }, 500);
     }
-}
+                }
+
 
 // --- 5. ДЖОКЕРЫ И ОКОНЧАНИЕ ИГРЫ ---
 
@@ -1015,7 +1038,6 @@ async function endGameLogic(winners, table, msgPrefix) {
             }
         }
         
-        // Зачисляем только выигрыш отдельной строкой (ставки уже сняты во время игры)
         if (net > 0) {
             const pid = p.balanceId;
             const txKey = push(ref(db, `players/${pid}/history`)).key;
@@ -1182,4 +1204,4 @@ window.poker.kickPlayer = async function(targetNick) {
         const newOrder = tblData.turnOrder.filter(n => n !== targetNick);
         await update(ref(db, `poker_tables/${tId}`), { turnOrder: newOrder });
     }
-}
+        }
