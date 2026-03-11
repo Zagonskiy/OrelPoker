@@ -2034,8 +2034,8 @@
                 inputNum, 
                 createBtn('+', 'btn-calc', () => handleScore(id, inputNum, 1)), 
                 createBtn('-', 'btn-calc', () => handleScore(id, inputNum, -1)), 
-                createBtn('⤺', 'btn-undo', () => undoLast(id)), 
-                createBtn('⤼', 'btn-redo', () => redoLast(id))
+                createBtn('⤾', 'btn-undo', () => undoLast(id)), 
+                createBtn('⤿', 'btn-redo', () => redoLast(id))
             );
         } else { cellAction.innerText = "—"; }
         
@@ -2526,6 +2526,7 @@
 
 </body>
 </html>
+
 
 
 
