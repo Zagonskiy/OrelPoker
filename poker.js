@@ -38,7 +38,7 @@ window.poker.createTable = async function() {
     const user = JSON.parse(sessionStorage.getItem('op_session_user'));
     if(!user) return alert("Войдите в аккаунт!");
 
-    const name = prompt("Название стола:", "Стол " + user.displayName);
+    const name = await window.customPrompt("Название стола:", "Стол " + user.displayName, "Создание стола");
     if(!name) return;
 
     const newTableRef = push(ref(db, 'poker_tables'));
@@ -88,7 +88,7 @@ onValue(ref(db, 'poker_tables'), (snap) => {
 });
 
 window.poker.deleteTable = async function(tableId) {
-    if(confirm("Удалить этот стол?")) {
+    if(await window.customConfirm("Удалить этот стол навсегда?", "Удаление")) {
         await remove(ref(db, `poker_tables/${tableId}`));
     }
 }
@@ -136,7 +136,7 @@ window.poker.joinTable = async function(tableId) {
 
 // УМНЫЙ ВЫХОД: Сначала безопасно сбрасываем карты, потом выходим
 window.poker.leaveTable = async function(skipConfirm = false, destView = 'poker-lobby') {
-    if(!skipConfirm && !confirm("Вы точно хотите выйти? Если вы в игре, ваши вложенные деньги сгорят!")) return;
+    if(!skipConfirm && !(await window.customConfirm("Вы точно хотите выйти? Ваши вложенные деньги сгорят!", "Выход из игры"))) return;
     
     document.getElementById('pokerControls').classList.add('hidden');
     document.getElementById('actionButtonsContainer').classList.add('hidden');
@@ -210,7 +210,7 @@ function subscribeToTable(tableId) {
         
         if(!table) { 
             if(currentTableId) { 
-                alert("Стол был расформирован."); 
+                window.customAlert("Стол был расформирован.");
                 document.getElementById('pokerControls').classList.add('hidden');
                 document.getElementById('actionButtonsContainer').classList.add('hidden');
                 currentTableId = null;
@@ -507,7 +507,7 @@ window.poker.startGame = async function() {
 
     const table = currentGameState;
     const playerNicks = Object.keys(table.players || {});
-    if(playerNicks.length < 2) return alert("Недостаточно игроков за столом! Нужно минимум 2.");
+    if(playerNicks.length < 2) return window.customAlert("Недостаточно игроков за столом! Нужно минимум 2.");
 
     const updates = {};
     let pot = 0;
@@ -722,7 +722,7 @@ window.poker.action = async function(act) {
             const swapIdx = hand.findIndex(c => c.selected);
             
             if(swapIdx === -1) {
-                alert("Выберите карту для обмена!");
+                window.customAlert("Выберите карту для обмена!");
                 return;
             }
             
@@ -741,7 +741,7 @@ window.poker.action = async function(act) {
         if (act === 'raise') {
             let minRaise = table.lastRaise || 10;
 
-            const amountStr = prompt(`Для колла нужно: ${callAmount}. Ваш баланс: ${myCachedBalance}.\nСколько добавить СВЕРХУ (Рейз)?\n(Минимум ${minRaise}, кратно 10)`);
+            const amountStr = await window.customPrompt("Ваш баланс: " + myCachedBalance + "\nДля колла нужно: " + callAmount + "\n\nСколько добавить СВЕРХУ (Рейз)?", "", "Повышение ставки");
             if (!amountStr) return;
             const raiseAmount = parseInt(amountStr);
             
@@ -753,7 +753,7 @@ window.poker.action = async function(act) {
             let totalPay = callAmount + raiseAmount; 
             
             if (myCachedBalance < totalPay) {
-                alert("Недостаточно средств! Кнопка Ва-банк сделает это за вас.");
+                window.customAlert("Недостаточно средств! Кнопка Ва-банк сделает это за вас.");
                 return;
             }
 
@@ -1170,8 +1170,8 @@ function evaluateHand(hand, communityCards) {
 }
 
 // --- ФУНКЦИИ ЛИДЕРА: ИСКЛЮЧЕНИЕ ИГРОКОВ ---
-window.poker.promptKick = function(targetNick, targetName) {
-    if(confirm(`Меню Лидера:\nВы точно хотите выгнать игрока ${targetName} со стола?`)) {
+window.poker.promptKick = async function(targetNick, targetName) {
+    if(await window.customConfirm(`Вы точно хотите выгнать игрока ${targetName} со стола?`, "Меню Лидера")) {
         window.poker.kickPlayer(targetNick);
     }
 }
