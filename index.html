@@ -1691,6 +1691,24 @@
             }
         });
     }
+
+    window.openPrivateChat = function(targetLogin) {
+        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if (!sessionUser) return;
+        
+        const myLogin = sessionUser.nick;
+        
+        // Генерируем уникальный ID чата (сортируем ники по алфавиту, чтобы ID совпадал у обоих игроков)
+        const participants = [myLogin, targetLogin].sort();
+        const chatId = participants[0] + '_' + participants[1];
+        
+        // Переключаемся на вкладку чата
+        showView('chat');
+        
+        // Загружаем этот приватный чат
+        loadChat(chatId, '@' + targetLogin);
+    }
+
     
     window.loadChat = function(chatId, title) {
         currentChatId = chatId;
@@ -2016,8 +2034,8 @@
                 inputNum, 
                 createBtn('+', 'btn-calc', () => handleScore(id, inputNum, 1)), 
                 createBtn('-', 'btn-calc', () => handleScore(id, inputNum, -1)), 
-                createBtn('↩', 'btn-undo', () => undoLast(id)), 
-                createBtn('↪', 'btn-redo', () => redoLast(id))
+                createBtn('⤺', 'btn-undo', () => undoLast(id)), 
+                createBtn('⤼', 'btn-redo', () => redoLast(id))
             );
         } else { cellAction.innerText = "—"; }
         
@@ -2508,6 +2526,7 @@
 
 </body>
 </html>
+
 
 
 
