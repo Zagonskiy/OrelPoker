@@ -1498,6 +1498,19 @@
             <div id="jokerCardsGrid" class="joker-cards-grid"></div>
         </div>
     </div>
+
+    <div id="customModalOverlay" class="modal-overlay hidden" style="z-index: 10000;">
+        <div class="modal-card" style="max-width: 350px;">
+            <h3 id="customModalTitle" style="margin-top:0; color:#8b4513; font-family:'Rye', cursive;">Внимание</h3>
+            <p id="customModalMessage" style="font-family:'Special Elite', monospace; font-size:1.1em; color:#3e2b1f; margin-bottom: 20px;"></p>
+            <input type="text" id="customModalInput" class="login-input" style="display:none; text-align:center; margin-bottom:20px;">
+            <div style="display:flex; justify-content:center; gap:15px;">
+                <button id="customModalCancel" class="btn-cancel-role" style="display:none; font-size:1.2em;">Отмена</button>
+                <button id="customModalOk" class="btn-login-action" style="margin:0; width:auto; padding: 10px 30px;">ОК</button>
+            </div>
+        </div>
+    </div>
+    
 </div>
 
 <script>
@@ -1566,6 +1579,53 @@
         { file: 'Croco.png',   owner: 'Lacosto Holocosto', name: 'Крокодил' },
         { file: 'rgb.png',     owner: 'all',           name: 'Свой Цвет' }
     ];
+
+
+    // --- ДВИЖОК КАСТОМНЫХ ОКОН ---
+    window.customAlert = function(message, title = "Внимание") {
+        return new Promise(resolve => showCustomModal(title, message, 'alert', resolve));
+    };
+    window.customConfirm = function(message, title = "Подтверждение") {
+        return new Promise(resolve => showCustomModal(title, message, 'confirm', resolve));
+    };
+    window.customPrompt = function(message, defaultValue = "", title = "Ввод данных", isPassword = false) {
+        return new Promise(resolve => showCustomModal(title, message, 'prompt', resolve, defaultValue, isPassword));
+    };
+
+    function showCustomModal(title, message, type, resolveCallback, defaultValue = "", isPassword = false) {
+        const overlay = document.getElementById('customModalOverlay');
+        const titleEl = document.getElementById('customModalTitle');
+        const msgEl = document.getElementById('customModalMessage');
+        const inputEl = document.getElementById('customModalInput');
+        const btnOk = document.getElementById('customModalOk');
+        const btnCancel = document.getElementById('customModalCancel');
+
+        titleEl.innerText = title; msgEl.innerText = message;
+        inputEl.style.display = type === 'prompt' ? 'block' : 'none';
+        btnCancel.style.display = (type === 'confirm' || type === 'prompt') ? 'inline-block' : 'none';
+        
+        if (type === 'prompt') { inputEl.type = isPassword ? 'password' : 'text'; inputEl.value = defaultValue; }
+
+        overlay.classList.remove('hidden');
+
+        const cleanup = () => {
+            overlay.classList.add('hidden');
+            btnOk.onclick = null; btnCancel.onclick = null; inputEl.onkeypress = null;
+        };
+
+        btnOk.onclick = () => {
+            cleanup();
+            if (type === 'prompt') resolveCallback(inputEl.value);
+            else if (type === 'confirm') resolveCallback(true);
+            else resolveCallback(true);
+        };
+        btnCancel.onclick = () => { cleanup(); type === 'prompt' ? resolveCallback(null) : resolveCallback(false); };
+
+        if (type === 'prompt') {
+            inputEl.focus();
+            inputEl.onkeypress = (e) => { if (e.key === 'Enter') btnOk.click(); };
+        }
+    }
 
     function updateMenuUI(displayName, loginName) {
         const nameEl = document.getElementById('menuDisplayName');
@@ -1838,9 +1898,9 @@
         document.getElementById('btnCancelEdit').classList.add('hidden');
     }
 
-    window.deleteChatMessage = function(key, timestamp) {
+    window.deleteChatMessage = async function(key, timestamp) {
         if (Date.now() - timestamp > 86400000) { alert("Время вышло."); return; }
-        if (confirm("Удалить?")) {
+        if (await window.customConfirm("Удалить сообщение?")) {
             const path = currentChatId === 'general' ? 'chat' : `private_chats/${currentChatId}`;
             remove(ref(db, `${path}/${key}`));
             if (editingMsgId === key) cancelEditMode();
@@ -2081,8 +2141,8 @@
     }
 
     window.refreshTable = async function() {
-        const pass = prompt("Для обновления введите код доступа:");
-        if (pass !== "108020") { if(pass !== null) alert("Ошибка доступа"); return; }
+        const pass = await window.customPrompt("Для обновления введите код доступа:", "", "Доступ", true);
+        if (pass !== "108020") { if(pass !== null) window.customAlert("Ошибка доступа", "Ошибка"); return; }
         try { await syncUsersToTable(); alert("Таблица синхронизирована!"); } catch(e) { alert("Ошибка: " + e.message); }
     }
 
@@ -2116,7 +2176,7 @@
         if (!sessionUser) return;
         
         const oldDisplayName = sessionUser.displayName || sessionUser.nick;
-        const newName = prompt("Новое имя:", oldDisplayName);
+        const newName = await window.customPrompt("Новое имя:", oldDisplayName, "Смена имени");
         if(!newName || newName.trim() === "") return;
         const trimmedName = newName.trim();
         
@@ -2150,7 +2210,7 @@
     }
 
     window.safeDeletePlayer = async function(id, login) {
-        if(!confirm("Убрать игрока со стола? (Баланс сохранится)")) return;
+        if(!(await window.customConfirm("Убрать игрока со стола? (Баланс сохранится)"))) return;
         const snapshot = await get(ref(db, 'players/' + id)); const data = snapshot.val();
         if (data && login && data.history) await update(ref(db, 'users/' + login), { saved_history: data.history }); 
         remove(ref(db, 'players/' + id));
@@ -2256,7 +2316,7 @@
     }
 
     window.restorePlayers = async function() { if(!confirm("Вернуть всех зарегистрированных игроков за стол?")) return; await syncUsersToTable(); alert("Список синхронизирован!"); }
-    window.logout = function() { if(confirm("Выйти?")) { if (currentConnectionRef) remove(currentConnectionRef); localStorage.removeItem('op_user'); sessionStorage.removeItem('op_session_user'); location.reload(); } }
+    window.logout = async function() { if (!(await window.customConfirm("Сохранить итоги, ОТСОРТИРОВАТЬ таблицу и сбросить историю?"))) return; { if (currentConnectionRef) remove(currentConnectionRef); localStorage.removeItem('op_user'); sessionStorage.removeItem('op_session_user'); location.reload(); } }
 
     function setOnlineStatus(nickname) { currentConnectionRef = push(ref(db, `online_users/${nickname}`)); onDisconnect(currentConnectionRef).remove(); set(currentConnectionRef, true); }
 
@@ -2325,15 +2385,15 @@
         const snapshot = await get(lastRedoQuery); snapshot.forEach((child) => { const val = child.val(); remove(child.ref); push(ref(db, 'players/' + id + '/history'), val); }); 
     }
 
-    window.createNewPlayer = function() { 
-        let guestName = prompt("Введите имя гостя:", "Гость"); if (guestName === null) return; 
+    window.createNewPlayer = async function() { 
+        let guestName = await window.customPrompt("Введите имя гостя:", "Гость", "Новый игрок");
         if (guestName.trim() === "") guestName = "Гость"; push(playersRef, { name: guestName.trim(), history: {} }); 
     }
 
-    window.resetPlayer = (id) => { if (prompt("Сбросить игрока (Код)?") === "108020") update(ref(db, 'players/' + id), { history: null, redoStack: null }); else alert("Ошибка"); };
+    window.resetPlayer = async (id) => { if (await window.customPrompt("Сбросить игрока (Код)?", "", "Сброс", true) === "108020") update(ref(db, 'players/' + id), { history: null, redoStack: null }); else window.customAlert("Ошибка", "Ошибка"); };
 
     window.extremeReset = async () => { 
-        if (prompt("ПОЛНЫЙ СБРОС (Код)?") === "108020") { 
+        if (await window.customPrompt("ПОЛНЫЙ СБРОС (Код)?", "", "Удаление", true) === "108020") {
             const snap = await get(playersRef); const updates = {}; 
             snap.forEach(child => { updates['players/' + child.key + '/history'] = null; updates['players/' + child.key + '/redoStack'] = null; }); 
             await update(ref(db), updates); 
@@ -2341,7 +2401,7 @@
     };
 
     window.startNewDay = async () => { 
-        if (prompt("НОВЫЙ ДЕНЬ (Код)?") === "108020") { 
+        if (await window.customPrompt("НОВЫЙ ДЕНЬ (Код)?", "", "Секретный доступ", true) === "108020") { 
             const snap = await get(playersRef); const updates = {}; 
             snap.forEach(child => { 
                 const { total } = calculatePlayerStats(child.val()); const key1 = push(ref(db)).key; const key2 = push(ref(db)).key; 
@@ -2373,9 +2433,9 @@
         await update(ref(db), updates); alert("Готово! Таблица отсортирована по лидерам.");
     };
 
-    window.deleteJournalEntry = function(id) { 
+    window.deleteJournalEntry = async function(id) { 
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        if (sessionUser.role === 'admin' || sessionUser.role === 'trusted') { if(confirm("Удалить запись?")) remove(ref(db, 'journal/' + id)); } else alert("Нет прав!"); 
+        if (sessionUser.role === 'admin' || sessionUser.role === 'trusted') { if(await window.customConfirm("Удалить запись?")) remove(ref(db, 'journal/' + id)); } else alert("Нет прав!"); 
     }
 
     onValue(journalRef, (snapshot) => {
@@ -2526,6 +2586,7 @@
 
 </body>
 </html>
+
 
 
 
