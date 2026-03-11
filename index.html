@@ -1969,15 +1969,16 @@
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
         if (!sessionUser) return;
         const myId = await findPlayerIdByLogin(sessionUser.nick);
-        if (!myId) return alert("Вы не сидите за столом! Сначала создайте игрока."); 
+        if (!myId) return window.customAlert("Вы не сидите за столом! Сначала создайте игрока.", "Ошибка"); 
         
         if (fileName) {
-            if(confirm("Установить этот фон?")) { 
+            if(await window.customConfirm("Установить этот фон?", "Смена фона")) { 
                 update(ref(db, 'players/' + myId), { background: fileName }); 
-                alert("Фон установлен!"); showView('game'); 
+                window.customAlert("Фон установлен!", "Успех"); 
+                showView('game'); 
             }
         } else {
-            if(confirm("Убрать фон?")) { 
+            if(await window.customConfirm("Убрать фон?", "Сброс фона")) { 
                 update(ref(db, 'players/' + myId), { background: null }); 
                 showView('game'); 
             }
@@ -2315,8 +2316,20 @@
         const savedData = JSON.parse(localStorage.getItem('poker_data_v74')); if (savedData) renderTable(savedData);
     }
 
-    window.restorePlayers = async function() { if(!confirm("Вернуть всех зарегистрированных игроков за стол?")) return; await syncUsersToTable(); alert("Список синхронизирован!"); }
-    window.logout = async function() { if (!(await window.customConfirm("Сохранить итоги, ОТСОРТИРОВАТЬ таблицу и сбросить историю?"))) return; { if (currentConnectionRef) remove(currentConnectionRef); localStorage.removeItem('op_user'); sessionStorage.removeItem('op_session_user'); location.reload(); } }
+    window.restorePlayers = async function() { 
+        if(!(await window.customConfirm("Вернуть всех зарегистрированных игроков за стол?", "Восстановление"))) return; 
+        await syncUsersToTable(); 
+        window.customAlert("Список синхронизирован!", "Успех"); 
+    }
+    
+    window.logout = async function() { 
+        if(await window.customConfirm("Выйти из аккаунта?", "Выход")) { 
+            if (currentConnectionRef) remove(currentConnectionRef); 
+            localStorage.removeItem('op_user'); 
+            sessionStorage.removeItem('op_session_user'); 
+            location.reload(); 
+        } 
+    }
 
     function setOnlineStatus(nickname) { currentConnectionRef = push(ref(db, `online_users/${nickname}`)); onDisconnect(currentConnectionRef).remove(); set(currentConnectionRef, true); }
 
@@ -2411,10 +2424,10 @@
             await update(ref(db), updates); alert("День начат! +500"); 
         } 
     };
-    
-    window.addToJournal = async function() {
-        if (!confirm("Сохранить итоги, ОТСОРТИРОВАТЬ таблицу и сбросить историю?")) return;
-        const dv = document.getElementById('gameDate').value; if (!dv) return alert("Ошибка даты!"); 
+     window.addToJournal = async function() {
+        if (!(await window.customConfirm("Сохранить итоги, ОТСОРТИРОВАТЬ таблицу и сбросить историю?", "Журнал"))) return;
+        const dv = document.getElementById('gameDate').value; 
+        if (!dv) return window.customAlert("Ошибка даты!", "Ошибка"); 
         const [y, m, d] = dv.split('-'); const fd = `${d}.${m}.${y}`;
         const s = await get(playersRef); const dt = s.val(); if (!dt) return;
         let playersArray = []; let gt = 0;
@@ -2430,13 +2443,9 @@
             updates['players/' + p.key + '/sortOrder'] = index; updates['players/' + p.key + '/history'] = newHistory; updates['players/' + p.key + '/redoStack'] = null;
         });
         await push(journalRef, { date: fd + ' ' + new Date().toLocaleTimeString().slice(0, 5), timestamp: Date.now(), grandTotal: gt, players: journalPlayers });
-        await update(ref(db), updates); alert("Готово! Таблица отсортирована по лидерам.");
+        await update(ref(db), updates); 
+        window.customAlert("Готово! Таблица отсортирована по лидерам.", "Успех");
     };
-
-    window.deleteJournalEntry = async function(id) { 
-        const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user'));
-        if (sessionUser.role === 'admin' || sessionUser.role === 'trusted') { if(await window.customConfirm("Удалить запись?")) remove(ref(db, 'journal/' + id)); } else alert("Нет прав!"); 
-    }
 
     onValue(journalRef, (snapshot) => {
         const listDiv = document.getElementById('journalList'); listDiv.innerHTML = ''; const data = snapshot.val();
@@ -2550,29 +2559,30 @@
     window.openTransferModal = async function() {
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')); if (!sessionUser) return;
         const myId = await findPlayerIdByLogin(sessionUser.nick);
-        if (!myId) return alert("Вы не сидите за столом! Сначала создайте игрока.");
+        if (!myId) return window.customAlert("Вы не сидите за столом! Сначала создайте игрока.", "Ошибка");
         const snap = await get(ref(db, 'players/' + myId)); const player = snap.val(); const { total } = calculatePlayerStats(player);
         document.getElementById('myCurrentBalance').innerText = total; document.getElementById('transferAmount').value = ''; document.getElementById('transferModal').classList.remove('hidden');
     }
 
     window.confirmTransfer = async function() {
         const amount = parseFloat(document.getElementById('transferAmount').value);
-        if (isNaN(amount) || amount <= 0) return alert("Некорректная сумма"); 
+        if (isNaN(amount) || amount <= 0) return window.customAlert("Некорректная сумма", "Ошибка"); 
         const sessionUser = JSON.parse(sessionStorage.getItem('op_session_user')); const myLogin = sessionUser.nick; const targetLogin = currentChatPartner;
         if (!targetLogin) return;
         const myId = await findPlayerIdByLogin(myLogin); const targetId = await findPlayerIdByLogin(targetLogin);
-        if (!myId) return alert("Ошибка: Вы не за столом."); 
-        if (!targetId) return alert("Ошибка: Получатель не за столом."); 
+        if (!myId) return window.customAlert("Ошибка: Вы не за столом.", "Ошибка"); 
+        if (!targetId) return window.customAlert("Ошибка: Получатель не за столом.", "Ошибка"); 
         const snap = await get(ref(db, 'players/' + myId)); const { total } = calculatePlayerStats(snap.val());
-        if (total < amount) return alert("Недостаточно средств!");
-        if (!confirm(`Перевести ${amount} игроку @${targetLogin}?`)) return;
+        if (total < amount) return window.customAlert("Недостаточно средств!", "Ошибка");
+        if (!(await window.customConfirm(`Перевести ${amount} игроку @${targetLogin}?`, "Перевод средств"))) return;
         const updates = {};
         const pushKey1 = push(ref(db, 'players/' + myId + '/history')).key; updates['players/' + myId + '/history/' + pushKey1] = -amount;
         const pushKey2 = push(ref(db, 'players/' + targetId + '/history')).key; updates['players/' + targetId + '/history/' + pushKey2] = amount;
         await update(ref(db), updates);
         const path = `private_chats/${currentChatId}`;
         push(ref(db, path), { sender: "Система", senderLogin: "system", text: `💸 ПЕРЕВОД: ${sessionUser.displayName} отправил ${amount} монет.`, timestamp: Date.now() });
-        document.getElementById('transferModal').classList.add('hidden'); alert("Перевод выполнен!");
+        document.getElementById('transferModal').classList.add('hidden'); 
+        window.customAlert("Перевод выполнен!", "Успех");
     }
 
     async function findPlayerIdByLogin(loginTarget) {
@@ -2586,6 +2596,7 @@
 
 </body>
 </html>
+
 
 
 
