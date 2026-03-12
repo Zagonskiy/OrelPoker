@@ -1290,15 +1290,14 @@
             top: 0;
             left: 0;
             right: 0;
-            bottom: 75px; /* Отступ ровно под размер нижнего меню */
+            bottom: 75px; 
+            width: 100% !important; /* МАГИЧЕСКАЯ СТРОКА: ЗАСТАВЛЯЕТ РАСТЯНУТЬСЯ */
             height: auto !important;
             background-color: var(--paper-bg);
             background-image: var(--paper-texture);
             z-index: 5;
-            padding: 10px;
+            padding: 15px;
             box-sizing: border-box;
-            
-            /* Для ПК: чтобы чат не растягивался на 2 метра в ширину */
             max-width: 800px;
             margin: 0 auto;
         }
@@ -1319,6 +1318,7 @@
             display: flex;
             flex-direction: column;
             flex: 1;
+            width: 100%; /* Растягиваем белый прямоугольник */
             height: 100%;
             overflow: hidden;
         }
@@ -1326,14 +1326,16 @@
         #view-chat .chat-messages {
             flex: 1;
             overflow-y: auto;
-            height: 0; /* МАГИЯ: это разрешает сообщениям скроллиться внутри своего блока */
+            height: 0; 
             margin-bottom: 10px;
             padding-right: 5px;
+            width: 100%;
         }
 
         #view-chat .chat-container > div:last-child {
-            flex: 0 0 auto; /* Строке ввода жестко запрещено сжиматься */
+            flex: 0 0 auto; 
             margin-bottom: 5px;
+            width: 100%;
         }
         /* --------------------------------------------------- */
         
@@ -2776,6 +2778,7 @@
 
 </body>
 </html>
+
 
 
 
