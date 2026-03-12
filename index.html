@@ -1278,28 +1278,30 @@
         .joker-pick-card:hover { transform: scale(1.1); box-shadow: 0 0 10px gold; }
 
         /* --- ФИКС ДЛЯ МОБИЛЬНОГО ПРИЛОЖЕНИЯ (РАСТЯГИВАЕМ ЭКРАНЫ НА 100%) --- */
-        html, body {
-            height: 100dvh; /* Используем dvh (dynamic viewport height) для телефонов */
-            overflow: hidden; /* Убираем системную прокрутку всей страницы */
-        }
-
-        /* Заставляем контейнеры чатов растягиваться на весь экран */
+        /* --- БЕЗОПАСНЫЙ ФИКС ЧАТА ДЛЯ МОБИЛОК --- */
+        /* Ограничиваем высоту ТОЛЬКО для чатов, главную игру вообще не трогаем */
         #view-chat.active, #view-chat-list.active {
             display: flex;
             flex-direction: column;
-            height: calc(100dvh - 70px); /* 70px — это место под нижнее меню навигации */
+            height: calc(100dvh - 75px); /* Минус место под нижнее меню */
         }
 
-        .chat-container {
-            flex-grow: 1; /* Пружина, растягивающая чат до самого низа */
+        #view-chat .chat-container {
             display: flex;
             flex-direction: column;
             height: 100%;
+            flex: 1;
         }
 
-        .chat-messages {
-            flex-grow: 1;
-            overflow-y: auto; /* Прокрутка только внутри сообщений */
+        #view-chat .chat-messages {
+            flex: 1 1 auto; /* Пружина: занимает всё свободное место */
+            overflow-y: auto; /* Скролл только для сообщений */
+        }
+
+        /* Жестко защищаем строку ввода, чтобы она не сплющилась и не пропала */
+        #view-chat .chat-container > div:last-child {
+            flex: 0 0 auto !important; /* Запрещаем браузеру сжимать поле ввода */
+            padding-bottom: 10px; /* Отступ снизу, чтобы не прилипало к меню */
         }
         
     </style>
@@ -2741,6 +2743,7 @@
 
 </body>
 </html>
+
 
 
 
