@@ -1277,3 +1277,4 @@ window.poker.kickPlayer = async function(targetNick) {
         await update(ref(db, `poker_tables/${tId}`), { turnOrder: newOrder });
     }
 }
+}
