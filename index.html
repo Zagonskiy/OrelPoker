@@ -231,6 +231,19 @@
             font-family: 'Special Elite', monospace;
         }
 
+        .chat-badge {
+            background-color: #d32f2f;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 0.85em;
+            font-family: 'Special Elite', monospace;
+            font-weight: bold;
+            margin-left: auto;
+            box-shadow: 0 0 5px rgba(211,47,47,0.8);
+            display: none; /* Скрыт по умолчанию */
+        }
+        
         .notification-badge {
             background-color: #ff0000;
             color: white;
@@ -1375,7 +1388,7 @@
                     <span class="chat-name">📢 ОБЩИЙ ЧАТ</span>
                     <span class="chat-preview">Нажмите, чтобы войти...</span>
                 </div>
-            </div>
+                <div id="badge_general" class="chat-badge">0</div> </div>
             <div id="privateChatsList"></div>
         </div>
 
@@ -1572,6 +1585,97 @@
     const chatRef = ref(db, 'chat');
     const connectedRef = ref(db, ".info/connected");
     const onlineUsersRef = ref(db, "online_users");
+
+    // --- СИСТЕМА УВЕДОМЛЕНИЙ И НЕПРОЧИТАННЫХ СООБЩЕНИЙ ---
+    window.chatUnreadCounts = {};
+
+    window.showNotification = function(title, body) {
+        // Если мы в нашем Android-приложении (вызываем нативный код)
+        if (window.AndroidApp && window.AndroidApp.showNotification) {
+            window.AndroidApp.showNotification(title, body);
+        } 
+        // Если мы на ПК или в iOS PWA (Web Notifications)
+        else if ("Notification" in window) {
+            if (Notification.permission === "granted") {
+                new Notification(title, { body: body, icon: './logo.png' });
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") new Notification(title, { body: body, icon: './logo.png' });
+                });
+            }
+        }
+    }
+
+    window.initGlobalChatListeners = function() {
+        const user = JSON.parse(sessionStorage.getItem('op_session_user'));
+        if(!user) return;
+        const myLogin = user.nick;
+
+        // Запрашиваем права на уведомления для ПК/iOS сразу при входе
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+
+        // Слушаем общий чат
+        onValue(ref(db, 'chat'), snap => countUnread('general', snap));
+
+        // Слушаем личные переписки
+        onValue(ref(db, 'private_chats'), snap => {
+            snap.forEach(child => {
+                if(child.key.includes(myLogin)) countUnread(child.key, child);
+            });
+        });
+    }
+
+    function countUnread(chatId, snapshot) {
+        const lastRead = parseInt(localStorage.getItem('last_read_' + chatId) || '0');
+        let unread = 0;
+        let latestMsg = null;
+        
+        snapshot.forEach(msgSnap => {
+            const msg = msgSnap.val();
+            if (msg.timestamp > lastRead) {
+                unread++;
+                latestMsg = msg;
+            }
+        });
+        
+        window.chatUnreadCounts[chatId] = unread;
+        if (typeof updateGlobalBadges === 'function') updateGlobalBadges();
+
+        // Отправка уведомления
+        if (unread > 0 && latestMsg) {
+            const user = JSON.parse(sessionStorage.getItem('op_session_user'));
+            // Проверяем: мы НЕ в этом чате прямо сейчас И сообщение написали не мы сами
+            if (user && currentChatId !== chatId && latestMsg.senderLogin !== user.nick) {
+                const notifiedKey = 'notified_' + latestMsg.timestamp;
+                // Защита от спама (чтобы не присылало 10 старых уведомлений при перезагрузке)
+                if (!localStorage.getItem(notifiedKey)) {
+                    localStorage.setItem(notifiedKey, '1');
+                    window.showNotification(latestMsg.sender, latestMsg.text);
+                }
+            }
+        }
+    }
+
+    window.updateGlobalBadges = function() {
+        let total = 0;
+        for(let key in window.chatUnreadCounts) {
+            total += window.chatUnreadCounts[key];
+            const badge = document.getElementById('badge_' + key);
+            if(badge) {
+                badge.innerText = window.chatUnreadCounts[key];
+                badge.style.display = window.chatUnreadCounts[key] > 0 ? 'block' : 'none';
+            }
+        }
+        const mainBadge = document.getElementById('chatBadge');
+        if(mainBadge) {
+            mainBadge.innerText = total;
+            if(total > 0) mainBadge.classList.add('visible');
+            else mainBadge.classList.remove('visible');
+        }
+    }
+    // ----------------------------------------------------
     
     let currentConnectionRef = null;
     let onlineNicknames = new Set();
@@ -1746,6 +1850,7 @@
                             <span class="chat-name">@${otherLogin}</span>
                             <span class="chat-preview">Личная переписка</span>
                         </div>
+                        <div id="badge_${chatKey}" class="chat-badge">0</div>
                     `;
                     listContainer.appendChild(item);
                 }
@@ -1841,6 +1946,7 @@
         const messages = [];
         snapshot.forEach(child => { 
             messages.push({ key: child.key, ...child.val() }); 
+            if (typeof window.updateGlobalBadges === 'function') window.updateGlobalBadges();
         });
         messages.sort((a, b) => a.timestamp - b.timestamp);
         
@@ -1868,6 +1974,14 @@
                         <button class="msg-btn" onclick="startEditMessage('${msg.key}', '${safeText}', ${msg.timestamp})">✏️</button>
                         <button class="msg-btn" onclick="deleteChatMessage('${msg.key}', ${msg.timestamp})">🗑</button>
                     </span>`;
+            }
+            // СБРАСЫВАЕМ СЧЕТЧИК, ТАК КАК МЫ ПРОЧИТАЛИ ЧАТ
+            if (currentChatId) {
+                localStorage.setItem('last_read_' + currentChatId, Date.now());
+                if (window.chatUnreadCounts) {
+                    window.chatUnreadCounts[currentChatId] = 0;
+                    if (typeof window.updateGlobalBadges === 'function') window.updateGlobalBadges();
+                }
             }
             
             const editedMark = msg.isEdited ? `<span class="edited-label">(ред.)</span>` : '';
@@ -2281,6 +2395,7 @@
         if(remember) localStorage.setItem('op_user', JSON.stringify(userObj));
         
         setOnlineStatus(nick); fetchUserRole(nick); applyRoleUI();
+        window.initGlobalChatListeners();
     }
 
     function fetchUserRole(nick) {
@@ -2600,6 +2715,7 @@
 
 </body>
 </html>
+
 
 
 
