@@ -1705,9 +1705,15 @@
         let unread = 0;
         let latestMsg = null;
         
+        // Получаем данные текущего пользователя
+        const user = JSON.parse(sessionStorage.getItem('op_session_user'));
+        const myLogin = user ? user.nick : null;
+        
         snapshot.forEach(msgSnap => {
             const msg = msgSnap.val();
-            if (msg.timestamp > lastRead) {
+            // Считаем сообщение непрочитанным, только если оно новее lastRead 
+            // И если его отправитель — НЕ текущий пользователь
+            if (msg.timestamp > lastRead && msg.senderLogin !== myLogin) {
                 unread++;
                 latestMsg = msg;
             }
@@ -1718,9 +1724,8 @@
 
         // Отправка уведомления
         if (unread > 0 && latestMsg) {
-            const user = JSON.parse(sessionStorage.getItem('op_session_user'));
             // Проверяем: мы НЕ в этом чате прямо сейчас И сообщение написали не мы сами
-            if (user && currentChatId !== chatId && latestMsg.senderLogin !== user.nick) {
+            if (user && currentChatId !== chatId && latestMsg.senderLogin !== myLogin) {
                 const notifiedKey = 'notified_' + latestMsg.timestamp;
                 // Защита от спама (чтобы не присылало 10 старых уведомлений при перезагрузке)
                 if (!localStorage.getItem(notifiedKey)) {
@@ -2790,6 +2795,7 @@
 
 </body>
 </html>
+
 
 
 
