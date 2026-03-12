@@ -279,7 +279,7 @@ function renderTableState(table, globalPlayers) {
         if(pData.cards) {
             let c1 = "", c2 = "", color1 = "", color2 = "", isBack1 = "back", isBack2 = "back";
             
-            const canShow = (pNick === myNick) || ((table.status === 'showdown' || table.status === 'showdown_folded') && pData.cardsVisible);
+            const canShow = pData.cardsVisible === true;
 
             if (canShow && pData.hand) {
                 const handArr = Array.isArray(pData.hand) ? pData.hand : Object.values(pData.hand);
