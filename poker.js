@@ -416,9 +416,6 @@ function renderTableState(table, globalPlayers) {
 
     // Отрисовываем общий банк фишками по центру (с задержкой для эффекта полета)
     document.getElementById('pokerPotDisplay').innerHTML = `Банк: ${table.pot || 0} <br> ${getChipsHTML(table.pot || 0, true)}`;
-            });
-        }
-    }
 
     const btnStart = document.getElementById('btnStartPoker');
     if(table.host === myNick && table.status === 'waiting') {
