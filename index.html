@@ -1270,8 +1270,31 @@
         .btn-delete-table:hover { opacity: 1; transform: scale(1.2); }
         .history-log span.poker-win { color: #00e676; font-weight: bold; background: rgba(0,255,0,0.1); padding: 0 4px; }
 
-        .joker-modal { background: #2a1b0f; border: 4px solid var(--accent-gold); padding: 20px; text-align: center; max-height: 80vh; overflow-y: auto; max-width: 400px; }
-        .joker-cards-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
+       /* Жесткая фиксация окна Джокера для WebView */
+        .joker-modal { 
+            background: #2a1b0f; 
+            border: 4px solid var(--accent-gold); 
+            padding: 20px; 
+            text-align: center; 
+            max-height: 85vh; /* Чуть больше высоты */
+            width: 90vw; /* Запрещаем сжиматься по ширине */
+            max-width: 400px; 
+            display: flex !important; 
+            flex-direction: column; /* Заголовок и сетка друг под другом */
+        }
+        
+        .joker-cards-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 10px; 
+            margin-top: 15px; 
+            overflow-y: auto !important; /* Скролл теперь только тут */
+            min-height: 0 !important; /* Главное лекарство от схлопывания */
+            flex: 1 1 auto !important; /* Растягивается на всё свободное место */
+            -webkit-overflow-scrolling: touch; /* Плавный скролл пальцем */
+            padding-right: 5px;
+            padding-bottom: 10px;
+        }
         .joker-pick-card { background: #fff; border-radius: 4px; padding: 10px 5px; font-family: monospace; font-size: 1.2em; font-weight: bold; cursor: pointer; border: 1px solid #000; }
         .joker-pick-card.red { color: red; }
         .joker-pick-card.black { color: black; }
@@ -2909,6 +2932,7 @@
 
 </body>
 </html>
+
 
 
 
