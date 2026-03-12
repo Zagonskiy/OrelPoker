@@ -1924,6 +1924,8 @@
             if (foundCount === 0) { 
                 listContainer.innerHTML = '<div style="text-align:center; padding:10px;">Личных переписок пока нет</div>'; 
             }
+
+            if (typeof window.updateGlobalBadges === 'function') window.updateGlobalBadges();
         });
     }
 
@@ -2781,6 +2783,7 @@
 
 </body>
 </html>
+
 
 
 
