@@ -1277,32 +1277,41 @@
         .joker-pick-card.black { color: black; }
         .joker-pick-card:hover { transform: scale(1.1); box-shadow: 0 0 10px gold; }
 
-        /* --- ФИКС ДЛЯ МОБИЛЬНОГО ПРИЛОЖЕНИЯ (РАСТЯГИВАЕМ ЭКРАНЫ НА 100%) --- */
-        /* --- БЕЗОПАСНЫЙ ФИКС ЧАТА ДЛЯ МОБИЛОК --- */
-        /* Ограничиваем высоту ТОЛЬКО для чатов, главную игру вообще не трогаем */
+        /* --- РЕШЕНИЕ ПРОБЛЕМЫ С ФОНОМ И ЧАТОМ НА ТЕЛЕФОНЕ --- */
+        
+        /* 1. Закрашиваем ВЕСЬ экран в цвет бумаги, чтобы не было коричневых дыр */
+        html {
+            min-height: 100%;
+            background-color: var(--paper-bg);
+            background-image: var(--paper-texture);
+        }
+
+        /* 2. Растягиваем окна чата правильно */
         #view-chat.active, #view-chat-list.active {
             display: flex;
             flex-direction: column;
-            height: calc(100dvh - 75px); /* Минус место под нижнее меню */
+            height: calc(100vh - 80px); /* Для старых телефонов */
+            height: calc(100dvh - 80px); /* 100% высоты минус нижнее меню */
         }
 
         #view-chat .chat-container {
             display: flex;
             flex-direction: column;
-            height: 100%;
             flex: 1;
+            min-height: 0; /* МАГИЯ: не дает контейнеру вылезти за экран */
         }
 
         #view-chat .chat-messages {
-            flex: 1 1 auto; /* Пружина: занимает всё свободное место */
-            overflow-y: auto; /* Скролл только для сообщений */
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0; /* МАГИЯ: включает скролл внутри блока сообщений */
         }
 
-        /* Жестко защищаем строку ввода, чтобы она не сплющилась и не пропала */
         #view-chat .chat-container > div:last-child {
-            flex: 0 0 auto !important; /* Запрещаем браузеру сжимать поле ввода */
-            padding-bottom: 10px; /* Отступ снизу, чтобы не прилипало к меню */
+            flex-shrink: 0; /* Строка ввода больше никогда не сожмется */
+            padding-bottom: 10px;
         }
+        /* --------------------------------------------------- */
         
     </style>
 </head>
@@ -1878,7 +1887,7 @@
                             <span class="chat-name">@${otherLogin}</span>
                             <span class="chat-preview">Личная переписка</span>
                         </div>
-                        <div id="badge_${key}" class="chat-badge">0</div>
+                        <div id="badge_${chatKey}" class="chat-badge">0</div>
                     `;
                     listContainer.appendChild(item);
                 }
@@ -2743,6 +2752,7 @@
 
 </body>
 </html>
+
 
 
 
