@@ -929,6 +929,7 @@ window.poker.action = async function(act) {
     } finally {
         setTimeout(() => { window.isActionProcessing = false; }, 500);
     }
+}
 
 
 // --- 5. ДЖОКЕРЫ И ОКОНЧАНИЕ ИГРЫ ---
@@ -1276,5 +1277,4 @@ window.poker.kickPlayer = async function(targetNick) {
         const newOrder = tblData.turnOrder.filter(n => n !== targetNick);
         await update(ref(db, `poker_tables/${tId}`), { turnOrder: newOrder });
     }
-}
 }
