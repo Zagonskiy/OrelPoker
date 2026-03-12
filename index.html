@@ -1277,39 +1277,63 @@
         .joker-pick-card.black { color: black; }
         .joker-pick-card:hover { transform: scale(1.1); box-shadow: 0 0 10px gold; }
 
-        /* --- РЕШЕНИЕ ПРОБЛЕМЫ С ФОНОМ И ЧАТОМ НА ТЕЛЕФОНЕ --- */
-        
-        /* 1. Закрашиваем ВЕСЬ экран в цвет бумаги, чтобы не было коричневых дыр */
-        html {
-            min-height: 100%;
+       /* --- БРОНЕБОЙНЫЙ ФИКС ЧАТА НА ВЕСЬ ЭКРАН --- */
+        html, body {
             background-color: var(--paper-bg);
             background-image: var(--paper-texture);
+            min-height: 100%;
         }
 
-        /* 2. Растягиваем окна чата правильно */
+        /* Жестко прибиваем экраны чатов к краям телефона */
         #view-chat.active, #view-chat-list.active {
-            display: flex;
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 75px; /* Отступ ровно под размер нижнего меню */
+            height: auto !important;
+            background-color: var(--paper-bg);
+            background-image: var(--paper-texture);
+            z-index: 5;
+            padding: 10px;
+            box-sizing: border-box;
+            
+            /* Для ПК: чтобы чат не растягивался на 2 метра в ширину */
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Список чатов скроллится обычным списком */
+        #view-chat-list.active {
+            overflow-y: auto;
+            display: block !important; 
+        }
+
+        /* Внутри самой переписки: сообщения пружинят, строка ввода всегда внизу */
+        #view-chat.active {
+            display: flex !important;
             flex-direction: column;
-            height: calc(100vh - 80px); /* Для старых телефонов */
-            height: calc(100dvh - 80px); /* 100% высоты минус нижнее меню */
         }
 
         #view-chat .chat-container {
             display: flex;
             flex-direction: column;
             flex: 1;
-            min-height: 0; /* МАГИЯ: не дает контейнеру вылезти за экран */
+            height: 100%;
+            overflow: hidden;
         }
 
         #view-chat .chat-messages {
             flex: 1;
             overflow-y: auto;
-            min-height: 0; /* МАГИЯ: включает скролл внутри блока сообщений */
+            height: 0; /* МАГИЯ: это разрешает сообщениям скроллиться внутри своего блока */
+            margin-bottom: 10px;
+            padding-right: 5px;
         }
 
         #view-chat .chat-container > div:last-child {
-            flex-shrink: 0; /* Строка ввода больше никогда не сожмется */
-            padding-bottom: 10px;
+            flex: 0 0 auto; /* Строке ввода жестко запрещено сжиматься */
+            margin-bottom: 5px;
         }
         /* --------------------------------------------------- */
         
@@ -2752,6 +2776,7 @@
 
 </body>
 </html>
+
 
 
 
