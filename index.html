@@ -1283,15 +1283,18 @@
             min-height: 100%;
         }
 
-        /* Жестко прибиваем экраны чатов к краям телефона */
+        /* ========================================= */
+        /* ЖЕЛЕЗОБЕТОННЫЙ БЛОК ЧАТА ДЛЯ WEBVIEW      */
+        /* ========================================= */
+
+        /* 1. Жестко фиксируем экран, чтобы он не улетал за пределы */
         #view-chat.active, #view-chat-list.active {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             right: 0 !important;
-            bottom: 75px !important; /* Жестко упираемся в нижнее меню */
+            bottom: 75px !important; /* Отступ для нижнего меню */
             width: 100% !important; 
-            /* СТРОКА С HEIGHT УДАЛЕНА, ТЕПЕРЬ ОНО РАСТЯНЕТСЯ */
             background-color: var(--paper-bg);
             background-image: var(--paper-texture);
             z-index: 5;
@@ -1301,42 +1304,51 @@
             margin: 0 auto;
         }
 
-        /* Список чатов скроллится обычным списком */
+        /* 2. Список чатов просто скроллится */
         #view-chat-list.active {
             overflow-y: auto;
             display: block !important; 
         }
 
-        /* Внутри самой переписки: сообщения пружинят, строка ввода всегда внизу */
+        /* 3. Оболочка самой переписки */
         #view-chat.active {
             display: flex !important;
             flex-direction: column;
         }
 
-        /* Внутри самой переписки: сообщения пружинят, строка ввода всегда внизу */
-        #view-chat.active {
-            display: flex !important;
-            flex-direction: column;
-        }
-
-        /* ИСПРАВЛЕНО: заменили несуществующий .chat-container на реальный ID панели */
+        /* 4. Сама панель переписки (исправленный ID) */
         #chatConversationPanel {
             display: flex;
             flex-direction: column;
-            flex: 1; /* Заставляет панель растянуться на всё доступное пространство */
+            flex: 1 1 auto; /* Умное растягивание для WebView */
+            height: 100%; /* Резервный парашют, чтобы не было высоты 0 */
             width: 100%;
             overflow: hidden;
         }
 
+        /* Гарантируем, что класс hidden работает */
+        #chatConversationPanel.hidden {
+            display: none !important;
+        }
+
+        /* 5. Область сообщений */
         #view-chat .chat-messages {
-            flex: 1;
+            flex: 1 1 0; /* Заставляет блок заполнять только свободное место */
             overflow-y: auto;
-            min-height: 0; /* ИСПРАВЛЕНО: заменили height: 0 на min-height: 0. Это правильный хак для скролла внутри flex-элемента */
+            -webkit-overflow-scrolling: touch; /* Плавный скролл на смартфонах */
             margin-bottom: 10px;
             padding-right: 5px;
             width: 100%;
         }
-        /* --------------------------------------------------- */
+
+        /* 6. Поле ввода (защита от сжатия) */
+        .chat-input-bar {
+            flex: 0 0 auto; /* Запрещаем сплющивать строку ввода */
+            width: 100%;
+            display: flex;
+            gap: 10px;
+        }
+        /* ========================================= */
         
     </style>
 </head>
@@ -2777,6 +2789,7 @@
 
 </body>
 </html>
+
 
 
 
