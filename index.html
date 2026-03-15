@@ -1382,15 +1382,18 @@
             display: flex; flex-wrap: wrap; justify-content: center; 
             padding-left: 10px; margin-top: 5px; 
         }
+        @keyframes bet-chip-anim {
+            from { transform: translateY(-40px) scale(0.5); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
         .poker-chip {
             width: 18px; height: 18px;
             border-radius: 50%;
             border: 2px dashed rgba(255,255,255,0.8);
             box-shadow: 1px 1px 3px rgba(0,0,0,0.8), inset 0 0 4px rgba(0,0,0,0.5);
-            display: inline-block;
-            margin-left: -8px; /* Эффект наложения фишек друг на друга */
             position: relative;
-            animation: chip-toss 0.4s ease-out backwards; /* Анимация полета фишки в банк */
+            /* Анимация выпадения фишек из инвентаря игрока */
+            animation: bet-chip-anim 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
         }
 
         /* 2. Колода и сброс (визуальная декорация над картами стола) */
