@@ -88,10 +88,10 @@ onValue(ref(db, 'poker_tables'), (snap) => {
 });
 
 
-// Калькулятор фишек по номиналам (ИСПРАВЛЕНО НАЛОЖЕНИЕ)
-function getChipsHTML(amount, staggerDelay = false) {
+// НОВЫЙ КАЛЬКУЛЯТОР ФИШЕК (Строим башенки!)
+function getChipsHTML(amount) {
     if (!amount || amount <= 0) return '';
-    let chips = [];
+    let towers = [];
     const denoms = [
         {val: 10000, color: 'gold'}, {val: 5000, color: 'silver'},
         {val: 1000, color: 'black'}, {val: 500, color: 'hotpink'},
@@ -100,20 +100,50 @@ function getChipsHTML(amount, staggerDelay = false) {
         {val: 10, color: 'gray'}
     ];
     let remaining = amount;
-    let delayCounter = 0;
     
     for(let d of denoms) {
         let count = Math.floor(remaining / d.val);
-        for(let i=0; i<count; i++) {
-            let delayStyle = staggerDelay ? `animation-delay: ${delayCounter * 0.05}s;` : '';
-            // Жестко задаем z-index и margin, чтобы фишки укладывались в красивый ряд
-            let marginStr = delayCounter === 0 ? '0' : '-10px';
-            chips.push(`<div class="poker-chip" style="background-color: ${d.color}; z-index: ${delayCounter + 1}; margin-left: ${marginStr}; ${delayStyle}"></div>`);
-            delayCounter++;
+        if (count > 0) {
+            let towerChips = [];
+            for(let i=0; i<count; i++) {
+                // margin-top: -14px накладывает фишки друг на друга, создавая вертикальную башенку
+                let mt = i > 0 ? '-14px' : '0';
+                towerChips.push(`<div class="poker-chip" style="background-color: ${d.color}; z-index: ${i}; margin-top: ${mt};"></div>`);
+            }
+            // column-reverse гарантирует, что первая фишка рисуется внизу башни
+            towers.push(`<div style="display: flex; flex-direction: column-reverse; align-items: center;">${towerChips.join('')}</div>`);
         }
         remaining %= d.val;
     }
-    return `<div class="chip-stack" style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center;">${chips.join('')}</div>`;
+    // gap: 6px расставляет разные номиналы рядом друг с другом
+    return `<div class="chip-stack" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px;">${towers.join('')}</div>`;
+}
+
+// НОВАЯ ФУНКЦИЯ: Полет фишек в банк
+function flyChipsToPot(amount, startEl, endEl) {
+    if (!startEl || !endEl || amount <= 0) return;
+    const startRect = startEl.getBoundingClientRect();
+    const endRect = endEl.getBoundingClientRect();
+    
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'fixed';
+    tempContainer.style.left = startRect.left + 'px';
+    tempContainer.style.top = startRect.top + 'px';
+    tempContainer.style.zIndex = '9999';
+    tempContainer.style.transition = 'all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)';
+    tempContainer.style.pointerEvents = 'none';
+    tempContainer.innerHTML = getChipsHTML(amount);
+    
+    document.body.appendChild(tempContainer);
+    
+    setTimeout(() => {
+        tempContainer.style.left = (endRect.left + endRect.width/2 - 20) + 'px';
+        tempContainer.style.top = (endRect.top + endRect.height/2 - 20) + 'px';
+        tempContainer.style.transform = 'scale(0.5)';
+        tempContainer.style.opacity = '0';
+    }, 50);
+    
+    setTimeout(() => tempContainer.remove(), 600);
 }
 
 
@@ -164,7 +194,6 @@ window.poker.joinTable = async function(tableId) {
     subscribeToTable(tableId);
 }
 
-// УМНЫЙ ВЫХОД: Сначала безопасно сбрасываем карты, потом выходим
 window.poker.leaveTable = async function(skipConfirm = false, destView = 'poker-lobby') {
     if(!skipConfirm && !(await window.customConfirm("Вы точно хотите выйти? Ваши вложенные деньги сгорят!", "Выход из игры"))) return;
     
@@ -280,14 +309,35 @@ function renderTableState(table, globalPlayers) {
     const user = JSON.parse(sessionStorage.getItem('op_session_user'));
     const myNick = user.nick;
 
-    document.getElementById('pokerPotDisplay').innerText = `Банк: ${table.pot || 0}`;
     document.getElementById('pokerCenterMessage').innerText = table.message || "";
 
     const container = document.getElementById('pokerPlayersContainer');
-    container.innerHTML = '';
+    const potEl = document.getElementById('communityCards'); // Направление для анимации фишек
     
     const playersArr = Object.keys(table.players || {});
     const myIdx = playersArr.indexOf(myNick);
+    
+    // --- ПРОВЕРКА И АНИМАЦИЯ СБРОСА ФИШЕК В БАНК ---
+    if (!window.lastInvestedState) window.lastInvestedState = {};
+    let sumInvested = 0; // Считаем сумму, которая лежит ПЕРЕД игроками
+
+    playersArr.forEach((pNick) => {
+        const currentInv = table.players[pNick].invested || 0;
+        const lastInv = window.lastInvestedState[pNick] || 0;
+        sumInvested += currentInv;
+        
+        // Если инвестиции обнулились (значит раунд закончился, и ставки собрали в центр)
+        if (currentInv === 0 && lastInv > 0) {
+            const safeId = `pp-node-${pNick.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            const playerEl = document.getElementById(safeId);
+            if (playerEl && potEl) {
+                flyChipsToPot(lastInv, playerEl, potEl); // Запускаем полет!
+            }
+        }
+        window.lastInvestedState[pNick] = currentInv;
+    });
+
+    container.innerHTML = '';
     
     playersArr.forEach((pNick, i) => {
         const pData = table.players[pNick];
@@ -347,8 +397,8 @@ function renderTableState(table, globalPlayers) {
         const kickAction = isHostAndNotMe ? `onclick="window.poker.promptKick('${pNick}', '${safeNick}')" style="cursor:pointer; box-shadow: inset 0 0 10px rgba(255,0,0,0.5);" title="Нажмите, чтобы выгнать"` : '';
 
         const div = document.createElement('div');
-        // УБРАЛИ класс swapClass, чтобы аватарки больше не тряслись!
         div.className = `poker-player pp-${visualIdx}`;
+        div.id = `pp-node-${pNick.replace(/[^a-zA-Z0-9]/g, '_')}`; // Присваиваем ID для полета фишек
         div.innerHTML = `
             <div class="pp-avatar ${isHisTurn ? 'active-turn' : ''}" ${kickAction}>
                 ${pNick.substr(0,2)}
@@ -359,7 +409,7 @@ function renderTableState(table, globalPlayers) {
                 <div style="font-size:0.7em; color:#ccc;">${pData.lastAction || ""}</div>
             </div>
             ${cardsHtml}
-            ${getChipsHTML(pData.invested || 0, true)} `;
+            ${getChipsHTML(pData.invested || 0)} `;
         container.appendChild(div);
     });
 
@@ -367,7 +417,6 @@ function renderTableState(table, globalPlayers) {
     if (commContainer) {
         commContainer.innerHTML = '';
         
-        // ДОБАВЛЕНА: Анимация тасовки колоды в начале игры
         let deckClass = "deck-visual";
         if (table.status === 'playing' && table.stage === 'preflop' && !window.deckShuffledState) {
             deckClass += " anim-shuffle";
@@ -402,7 +451,6 @@ function renderTableState(table, globalPlayers) {
                             setTimeout(() => felt.classList.remove('table-shake'), 400); 
                         }
                         
-                        // ДОБАВЛЕНО: Заставляем подпрыгнуть фишки, карты и аватарки игроков
                         document.querySelectorAll('.poker-chip, .poker-card:not(.anim-epic-river), .pp-avatar').forEach(el => {
                             el.classList.add('element-jump');
                             setTimeout(() => el.classList.remove('element-jump'), 400);
@@ -411,7 +459,7 @@ function renderTableState(table, globalPlayers) {
                     }, 1400);
                 } else if (i !== 4) {
                     cDiv.classList.add('anim-deal'); 
-                    cDiv.style.animationDelay = `${i * 0.15}s`; // ДОБАВЛЕНО: Задержка, чтобы карты вылетали по очереди
+                    cDiv.style.animationDelay = `${i * 0.15}s`;
                 }
             } else {
                 cDiv.className = `poker-card back`;
@@ -421,7 +469,10 @@ function renderTableState(table, globalPlayers) {
         }
     }
 
-    document.getElementById('pokerPotDisplay').innerHTML = `Банк: ${table.pot || 0} <br> ${getChipsHTML(table.pot || 0, true)}`;
+    // --- ОТОБРАЖЕНИЕ ЦЕНТРАЛЬНОГО БАНКА БЕЗ ДУБЛИКАТОВ ---
+    let centerPot = (table.pot || 0) - sumInvested;
+    if (centerPot < 0) centerPot = 0;
+    document.getElementById('pokerPotDisplay').innerHTML = `Банк: ${table.pot || 0} <br> ${getChipsHTML(centerPot)}`;
 
     const btnStart = document.getElementById('btnStartPoker');
     if(table.host === myNick && table.status === 'waiting') {
@@ -583,7 +634,7 @@ function createDeck() {
 window.poker.startGame = async function() {
     if(currentGameState && currentGameState.status !== 'waiting' && currentGameState.status !== 'showdown') return;
 
-    window.deckShuffledState = false; // Сбрасываем флаг анимации тасовки
+    window.deckShuffledState = false;
 
     const table = currentGameState;
     const playerNicks = Object.keys(table.players || {});
@@ -742,11 +793,13 @@ async function advanceTurn(tableData, updatesObj) {
         updatesObj[`poker_tables/${currentTableId}/currentBet`] = 0; 
         updatesObj[`poker_tables/${currentTableId}/lastRaise`] = 10; 
         
+        // Сброс инвестиций игроков - именно это стриггерит полет фишек в рендере
         activePlayers.forEach(nick => {
             if (!playersTemp[nick].isAllIn) {
                 updatesObj[`poker_tables/${currentTableId}/players/${nick}/acted`] = false;
             }
             updatesObj[`poker_tables/${currentTableId}/players/${nick}/roundBet`] = 0;
+            updatesObj[`poker_tables/${currentTableId}/players/${nick}/invested`] = 0; 
         });
         
         let startIdx = 0;
@@ -807,7 +860,6 @@ window.poker.action = async function(act) {
                 return;
             }
 
-            // --- ДОБАВЛЕНО: Анимация полета карты из рук в сброс ---
             const myPlayerDiv = document.querySelector('.poker-player.pp-0') || document.getElementById('myHand');
             const discardDiv = document.querySelector('.discard-visual');
             
@@ -821,7 +873,6 @@ window.poker.action = async function(act) {
                 tempCard.style.top = startRect.top + 'px';
                 document.body.appendChild(tempCard);
 
-                // Даем браузеру время отрендерить элемент, а затем запускаем полет
                 requestAnimationFrame(() => {
                     tempCard.style.left = (endRect.left + 5) + 'px';
                     tempCard.style.top = (endRect.top + 5) + 'px';
@@ -831,7 +882,6 @@ window.poker.action = async function(act) {
 
                 setTimeout(() => tempCard.remove(), 600);
             }
-            // --------------------------------------------------------
             
             const newCard = deck.pop();
             hand[swapIdx] = newCard;
@@ -1165,7 +1215,7 @@ async function endGameLogic(winners, table, msgPrefix) {
 
 window.poker.nextRound = async function() {
     window.riverAnimatedState = false;
-    window.deckShuffledState = false; // Сбрасываем тасовку колоды
+    window.deckShuffledState = false;
     const updates = {};
     updates[`poker_tables/${currentTableId}/status`] = 'waiting';
     updates[`poker_tables/${currentTableId}/message`] = 'Ожидание новой раздачи...';
@@ -1278,7 +1328,6 @@ function evaluateHand(hand, communityCards) {
     return 100000 + kickerScore; 
 }
 
-// --- ФУНКЦИИ ЛИДЕРА: ИСКЛЮЧЕНИЕ ИГРОКОВ ---
 window.poker.promptKick = async function(targetNick, targetName) {
     if(await window.customConfirm(`Вы точно хотите выгнать игрока ${targetName} со стола?`, "Меню Лидера")) {
         window.poker.kickPlayer(targetNick);
