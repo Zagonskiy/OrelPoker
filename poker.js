@@ -88,9 +88,7 @@ onValue(ref(db, 'poker_tables'), (snap) => {
 });
 
 
-// НОВЫЙ КАЛЬКУЛЯТОР ФИШЕК (Строим башенки!)
-// Калькулятор фишек: строим видимые башенки по номиналам
-// Калькулятор фишек: строим башенки по номиналам
+// НОВЫЙ КАЛЬКУЛЯТОР ФИШЕК (Строим видимые башенки!)
 function getChipsHTML(amount) {
     if (!amount || amount <= 0) return '';
     let towers = [];
@@ -119,9 +117,10 @@ function getChipsHTML(amount) {
         }
         remaining %= d.val;
     }
-    // Выстраиваем башенки в ряд
     return `<div class="chip-stack" style="display: flex; justify-content: center; align-items: flex-end; gap: 8px; margin-top: 10px;">${towers.join('')}</div>`;
 }
+
+// Полет фишек в банк
 function flyChipsToPot(amount, startEl, endEl) {
     if (!startEl || !endEl || amount <= 0) return;
     const startRect = startEl.getBoundingClientRect();
@@ -314,7 +313,7 @@ function renderTableState(table, globalPlayers) {
     document.getElementById('pokerCenterMessage').innerText = table.message || "";
 
     const container = document.getElementById('pokerPlayersContainer');
-    const potEl = document.getElementById('communityCards'); // Направление для анимации фишек
+    const potEl = document.getElementById('communityCards'); 
     
     const playersArr = Object.keys(table.players || {});
     const myIdx = playersArr.indexOf(myNick);
@@ -326,16 +325,14 @@ function renderTableState(table, globalPlayers) {
         const currentInv = table.players[pNick].invested || 0;
         const lastInv = window.lastInvestedState[pNick] || 0;
         
-        // Если инвестиция ВЫРОСЛА (игрок сделал ставку или анте)
         if (currentInv > lastInv) {
             const betAmount = currentInv - lastInv;
             const safeId = `pp-node-${pNick.replace(/[^a-zA-Z0-9]/g, '_')}`;
             const playerEl = document.getElementById(safeId);
             if (playerEl && potEl) {
-                flyChipsToPot(betAmount, playerEl, potEl); // Анимация полета!
+                flyChipsToPot(betAmount, playerEl, potEl); 
             }
         }
-        
         window.lastInvestedState[pNick] = currentInv;
     });
 
@@ -400,7 +397,7 @@ function renderTableState(table, globalPlayers) {
 
         const div = document.createElement('div');
         div.className = `poker-player pp-${visualIdx}`;
-        div.id = `pp-node-${pNick.replace(/[^a-zA-Z0-9]/g, '_')}`; // ID нужен для старта полета
+        div.id = `pp-node-${pNick.replace(/[^a-zA-Z0-9]/g, '_')}`; 
         div.innerHTML = `
             <div class="pp-avatar ${isHisTurn ? 'active-turn' : ''}" ${kickAction}>
                 ${pNick.substr(0,2)}
@@ -411,8 +408,9 @@ function renderTableState(table, globalPlayers) {
                 <div style="font-size:0.7em; color:#ccc;">${pData.lastAction || ""}</div>
             </div>
             ${cardsHtml}
-            ${getChipsHTML(balance)} `; // <--- ИСПРАВЛЕНО: ТЕПЕРЬ ТУТ БАЛАНС, А НЕ СТАВКА
+            ${getChipsHTML(balance)} `; 
         container.appendChild(div);
+    }); // <--- ИСПРАВЛЕНО: Вот та самая скобка, которая всё ломала!
 
     const commContainer = document.getElementById('communityCards');
     if (commContainer) {
@@ -470,9 +468,6 @@ function renderTableState(table, globalPlayers) {
         }
     }
 
-    // --- ОТОБРАЖЕНИЕ ЦЕНТРАЛЬНОГО БАНКА БЕЗ ДУБЛИКАТОВ ---
-    let centerPot = (table.pot || 0) - sumInvested;
-    if (centerPot < 0) centerPot = 0;
     // --- ОТОБРАЖЕНИЕ ЦЕНТРАЛЬНОГО БАНКА ---
     document.getElementById('pokerPotDisplay').innerHTML = `Банк: ${table.pot || 0} <br> ${getChipsHTML(table.pot || 0)}`;
 
@@ -616,7 +611,6 @@ function renderTableState(table, globalPlayers) {
     } else {
         document.getElementById('jokerModal').classList.add('hidden');
     }
-    });
 }
 
 // --- 3. СОЗДАНИЕ КОЛОДЫ И СТАРТ ---
