@@ -89,6 +89,7 @@ onValue(ref(db, 'poker_tables'), (snap) => {
 
 
 // НОВЫЙ КАЛЬКУЛЯТОР ФИШЕК (Строим башенки!)
+// Калькулятор фишек: строим видимые башенки по номиналам
 function getChipsHTML(amount) {
     if (!amount || amount <= 0) return '';
     let towers = [];
@@ -100,23 +101,25 @@ function getChipsHTML(amount) {
         {val: 10, color: 'gray'}
     ];
     let remaining = amount;
+    let delayCounter = 0;
     
     for(let d of denoms) {
         let count = Math.floor(remaining / d.val);
         if (count > 0) {
             let towerChips = [];
             for(let i=0; i<count; i++) {
-                // margin-top: -14px накладывает фишки друг на друга, создавая вертикальную башенку
-                let mt = i > 0 ? '-14px' : '0';
-                towerChips.push(`<div class="poker-chip" style="background-color: ${d.color}; z-index: ${i}; margin-top: ${mt};"></div>`);
+                // Жестко поднимаем каждую следующую фишку в стопке на 4px вверх
+                towerChips.push(`<div class="poker-chip" style="background-color: ${d.color}; z-index: ${i}; bottom: ${i * 4}px; animation-delay: ${delayCounter * 0.05}s;"></div>`);
+                delayCounter++;
             }
-            // column-reverse гарантирует, что первая фишка рисуется внизу башни
-            towers.push(`<div style="display: flex; flex-direction: column-reverse; align-items: center;">${towerChips.join('')}</div>`);
+            // Высчитываем высоту башенки, чтобы контейнер не был плоским
+            let towerHeight = 18 + (count - 1) * 4;
+            towers.push(`<div class="chip-tower" style="position: relative; width: 18px; height: ${towerHeight}px;">${towerChips.join('')}</div>`);
         }
         remaining %= d.val;
     }
-    // gap: 6px расставляет разные номиналы рядом друг с другом
-    return `<div class="chip-stack" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px;">${towers.join('')}</div>`;
+    // Выстраиваем башенки в ряд и выравниваем по нижнему краю (align-items: flex-end)
+    return `<div class="chip-stack" style="display: flex; justify-content: center; align-items: flex-end; gap: 8px; margin-top: 10px;">${towers.join('')}</div>`;
 }
 
 // НОВАЯ ФУНКЦИЯ: Полет фишек в банк
