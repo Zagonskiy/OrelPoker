@@ -88,7 +88,7 @@ onValue(ref(db, 'poker_tables'), (snap) => {
 });
 
 
-// НОВЫЙ КАЛЬКУЛЯТОР ФИШЕК (Строим видимые башенки!)
+// Калькулятор фишек: ровное горизонтальное наслоение
 function getChipsHTML(amount) {
     if (!amount || amount <= 0) return '';
     let towers = [];
@@ -100,24 +100,21 @@ function getChipsHTML(amount) {
         {val: 10, color: 'gray'}
     ];
     let remaining = amount;
-    let delayCounter = 0;
     
     for(let d of denoms) {
         let count = Math.floor(remaining / d.val);
         if (count > 0) {
             let towerChips = [];
             for(let i=0; i<count; i++) {
-                // Поднимаем каждую следующую фишку в стопке на 4px вверх
-                towerChips.push(`<div class="poker-chip" style="background-color: ${d.color}; z-index: ${i}; bottom: ${i * 4}px; animation-delay: ${delayCounter * 0.05}s;"></div>`);
-                delayCounter++;
+                // Наслаиваем фишки одного номинала горизонтально (-12px)
+                let ml = i === 0 ? '0' : '-12px'; 
+                towerChips.push(`<div class="poker-chip" style="background-color: ${d.color}; margin-left: ${ml}; z-index: ${i};"></div>`);
             }
-            // Высчитываем высоту башенки, чтобы контейнер не был плоским
-            let towerHeight = 18 + (count - 1) * 4;
-            towers.push(`<div class="chip-tower" style="position: relative; width: 18px; height: ${towerHeight}px;">${towerChips.join('')}</div>`);
+            towers.push(`<div style="display: flex; align-items: center;">${towerChips.join('')}</div>`);
         }
         remaining %= d.val;
     }
-    return `<div class="chip-stack" style="display: flex; justify-content: center; align-items: flex-end; gap: 8px; margin-top: 10px;">${towers.join('')}</div>`;
+    return `<div class="chip-stack" style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; margin-top: 5px;">${towers.join('')}</div>`;
 }
 
 // Полет фишек в банк
@@ -318,19 +315,19 @@ function renderTableState(table, globalPlayers) {
     const playersArr = Object.keys(table.players || {});
     const myIdx = playersArr.indexOf(myNick);
     
-    // --- АНИМАЦИЯ СТАВОК: ФИШКИ ЛЕТЯТ В БАНК СРАЗУ ---
+    // --- ЛОГИКА ПОЛЕТА ФИШЕК В КОНЦЕ РАУНДА ---
     if (!window.lastInvestedState) window.lastInvestedState = {};
 
     playersArr.forEach((pNick) => {
         const currentInv = table.players[pNick].invested || 0;
         const lastInv = window.lastInvestedState[pNick] || 0;
         
-        if (currentInv > lastInv) {
-            const betAmount = currentInv - lastInv;
+        // Фишки летят в общий банк ТОЛЬКО когда раунд окончен (ставка обнулилась)
+        if (currentInv === 0 && lastInv > 0) {
             const safeId = `pp-node-${pNick.replace(/[^a-zA-Z0-9]/g, '_')}`;
             const playerEl = document.getElementById(safeId);
             if (playerEl && potEl) {
-                flyChipsToPot(betAmount, playerEl, potEl); 
+                flyChipsToPot(lastInv, playerEl, potEl); 
             }
         }
         window.lastInvestedState[pNick] = currentInv;
@@ -408,7 +405,9 @@ function renderTableState(table, globalPlayers) {
                 <div style="font-size:0.7em; color:#ccc;">${pData.lastAction || ""}</div>
             </div>
             ${cardsHtml}
-            ${getChipsHTML(balance)} `; 
+            <div class="player-inventory">${getChipsHTML(balance - (pData.invested || 0))}</div>
+            <div class="player-bet" style="margin-top: 15px;">${getChipsHTML(pData.invested || 0)}</div>
+        `; 
         container.appendChild(div);
     }); // <--- ИСПРАВЛЕНО: Вот та самая скобка, которая всё ломала!
 
@@ -431,6 +430,8 @@ function renderTableState(table, globalPlayers) {
 
         const commCards = table.communityCards || [];
         
+        if (!window.animatedCardsState) window.animatedCardsState = [];
+
         for(let i=0; i<5; i++) {
             const cDiv = document.createElement('div');
             
@@ -442,6 +443,7 @@ function renderTableState(table, globalPlayers) {
                 if (i === 4 && !window.riverAnimatedState) {
                     cDiv.classList.add('anim-epic-river');
                     window.riverAnimatedState = true; 
+                    window.animatedCardsState[i] = true; // Запоминаем, что карта открыта
                     
                     setTimeout(() => {
                         const felt = document.querySelector('.poker-table-felt');
@@ -456,9 +458,11 @@ function renderTableState(table, globalPlayers) {
                         });
 
                     }, 1400);
-                } else if (i !== 4) {
+                } else if (i !== 4 && !window.animatedCardsState[i]) {
+                    // Анимация играет ТОЛЬКО ОДИН РАЗ
                     cDiv.classList.add('anim-deal'); 
                     cDiv.style.animationDelay = `${i * 0.15}s`;
+                    window.animatedCardsState[i] = true;
                 }
             } else {
                 cDiv.className = `poker-card back`;
