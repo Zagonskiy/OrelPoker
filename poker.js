@@ -90,6 +90,7 @@ onValue(ref(db, 'poker_tables'), (snap) => {
 
 // НОВЫЙ КАЛЬКУЛЯТОР ФИШЕК (Строим башенки!)
 // Калькулятор фишек: строим видимые башенки по номиналам
+// Калькулятор фишек: строим башенки по номиналам
 function getChipsHTML(amount) {
     if (!amount || amount <= 0) return '';
     let towers = [];
@@ -108,7 +109,7 @@ function getChipsHTML(amount) {
         if (count > 0) {
             let towerChips = [];
             for(let i=0; i<count; i++) {
-                // Жестко поднимаем каждую следующую фишку в стопке на 4px вверх
+                // Поднимаем каждую следующую фишку в стопке на 4px вверх
                 towerChips.push(`<div class="poker-chip" style="background-color: ${d.color}; z-index: ${i}; bottom: ${i * 4}px; animation-delay: ${delayCounter * 0.05}s;"></div>`);
                 delayCounter++;
             }
@@ -118,11 +119,9 @@ function getChipsHTML(amount) {
         }
         remaining %= d.val;
     }
-    // Выстраиваем башенки в ряд и выравниваем по нижнему краю (align-items: flex-end)
+    // Выстраиваем башенки в ряд
     return `<div class="chip-stack" style="display: flex; justify-content: center; align-items: flex-end; gap: 8px; margin-top: 10px;">${towers.join('')}</div>`;
 }
-
-// НОВАЯ ФУНКЦИЯ: Полет фишек в банк
 function flyChipsToPot(amount, startEl, endEl) {
     if (!startEl || !endEl || amount <= 0) return;
     const startRect = startEl.getBoundingClientRect();
@@ -139,6 +138,7 @@ function flyChipsToPot(amount, startEl, endEl) {
     
     document.body.appendChild(tempContainer);
     
+    // Летим в центр банка!
     setTimeout(() => {
         tempContainer.style.left = (endRect.left + endRect.width/2 - 20) + 'px';
         tempContainer.style.top = (endRect.top + endRect.height/2 - 20) + 'px';
@@ -148,7 +148,6 @@ function flyChipsToPot(amount, startEl, endEl) {
     
     setTimeout(() => tempContainer.remove(), 600);
 }
-
 
 window.poker.deleteTable = async function(tableId) {
     if(await window.customConfirm("Удалить этот стол навсегда?", "Удаление")) {
@@ -320,23 +319,23 @@ function renderTableState(table, globalPlayers) {
     const playersArr = Object.keys(table.players || {});
     const myIdx = playersArr.indexOf(myNick);
     
-    // --- ПРОВЕРКА И АНИМАЦИЯ СБРОСА ФИШЕК В БАНК ---
+    // --- АНИМАЦИЯ СТАВОК: ФИШКИ ЛЕТЯТ В БАНК СРАЗУ ---
     if (!window.lastInvestedState) window.lastInvestedState = {};
-    let sumInvested = 0; // Считаем сумму, которая лежит ПЕРЕД игроками
 
     playersArr.forEach((pNick) => {
         const currentInv = table.players[pNick].invested || 0;
         const lastInv = window.lastInvestedState[pNick] || 0;
-        sumInvested += currentInv;
         
-        // Если инвестиции обнулились (значит раунд закончился, и ставки собрали в центр)
-        if (currentInv === 0 && lastInv > 0) {
+        // Если инвестиция ВЫРОСЛА (игрок сделал ставку или анте)
+        if (currentInv > lastInv) {
+            const betAmount = currentInv - lastInv;
             const safeId = `pp-node-${pNick.replace(/[^a-zA-Z0-9]/g, '_')}`;
             const playerEl = document.getElementById(safeId);
             if (playerEl && potEl) {
-                flyChipsToPot(lastInv, playerEl, potEl); // Запускаем полет!
+                flyChipsToPot(betAmount, playerEl, potEl); // Анимация полета!
             }
         }
+        
         window.lastInvestedState[pNick] = currentInv;
     });
 
@@ -401,7 +400,7 @@ function renderTableState(table, globalPlayers) {
 
         const div = document.createElement('div');
         div.className = `poker-player pp-${visualIdx}`;
-        div.id = `pp-node-${pNick.replace(/[^a-zA-Z0-9]/g, '_')}`; // Присваиваем ID для полета фишек
+        div.id = `pp-node-${pNick.replace(/[^a-zA-Z0-9]/g, '_')}`; // ID нужен для старта полета
         div.innerHTML = `
             <div class="pp-avatar ${isHisTurn ? 'active-turn' : ''}" ${kickAction}>
                 ${pNick.substr(0,2)}
@@ -412,9 +411,8 @@ function renderTableState(table, globalPlayers) {
                 <div style="font-size:0.7em; color:#ccc;">${pData.lastAction || ""}</div>
             </div>
             ${cardsHtml}
-            ${getChipsHTML(pData.invested || 0)} `;
+            ${getChipsHTML(balance)} `; // <--- ИСПРАВЛЕНО: ТЕПЕРЬ ТУТ БАЛАНС, А НЕ СТАВКА
         container.appendChild(div);
-    });
 
     const commContainer = document.getElementById('communityCards');
     if (commContainer) {
@@ -475,7 +473,8 @@ function renderTableState(table, globalPlayers) {
     // --- ОТОБРАЖЕНИЕ ЦЕНТРАЛЬНОГО БАНКА БЕЗ ДУБЛИКАТОВ ---
     let centerPot = (table.pot || 0) - sumInvested;
     if (centerPot < 0) centerPot = 0;
-    document.getElementById('pokerPotDisplay').innerHTML = `Банк: ${table.pot || 0} <br> ${getChipsHTML(centerPot)}`;
+    // --- ОТОБРАЖЕНИЕ ЦЕНТРАЛЬНОГО БАНКА ---
+    document.getElementById('pokerPotDisplay').innerHTML = `Банк: ${table.pot || 0} <br> ${getChipsHTML(table.pot || 0)}`;
 
     const btnStart = document.getElementById('btnStartPoker');
     if(table.host === myNick && table.status === 'waiting') {
