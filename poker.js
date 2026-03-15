@@ -117,32 +117,41 @@ function getChipsHTML(amount) {
     return `<div class="chip-stack" style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; margin-top: 5px;">${towers.join('')}</div>`;
 }
 
-// Полет фишек в банк
-function flyChipsToPot(amount, startEl, endEl) {
+// Новая анимация: понимает, летим мы на стол (ставка) или в центр (банк)
+function flyChipsAnimation(amount, startEl, endEl, isToPot) {
     if (!startEl || !endEl || amount <= 0) return;
     const startRect = startEl.getBoundingClientRect();
     const endRect = endEl.getBoundingClientRect();
     
-    const tempContainer = document.createElement('div');
-    tempContainer.style.position = 'fixed';
-    tempContainer.style.left = startRect.left + 'px';
-    tempContainer.style.top = startRect.top + 'px';
-    tempContainer.style.zIndex = '9999';
-    tempContainer.style.transition = 'all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)';
-    tempContainer.style.pointerEvents = 'none';
-    tempContainer.innerHTML = getChipsHTML(amount);
+    const temp = document.createElement('div');
+    temp.style.position = 'fixed';
+    temp.style.zIndex = '9999';
+    temp.style.transition = 'all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)';
+    temp.style.pointerEvents = 'none';
+    temp.innerHTML = getChipsHTML(amount);
     
-    document.body.appendChild(tempContainer);
+    // Старт анимации: от центра аватарки игрока
+    temp.style.left = startRect.left + (startRect.width / 2) - 10 + 'px';
+    temp.style.top = startRect.top + (startRect.height / 2) - 10 + 'px';
     
-    // Летим в центр банка!
+    document.body.appendChild(temp);
+    
     setTimeout(() => {
-        tempContainer.style.left = (endRect.left + endRect.width/2 - 20) + 'px';
-        tempContainer.style.top = (endRect.top + endRect.height/2 - 20) + 'px';
-        tempContainer.style.transform = 'scale(0.5)';
-        tempContainer.style.opacity = '0';
+        if (isToPot) {
+            // Летим с места ставки в самый центр стола
+            temp.style.left = (endRect.left + endRect.width/2 - 20) + 'px';
+            temp.style.top = (endRect.top + endRect.height/2 - 20) + 'px';
+            temp.style.transform = 'scale(0.5)';
+        } else {
+            // Летим из инвентаря на стол перед игроком (выдвигаем ставку)
+            temp.style.left = endRect.left + 'px';
+            temp.style.top = (endRect.top - 45) + 'px'; 
+            temp.style.transform = 'scale(0.8)';
+        }
+        temp.style.opacity = '0';
     }, 50);
     
-    setTimeout(() => tempContainer.remove(), 600);
+    setTimeout(() => temp.remove(), 600);
 }
 
 window.poker.deleteTable = async function(tableId) {
@@ -315,21 +324,27 @@ function renderTableState(table, globalPlayers) {
     const playersArr = Object.keys(table.players || {});
     const myIdx = playersArr.indexOf(myNick);
     
-    // --- ЛОГИКА ПОЛЕТА ФИШЕК В КОНЦЕ РАУНДА ---
+    // --- ЛОГИКА ПОЛЕТА ФИШЕК ---
     if (!window.lastInvestedState) window.lastInvestedState = {};
 
     playersArr.forEach((pNick) => {
         const currentInv = table.players[pNick].invested || 0;
         const lastInv = window.lastInvestedState[pNick] || 0;
         
-        // Фишки летят в общий банк ТОЛЬКО когда раунд окончен (ставка обнулилась)
-        if (currentInv === 0 && lastInv > 0) {
-            const safeId = `pp-node-${pNick.replace(/[^a-zA-Z0-9]/g, '_')}`;
-            const playerEl = document.getElementById(safeId);
-            if (playerEl && potEl) {
-                flyChipsToPot(lastInv, playerEl, potEl); 
-            }
+        const safeId = `pp-node-${pNick.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        const playerEl = document.getElementById(safeId);
+        const potEl = document.getElementById('communityCards');
+        
+        // 1. Игрок делает ставку: фишки едут перед ним на стол
+        if (currentInv > lastInv && playerEl) {
+            flyChipsAnimation(currentInv - lastInv, playerEl, playerEl, false); 
         }
+        
+        // 2. Раунд окончен (ставка обнулилась): фишки едут со стола в банк
+        if (currentInv === 0 && lastInv > 0 && playerEl && potEl) {
+            flyChipsAnimation(lastInv, playerEl, potEl, true); 
+        }
+        
         window.lastInvestedState[pNick] = currentInv;
     });
 
@@ -430,6 +445,7 @@ function renderTableState(table, globalPlayers) {
 
         const commCards = table.communityCards || [];
         
+        // Создаем память для карт, чтобы они не анимировались повторно
         if (!window.animatedCardsState) window.animatedCardsState = [];
 
         for(let i=0; i<5; i++) {
@@ -440,10 +456,11 @@ function renderTableState(table, globalPlayers) {
                 cDiv.className = `poker-card ${['♥','♦', 'red'].includes(card.suit) || card.suit === '★' && card.color === 'red' ? 'red' : 'black'}`;
                 cDiv.innerHTML = `${card.rank}<br>${card.suit}`;
                 
+                // Эпичный Ривер (5-я карта)
                 if (i === 4 && !window.riverAnimatedState) {
                     cDiv.classList.add('anim-epic-river');
                     window.riverAnimatedState = true; 
-                    window.animatedCardsState[i] = true; // Запоминаем, что карта открыта
+                    window.animatedCardsState[i] = true; // Запомнили
                     
                     setTimeout(() => {
                         const felt = document.querySelector('.poker-table-felt');
@@ -451,18 +468,12 @@ function renderTableState(table, globalPlayers) {
                             felt.classList.add('table-shake');
                             setTimeout(() => felt.classList.remove('table-shake'), 400); 
                         }
-                        
-                        document.querySelectorAll('.poker-chip, .poker-card:not(.anim-epic-river), .pp-avatar').forEach(el => {
-                            el.classList.add('element-jump');
-                            setTimeout(() => el.classList.remove('element-jump'), 400);
-                        });
-
                     }, 1400);
-                } else if (i !== 4 && !window.animatedCardsState[i]) {
-                    // Анимация играет ТОЛЬКО ОДИН РАЗ
+                } 
+                // Остальные карты (1, 2, 3, 4): открываются только ОДИН раз
+                else if (i !== 4 && !window.animatedCardsState[i]) {
                     cDiv.classList.add('anim-deal'); 
-                    cDiv.style.animationDelay = `${i * 0.15}s`;
-                    window.animatedCardsState[i] = true;
+                    window.animatedCardsState[i] = true; // Запомнили
                 }
             } else {
                 cDiv.className = `poker-card back`;
@@ -633,6 +644,7 @@ function createDeck() {
 }
 
 window.poker.startGame = async function() {
+    window.animatedCardsState = [];
     if(currentGameState && currentGameState.status !== 'waiting' && currentGameState.status !== 'showdown') return;
 
     window.deckShuffledState = false;
@@ -1215,6 +1227,7 @@ async function endGameLogic(winners, table, msgPrefix) {
 }
 
 window.poker.nextRound = async function() {
+    window.animatedCardsState = [];
     window.riverAnimatedState = false;
     window.deckShuffledState = false;
     const updates = {};
