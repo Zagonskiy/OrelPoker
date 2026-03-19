@@ -1490,9 +1490,22 @@
             display: flex; flex-wrap: wrap; justify-content: center; 
             padding-left: 10px; margin-top: 5px; 
         }
+        .chip-stack > div {
+            position: relative !important; /* Включаем управление слоями */
+        }
         .chip-stack > div:not(:first-child) {
             margin-left: -12px !important; /* Надвигаем новую группу цвета на предыдущую */
         }
+
+        .chip-stack > div:nth-child(1) { z-index: 1 !important; }
+        .chip-stack > div:nth-child(2) { z-index: 2 !important; }
+        .chip-stack > div:nth-child(3) { z-index: 3 !important; }
+        .chip-stack > div:nth-child(4) { z-index: 4 !important; }
+        .chip-stack > div:nth-child(5) { z-index: 5 !important; }
+        .chip-stack > div:nth-child(6) { z-index: 6 !important; }
+        .chip-stack > div:nth-child(7) { z-index: 7 !important; }
+        .chip-stack > div:nth-child(8) { z-index: 8 !important; }
+        
         @keyframes bet-chip-anim {
             from { transform: translateY(-40px) scale(0.5); opacity: 0; }
             to { transform: translateY(0) scale(1); opacity: 1; }
