@@ -1151,12 +1151,12 @@
         
         .poker-player { position: absolute; width: 100px; text-align: center; z-index: 10; }
         
-        .pp-0 { transform: translateY(45px); } 
-        .pp-1 { transform: translate(-45px, 35px); }
-        .pp-2 { transform: translate(-45px, -35px); }
-        .pp-3 { transform: translateY(-45px); }
-        .pp-4 { transform: translate(45px, -35px); }
-        .pp-5 { transform: translate(45px, 35px); }
+        .pp-0 { bottom: 2% !important; left: 50% !important; transform: translateX(-50%) !important; }
+        .pp-1 { bottom: 10% !important; left: 2% !important; transform: none !important; }
+        .pp-2 { top: 10% !important; left: 2% !important; transform: none !important; }
+        .pp-3 { top: 2% !important; left: 50% !important; transform: translateX(-50%) !important; }
+        .pp-4 { top: 10% !important; right: 2% !important; left: auto !important; transform: none !important; }
+        .pp-5 { bottom: 10% !important; right: 2% !important; left: auto !important; transform: none !important; }
 
         .pp-avatar { width: 50px; height: 50px; background: #2a1b0f; border: 2px solid var(--accent-gold); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--accent-gold); font-weight: bold; position: relative; transition: all 0.3s; }
         .pp-avatar.active-turn { box-shadow: 0 0 25px #00ff00; border-color: #fff; transform: scale(1.1); }
@@ -1273,8 +1273,14 @@
 
         @media (max-width: 600px) {
             #pokerControls {
-                padding: 5px !important;
-                bottom: 60px !important; /* Поднимаем над системным меню Android */
+                position: fixed !important; /* Жестко фиксируем на экране */
+                bottom: 0 !important; /* Прибиваем к самому низу */
+                left: 0 !important;
+                right: 0 !important;
+                padding: 10px 5px 20px 5px !important; /* 20px снизу защищают от полоски Android/iOS */
+                background: rgba(42, 27, 15, 0.98) !important;
+                z-index: 1000 !important;
+                box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
             }
             #actionButtonsContainer {
                 gap: 5px !important;
@@ -1282,9 +1288,8 @@
             #actionButtonsContainer button {
                 padding: 8px 5px !important;
                 font-size: 11px !important;
-                min-height: 35px !important;
+                min-height: 40px !important;
             }
-            /* Чуть уменьшаем свои карты, чтобы они не перекрывали стол */
             #myHand .poker-card {
                 width: 45px !important;
                 height: 65px !important;
@@ -1294,23 +1299,29 @@
 
        /* Жесткая фиксация окна Джокера для WebView */
         .joker-modal {
-            position: fixed !important;
-            top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
-            width: 100vw !important; height: 100vh !important;
-            max-width: 100% !important; max-height: 100% !important;
-            overflow-y: auto !important; /* Прокрутка всего окна */
-            display: block !important; /* Убираем flex, который сжимал карты */
-            padding: 20px 10px 80px 10px !important;
-            z-index: 10000 !important;
-            background: rgba(42, 27, 15, 0.98) !important;
+            position: relative !important; /* Убрали fixed, чтобы окно снова стало нормального размера на ПК */
+            width: 90vw !important; /* На телефоне займет 90% ширины */
+            height: auto !important;
+            max-width: 450px !important; /* На ПК не будет расти больше 450px */
+            max-height: 80vh !important; /* Не вылезет за пределы высоты экрана */
+            background: #2a1b0f !important;
+            border: 4px solid var(--accent-gold) !important;
+            padding: 20px !important;
+            text-align: center !important;
+            display: flex !important;
+            flex-direction: column !important; /* Заголовок сверху, карты внизу */
+            border-radius: 10px;
         }
+        
         .joker-cards-grid {
-            display: flex !important; /* Flex с переносом вместо Grid */
+            display: flex !important;
             flex-wrap: wrap !important;
             justify-content: center !important;
             gap: 10px !important;
-            height: auto !important;
-            margin-top: 20px;
+            overflow-y: auto !important; /* Скроллится только сама сетка с картами! */
+            min-height: 0 !important; /* Лекарство от бага WebView */
+            margin-top: 15px !important;
+            padding-bottom: 10px !important;
         }
         .joker-pick-card { background: #fff; border-radius: 4px; padding: 10px 5px; font-family: monospace; font-size: 1.2em; font-weight: bold; cursor: pointer; border: 1px solid #000; }
         .joker-pick-card.red { color: red; }
