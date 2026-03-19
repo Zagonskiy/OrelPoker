@@ -1554,9 +1554,9 @@
         /* 4. ЭПИЧНЫЙ РИВЕР (5-я карта) и ТРЯСКА СТОЛА */
         @keyframes epic-river-drop {
             0% { transform: translateY(-250px) rotateY(0deg) rotateZ(15deg) scale(0.2); opacity: 0; }
-            40% { transform: translateY(-100px) rotateY(1080deg) rotateZ(-10deg) scale(1.8); opacity: 1; } /* Зависание и бешеная прокрутка */
-            80% { transform: translateY(10px) rotateY(1800deg) rotateZ(5deg) scale(1.1); } /* Замедленное падение */
-            100% { transform: translateY(0) rotateY(1800deg) rotateZ(0deg) scale(1); }
+            40% { transform: translateY(-100px) rotateY(1080deg) rotateZ(-10deg) scale(1.8); opacity: 1; } 
+            80% { transform: translateY(10px) rotateY(1800deg) rotateZ(5deg) scale(1.1); } 
+            100% { transform: translateY(0) rotateY(1800deg) rotateZ(var(--end-rot, 15deg)) scale(1); }
         }
         .anim-epic-river { 
             animation: epic-river-drop 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; 
