@@ -316,7 +316,6 @@ function renderTableState(table, globalPlayers) {
     const user = JSON.parse(sessionStorage.getItem('op_session_user'));
     const myNick = user.nick;
 
-
     if (table.status === 'waiting') {
         window.animatedCardsState = [];
         window.riverAnimatedState = false;
@@ -433,7 +432,7 @@ function renderTableState(table, globalPlayers) {
             <div class="player-bet" style="margin-top: 15px;">${getChipsHTML(pData.invested || 0)}</div>
         `; 
         container.appendChild(div);
-    }); // <--- ИСПРАВЛЕНО: Вот та самая скобка, которая всё ломала!
+    });
 
     const commContainer = document.getElementById('communityCards');
     if (commContainer) {
@@ -511,7 +510,7 @@ function renderTableState(table, globalPlayers) {
                             // В момент тряски (на 800мс) раскидываем первые 4 карты
                             const tableCards = document.querySelectorAll('.community-cards .poker-card');
                             tableCards.forEach((cardEl, idx) => {
-                                if (idx < 4 && window.scatteredAngles[idx]) {
+                                if (idx < 4 && window.scatteredAngles && window.scatteredAngles[idx]) {
                                     cardEl.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
                                     cardEl.style.transform = `translate(${window.scatteredAngles[idx].x}px, ${window.scatteredAngles[idx].y}px) rotateZ(${window.scatteredAngles[idx].rot}deg)`;
                                 }
@@ -531,8 +530,6 @@ function renderTableState(table, globalPlayers) {
             commContainer.appendChild(cDiv);
         }
     }
-
-
 
     // --- ОТОБРАЖЕНИЕ ЦЕНТРАЛЬНОГО БАНКА ---
     document.getElementById('pokerPotDisplay').innerHTML = `Банк: ${table.pot || 0} <br> ${getChipsHTML(table.pot || 0)}`;
@@ -678,7 +675,6 @@ function renderTableState(table, globalPlayers) {
         document.getElementById('jokerModal').classList.add('hidden');
     }
 }
-
 
 // --- 3. СОЗДАНИЕ КОЛОДЫ И СТАРТ ---
 
