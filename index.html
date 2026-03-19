@@ -2942,9 +2942,10 @@
         const isGoingToNonPoker = viewName !== 'poker-table' && viewName !== 'poker-lobby';
 
         if (!forceSkipConfirm && isAtPokerTable && isGoingToNonPoker) {
-            if (confirm("Вы точно хотите покинуть стол? Ваши вложенные деньги сгорят, а карты будут сброшены!")) {
-                if (window.poker && window.poker.leaveTable) {
-                    window.poker.leaveTable(true, viewName); // true = пропустить второе подтверждение
+            if (!skipCheck && window.poker && window.poker.getCurrentTableId() && viewId !== 'poker-table') {
+                // Передаем управление покеру: он покажет красивую табличку и сам переключит экран
+                    window.poker.leaveTable(false, viewId);
+                    return; // Прерываем текущий переход
                 }
             }
             return; // Останавливаем выполнение, leaveTable сама переключит вид
