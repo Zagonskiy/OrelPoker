@@ -408,7 +408,7 @@ function renderTableState(table, globalPlayers) {
         const kickAction = isHostAndNotMe ? `onclick="window.poker.promptKick('${pNick}', '${safeNick}')" style="cursor:pointer; box-shadow: inset 0 0 10px rgba(255,0,0,0.5);" title="Нажмите, чтобы выгнать"` : '';
 
         const div = document.createElement('div');
-        div.className = `poker-player pp-${visualIdx}`;
+        div.className = `poker-player pp-${visualIdx} ${pData.cards ? 'has-cards' : ''}`;
         div.id = `pp-node-${pNick.replace(/[^a-zA-Z0-9]/g, '_')}`; 
         div.innerHTML = `
             <div class="pp-avatar ${isHisTurn ? 'active-turn' : ''}" ${kickAction}>
