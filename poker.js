@@ -476,7 +476,7 @@ function renderTableState(table, globalPlayers) {
                             felt.classList.add('table-shake');
                             setTimeout(() => felt.classList.remove('table-shake'), 400); 
                         }
-                    }, 800);
+                    }, 1000);
                 } 
                 // Остальные карты (1, 2, 3, 4): открываются только ОДИН раз
                 else if (i !== 4 && !window.animatedCardsState[i]) {
