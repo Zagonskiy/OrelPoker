@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -1150,17 +1151,37 @@
         }
         
         .poker-player { position: absolute !important; }
-        .pp-0 { bottom: -15px !important; left: 50% !important; transform: translateX(-50%) !important; }
-        .pp-1 { bottom: 10px !important; left: -10px !important; transform: none !important; }
-        .pp-2 { top: 10px !important; left: -10px !important; transform: none !important; }
-        .pp-3 { top: -15px !important; left: 50% !important; transform: translateX(-50%) !important; }
-        .pp-4 { top: 10px !important; right: -10px !important; left: auto !important; transform: none !important; }
-        .pp-5 { bottom: 10px !important; right: -10px !important; left: auto !important; transform: none !important; }
+        .pp-0 { bottom: -35px !important; left: 50% !important; transform: translateX(-50%) !important; }
+        .pp-1 { bottom: 0 !important; left: -30px !important; transform: none !important; }
+        .pp-2 { top: 0 !important; left: -30px !important; transform: none !important; }
+        .pp-3 { top: -35px !important; left: 50% !important; transform: translateX(-50%) !important; }
+        .pp-4 { top: 0 !important; right: -30px !important; left: auto !important; transform: none !important; }
+        .pp-5 { bottom: 0 !important; right: -30px !important; left: auto !important; transform: none !important; }
 
         .pp-avatar { width: 50px; height: 50px; background: #2a1b0f; border: 2px solid var(--accent-gold); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--accent-gold); font-weight: bold; position: relative; transition: all 0.3s; }
         .pp-avatar.active-turn { box-shadow: 0 0 25px #00ff00; border-color: #fff; transform: scale(1.1); }
         
-        .pp-info { background: rgba(0,0,0,0.85); border: 1px solid var(--accent-brown); color: #fff; padding: 4px 8px; border-radius: 8px; font-size: 0.8em; margin-top: 5px; position: relative; z-index: 5; min-width: 90px; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .pp-info { 
+            background: rgba(0,0,0,0.85); 
+            border: 1px solid var(--accent-brown); 
+            color: #fff; 
+            padding: 4px 8px; 
+            border-radius: 8px; 
+            font-size: 0.8em; 
+            margin: 5px auto 0 auto; /* Ровно по центру под аватаркой */
+            position: relative; 
+            z-index: 5; 
+    
+            /* Умное сжатие */
+            min-width: 0; /* Убираем твои 90px */
+            width: max-content; 
+            max-width: 80px; /* Лимит ширины */
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; /* Ставит "..." в конце длинного ника */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5); 
+            text-align: center;
+        }
         .pp-balance { color: var(--accent-green); font-weight: bold; display: block; border-top: 1px dotted #555; margin-top: 2px; padding-top: 2px; }
         .pp-cards { display: flex; justify-content: center; margin-top: 5px; }
 
@@ -1308,9 +1329,9 @@
         }
         .joker-modal {
             position: relative !important;
-            width: 90vw !important;
+            width: 95vw !important;
             max-width: 420px !important;
-            max-height: 85vh !important; /* На мобилке не вылезет за экран */
+            max-height: 80vh !important; /* Не даём окну вылезти за экран */
             background: #2a1b0f !important;
             border: 4px solid var(--accent-gold) !important;
             padding: 20px 15px !important;
@@ -1318,15 +1339,18 @@
             flex-direction: column !important;
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.8) !important;
+            box-sizing: border-box;
         }
+
         .joker-cards-grid {
-            display: flex !important;
-            flex-wrap: wrap !important;
-            justify-content: center !important;
-            gap: 10px !important;
-            overflow-y: auto !important; /* Карты скроллятся внутри окна */
-            padding: 5px !important;
-            flex: 1 1 auto !important;
+            display: grid !important; /* Меняем flex на grid */
+            grid-template-columns: repeat(auto-fit, minmax(45px, 1fr)) !important;
+            gap: 8px !important;
+            overflow-y: auto !important; /* Включаем внутренний скролл */
+            padding: 10px !important;
+            max-height: 55vh !important; /* Жёсткий лимит высоты для сетки */
+            width: 100%;
+            box-sizing: border-box;
             -webkit-overflow-scrolling: touch;
         }
         .joker-pick-card { background: #fff; border-radius: 4px; padding: 10px 5px; font-family: monospace; font-size: 1.2em; font-weight: bold; cursor: pointer; border: 1px solid #000; }
@@ -1452,7 +1476,7 @@
             from { transform: translate(0, -100px) rotate(-30deg) scale(0.5); opacity: 0; }
             to { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
         }
-        .anim-deal { animation: deal-card-anim 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards; }
+        .anim-deal { animation: deal-card-anim 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
 
         @keyframes card-swap-anim {
             0% { transform: translateY(0); }
