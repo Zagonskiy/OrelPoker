@@ -827,7 +827,7 @@ async function advanceTurn(tableData, updatesObj) {
         
         if (startIdx < tableData.turnOrder.length) {
             updatesObj[`poker_tables/${currentTableId}/currentTurnIndex`] = startIdx;
-            updatesObj[`poker_tables/${currentTableId}/message`] = `Раунд: ${nextStage}. Ход: ${playersTemp[tableData.turnOrder[startIdx]].nick}`;
+            updatesObj[`poker_tables/${currentTableId}/message`] = `Ход: ${playersTemp[tableData.turnOrder[startIdx]].nick}`;
         } else {
             updatesObj[`poker_tables/${currentTableId}/triggerEnd`] = true;
         }
