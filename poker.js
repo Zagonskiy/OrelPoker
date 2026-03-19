@@ -322,6 +322,7 @@ function renderTableState(table, globalPlayers) {
         window.riverAnimatedState = false;
         window.deckShuffledState = false;
         window.lastInvestedState = {};
+        window.scatteredAngles = null;
     }
 
     document.getElementById('pokerCenterMessage').innerText = table.message || "";
@@ -459,6 +460,16 @@ function renderTableState(table, globalPlayers) {
         for(let i=0; i<5; i++) {
             const cDiv = document.createElement('div');
             
+            // 1. СОХРАНЯЕМ ХАОС ПРИ ПЕРЕРИСОВКЕ
+            // Если стол уже был разбросан, возвращаем картам их случайные углы
+            if (window.scatteredAngles && window.scatteredAngles[i]) {
+                if (i === 4) {
+                    cDiv.style.transform = `rotateZ(${window.scatteredAngles[i].rot}deg)`;
+                } else {
+                    cDiv.style.transform = `translate(${window.scatteredAngles[i].x}px, ${window.scatteredAngles[i].y}px) rotateZ(${window.scatteredAngles[i].rot}deg)`;
+                }
+            }
+
             if (i < commCards.length) {
                 const card = commCards[i];
                 cDiv.className = `poker-card ${['♥','♦', 'red'].includes(card.suit) || card.suit === '★' && card.color === 'red' ? 'red' : 'black'}`;
@@ -466,22 +477,52 @@ function renderTableState(table, globalPlayers) {
                 
                 // Эпичный Ривер (5-я карта)
                 if (i === 4 && !window.riverAnimatedState) {
+                    
+                    // 2. ГЕНЕРИРУЕМ ХАОС
+                    // Создаем случайные углы и сдвиги для ВСЕХ 5 карт
+                    window.scatteredAngles = [];
+                    for(let j=0; j<5; j++) {
+                        if (j === 4) {
+                            // 5-я карта просто падает под кривым углом (от -30 до 30 градусов)
+                            window.scatteredAngles.push({ rot: Math.floor(Math.random() * 60 - 30) }); 
+                        } else {
+                            // Остальные карты сильно разлетаются в стороны при ударе
+                            window.scatteredAngles.push({
+                                x: Math.floor(Math.random() * 20 - 10), // Сдвиг по X
+                                y: Math.floor(Math.random() * 20 - 10), // Сдвиг по Y
+                                rot: Math.floor(Math.random() * 90 - 45) // Разброс от -45 до 45 градусов
+                            });
+                        }
+                    }
+                    
+                    // Передаем угол в CSS анимацию для 5-й карты
+                    cDiv.style.setProperty('--end-rot', `${window.scatteredAngles[4].rot}deg`);
                     cDiv.classList.add('anim-epic-river');
                     window.riverAnimatedState = true; 
-                    window.animatedCardsState[i] = true; // Запомнили
+                    window.animatedCardsState[i] = true; 
                     
                     setTimeout(() => {
                         const felt = document.querySelector('.poker-table-felt');
                         if(felt) {
                             felt.classList.add('table-shake');
                             setTimeout(() => felt.classList.remove('table-shake'), 400); 
+                            
+                            // 3. УДАРНАЯ ВОЛНА
+                            // В момент тряски (на 800мс) раскидываем первые 4 карты
+                            const tableCards = document.querySelectorAll('.community-cards .poker-card');
+                            tableCards.forEach((cardEl, idx) => {
+                                if (idx < 4 && window.scatteredAngles[idx]) {
+                                    cardEl.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                                    cardEl.style.transform = `translate(${window.scatteredAngles[idx].x}px, ${window.scatteredAngles[idx].y}px) rotateZ(${window.scatteredAngles[idx].rot}deg)`;
+                                }
+                            });
                         }
-                    }, 1350);
+                    }, 1350); // Таймер твоего удара
                 } 
                 // Остальные карты (1, 2, 3, 4): открываются только ОДИН раз
                 else if (i !== 4 && !window.animatedCardsState[i]) {
                     cDiv.classList.add('anim-deal'); 
-                    window.animatedCardsState[i] = true; // Запомнили
+                    window.animatedCardsState[i] = true; 
                 }
             } else {
                 cDiv.className = `poker-card back`;
@@ -490,6 +531,7 @@ function renderTableState(table, globalPlayers) {
             commContainer.appendChild(cDiv);
         }
     }
+}
 
     // --- ОТОБРАЖЕНИЕ ЦЕНТРАЛЬНОГО БАНКА ---
     document.getElementById('pokerPotDisplay').innerHTML = `Банк: ${table.pot || 0} <br> ${getChipsHTML(table.pot || 0)}`;
@@ -655,6 +697,7 @@ window.poker.startGame = async function() {
     window.animatedCardsState = [];
     window.riverAnimatedState = false;
     window.lastInvestedState = {};
+    window.scatteredAngles = null;
     if(currentGameState && currentGameState.status !== 'waiting' && currentGameState.status !== 'showdown') return;
 
     window.deckShuffledState = false;
@@ -1241,6 +1284,7 @@ window.poker.nextRound = async function() {
     window.riverAnimatedState = false;
     window.deckShuffledState = false;
     window.lastInvestedState = {};
+    window.scatteredAngles = null;
     const updates = {};
     updates[`poker_tables/${currentTableId}/status`] = 'waiting';
     updates[`poker_tables/${currentTableId}/message`] = 'Ожидание новой раздачи...';
