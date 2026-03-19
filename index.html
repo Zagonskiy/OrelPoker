@@ -2936,7 +2936,7 @@
     window.closeRoleModal = function() { document.getElementById('roleModal').classList.add('role-hidden'); currentRankLogin = null; }
     window.toggleSidebar = function() { document.getElementById('sidebar').classList.toggle('open'); }
 
-    window.showView = function(viewName, forceSkipConfirm = false) {
+    window.showView = async function(viewName, forceSkipConfirm = false) {
         // Умная проверка: уходит ли игрок с экрана покера на другие вкладки
         const isAtPokerTable = !document.getElementById('view-poker-table').classList.contains('hidden');
         const isGoingToNonPoker = viewName !== 'poker-table' && viewName !== 'poker-lobby';
