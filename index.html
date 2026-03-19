@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -1151,12 +1150,13 @@
         }
         
         .poker-player { position: absolute !important; }
-        .pp-0 { bottom: -35px !important; left: 50% !important; transform: translateX(-50%) !important; }
-        .pp-1 { bottom: 0 !important; left: -30px !important; transform: none !important; }
-        .pp-2 { top: 0 !important; left: -30px !important; transform: none !important; }
-        .pp-3 { top: -35px !important; left: 50% !important; transform: translateX(-50%) !important; }
-        .pp-4 { top: 0 !important; right: -30px !important; left: auto !important; transform: none !important; }
-        .pp-5 { bottom: 0 !important; right: -30px !important; left: auto !important; transform: none !important; }
+        /* Выносим игроков ещё дальше на край стола */
+        .pp-0 { bottom: -65px !important; left: 50% !important; transform: translateX(-50%) !important; }
+        .pp-1 { bottom: -20px !important; left: -45px !important; transform: none !important; }
+        .pp-2 { top: -20px !important; left: -45px !important; transform: none !important; }
+        .pp-3 { top: -65px !important; left: 50% !important; transform: translateX(-50%) !important; }
+        .pp-4 { top: -20px !important; right: -45px !important; left: auto !important; transform: none !important; }
+        .pp-5 { bottom: -20px !important; right: -45px !important; left: auto !important; transform: none !important; }
 
         .pp-avatar { width: 50px; height: 50px; background: #2a1b0f; border: 2px solid var(--accent-gold); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--accent-gold); font-weight: bold; position: relative; transition: all 0.3s; }
         .pp-avatar.active-turn { box-shadow: 0 0 25px #00ff00; border-color: #fff; transform: scale(1.1); }
@@ -1168,19 +1168,16 @@
             padding: 4px 8px; 
             border-radius: 8px; 
             font-size: 0.8em; 
-            margin: 5px auto 0 auto; /* Ровно по центру под аватаркой */
+            margin: 5px auto 0 auto; 
             position: relative; 
-            z-index: 5; 
-    
-            /* Умное сжатие */
-            min-width: 0; /* Убираем твои 90px */
+            z-index: 5;           
             width: max-content; 
-            max-width: 80px; /* Лимит ширины */
-            white-space: nowrap; 
-            overflow: hidden; 
-            text-overflow: ellipsis; /* Ставит "..." в конце длинного ника */
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5); 
+            max-width: 120px; /* Ограничитель, чтобы текст не уехал за экран */
+            white-space: normal; /* Разрешаем перенос текста на новые строки */
+            word-wrap: break-word; /* Разрываем слишком длинные слова */
+            line-height: 1.2;
             text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5); 
         }
         .pp-balance { color: var(--accent-green); font-weight: bold; display: block; border-top: 1px dotted #555; margin-top: 2px; padding-top: 2px; }
         .pp-cards { display: flex; justify-content: center; margin-top: 5px; }
