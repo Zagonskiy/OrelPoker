@@ -1158,16 +1158,16 @@
         .pp-4 { top: -20px !important; right: -45px !important; left: auto !important; transform: none !important; }
         .pp-5 { bottom: -20px !important; right: -45px !important; left: auto !important; transform: none !important; }
 
-        .pp-avatar { width: 40px; height: 40px; font-size: 0.9em; background: #2a1b0f; border: 2px solid var(--accent-gold); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--accent-gold); font-weight: bold; position: relative; transition: all 0.3s; }
+        .pp-avatar { width: 50px; height: 50px; background: #2a1b0f; border: 2px solid var(--accent-gold); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: var(--accent-gold); font-weight: bold; position: relative; transition: all 0.3s; }
         .pp-avatar.active-turn { box-shadow: 0 0 25px #00ff00; border-color: #fff; transform: scale(1.1); }
         
         .pp-info { 
             background: rgba(0,0,0,0.85); 
             border: 1px solid var(--accent-brown); 
             color: #fff; 
-            padding: 3px 6px; 
+            padding: 4px 8px; 
             border-radius: 8px; 
-            font-size: 0.7em; 
+            font-size: 0.8em; 
             margin: 5px auto 0 auto; 
             position: relative; 
             z-index: 5;           
@@ -1179,6 +1179,21 @@
             text-align: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.5); 
         }
+
+        /* Уменьшаем игроков только на экранах мобильных телефонов (до 768px) */
+        @media screen and (max-width: 768px) {
+            .pp-avatar { 
+                width: 40px !important; 
+                height: 40px !important; 
+                font-size: 0.9em !important; 
+            }
+    
+            .pp-info { 
+                font-size: 0.7em !important; 
+                padding: 3px 6px !important; 
+            }
+        }
+        
         .pp-balance { color: var(--accent-green); font-weight: bold; display: block; border-top: 1px dotted #555; margin-top: 2px; padding-top: 2px; }
         .pp-cards { display: flex; justify-content: center; margin-top: 5px; }
 
