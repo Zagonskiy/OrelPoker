@@ -645,6 +645,8 @@ function createDeck() {
 
 window.poker.startGame = async function() {
     window.animatedCardsState = [];
+    window.riverAnimatedState = false;
+    window.lastInvestedState = {};
     if(currentGameState && currentGameState.status !== 'waiting' && currentGameState.status !== 'showdown') return;
 
     window.deckShuffledState = false;
@@ -1230,6 +1232,7 @@ window.poker.nextRound = async function() {
     window.animatedCardsState = [];
     window.riverAnimatedState = false;
     window.deckShuffledState = false;
+    window.lastInvestedState = {};
     const updates = {};
     updates[`poker_tables/${currentTableId}/status`] = 'waiting';
     updates[`poker_tables/${currentTableId}/message`] = 'Ожидание новой раздачи...';
