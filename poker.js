@@ -316,6 +316,14 @@ function renderTableState(table, globalPlayers) {
     const user = JSON.parse(sessionStorage.getItem('op_session_user'));
     const myNick = user.nick;
 
+
+    if (table.status === 'waiting') {
+        window.animatedCardsState = [];
+        window.riverAnimatedState = false;
+        window.deckShuffledState = false;
+        window.lastInvestedState = {};
+    }
+
     document.getElementById('pokerCenterMessage').innerText = table.message || "";
 
     const container = document.getElementById('pokerPlayersContainer');
