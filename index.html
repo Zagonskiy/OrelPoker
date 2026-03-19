@@ -1487,6 +1487,8 @@
         /* 1. Математические фишки */
         .chip-stack {
             gap: 0 !important; /* Убираем стандартный пробел в 8px между группами */
+            display: flex; flex-wrap: wrap; justify-content: center; 
+            padding-left: 10px; margin-top: 5px; 
         }
         .chip-stack > div:not(:first-child) {
             margin-left: -12px !important; /* Надвигаем новую группу цвета на предыдущую */
