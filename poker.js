@@ -533,6 +533,7 @@ function renderTableState(table, globalPlayers) {
     }
 }
 
+
     // --- ОТОБРАЖЕНИЕ ЦЕНТРАЛЬНОГО БАНКА ---
     document.getElementById('pokerPotDisplay').innerHTML = `Банк: ${table.pot || 0} <br> ${getChipsHTML(table.pot || 0)}`;
 
@@ -676,7 +677,7 @@ function renderTableState(table, globalPlayers) {
     } else {
         document.getElementById('jokerModal').classList.add('hidden');
     }
-}
+
 
 // --- 3. СОЗДАНИЕ КОЛОДЫ И СТАРТ ---
 
