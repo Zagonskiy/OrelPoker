@@ -1354,6 +1354,8 @@
             overflow-y: auto !important;
             padding: 5px !important;
             box-sizing: border-box !important;
+            flex: 1 1 auto !important;
+            min-height: 250px !important; /* Жестко заставляем контейнер раскрыться */
         }
 
 /* Карты джокера без flexbox, чтобы <br> работал нормально */
@@ -1374,6 +1376,7 @@
             box-sizing: border-box !important;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.5) !important;
             cursor: pointer;
+            min-height: 70px !important; /* Жестко заставляем контейнер раскрыться */
         }
         .joker-pick-card.red { color: red !important; }
         .joker-pick-card.black { color: black !important; }
