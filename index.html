@@ -1346,17 +1346,17 @@
         }
 
         .joker-grid-mobile {
-            display: flex !important;
-            flex-wrap: wrap !important;
-            justify-content: center !important;
-            gap: 10px !important;
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(50px, 1fr)) !important;
+            gap: 8px !important;
             width: 100% !important;
-            max-height: 50vh !important;
+            max-height: 55vh !important;
             overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch !important;
+            padding: 5px !important;
+            box-sizing: border-box !important;
         }
 
-        /* Карты джокера (жесткая защита от сплющивания) */
+/* Карты джокера без flexbox, чтобы <br> работал нормально */
         .joker-pick-card { 
             background: #fff !important; 
             border-radius: 4px !important; 
@@ -1364,13 +1364,14 @@
             font-size: 1.3em !important; 
             font-weight: bold !important; 
             border: 2px solid #000 !important; 
-            display: flex !important;
-            align-items: center !important; 
-            justify-content: center !important;
-            /* Жесткие размеры карты */
-            width: 50px !important;  
+            
+            /* Бронебойное центрирование без flex */
+            display: block !important;
+            text-align: center !important;
+            padding-top: 8px !important; /* Сдвигаем текст ровно по центру */
+    
             height: 70px !important; 
-            flex-shrink: 0 !important; /* Физически запрещаем мобилке сжимать карту */
+            box-sizing: border-box !important;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.5) !important;
             cursor: pointer;
         }
