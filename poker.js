@@ -531,7 +531,7 @@ function renderTableState(table, globalPlayers) {
             commContainer.appendChild(cDiv);
         }
     }
-}
+
 
 
     // --- ОТОБРАЖЕНИЕ ЦЕНТРАЛЬНОГО БАНКА ---
@@ -677,6 +677,7 @@ function renderTableState(table, globalPlayers) {
     } else {
         document.getElementById('jokerModal').classList.add('hidden');
     }
+}
 
 
 // --- 3. СОЗДАНИЕ КОЛОДЫ И СТАРТ ---
