@@ -516,7 +516,7 @@ function renderTableState(table, globalPlayers) {
                                 }
                             });
                         }
-                    }, 750); // Таймер твоего удара
+                    }, 1000); // Таймер твоего удара
                 } 
                 // Остальные карты (1, 2, 3, 4): открываются только ОДИН раз
                 else if (i !== 4 && !window.animatedCardsState[i]) {
